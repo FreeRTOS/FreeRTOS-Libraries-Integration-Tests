@@ -1,15 +1,8 @@
-## My Project
+## Labs Project FreeRTOS LTS Qualification Tests
 
-TODO: Fill this README out!
+This Labs project is still under development and not ready for production use.
 
-Be sure to:
-
-* Change the title in this README
-* Edit your repository description on GitHub
-
-## Security
-
-See [CONTRIBUTING](CONTRIBUTING.md#security-issue-notifications) for more information.
+This repo contiains tests that can be used for LTS qualification, Integration Toolkit and Golden Reference.
 
 ## License
 
