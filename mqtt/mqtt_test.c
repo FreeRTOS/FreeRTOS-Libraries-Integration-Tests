@@ -142,6 +142,7 @@ static TransportInterface_t * pTestTransport;
 static TestHostInfo_t * pTestHostInfo;
 static TestNetworkCredentials_t * pTestNetworkCredentials;
 static void * pTestNetworkContext;
+static void * pTestSecondNetworkContext;
 
 static Network_Connect_Func pTestNetworkConnect;
 static Network_Disconnect_Func pTestNetworkDisconnect;
@@ -245,6 +246,7 @@ static int clientIdRandNumber;
  * @brief Sends an MQTT CONNECT packet over the already connected TCP socket.
  *
  * @param[in] pContext MQTT context pointer.
+ * @param[in] pNetworkContext Network context for mqtt connection
  * @param[in] createCleanSession Creates a new MQTT session if true.
  * If false, tries to establish the existing session if there was session
  * already present in broker.
@@ -252,6 +254,7 @@ static int clientIdRandNumber;
  * Session present response is obtained from the CONNACK from broker.
  */
 static void establishMqttSession( MQTTContext_t * pContext,
+                                  void * pNetworkContext,
                                   bool createCleanSession,
                                   bool * pSessionPresent );
 
@@ -277,11 +280,14 @@ static void eventCallback( MQTTContext_t * pContext,
 
 
 static void establishMqttSession( MQTTContext_t * pContext,
+                                  void * pNetworkContext,
                                   bool createCleanSession,
                                   bool * pSessionPresent )
 {
     MQTTConnectInfo_t connectInfo;
+    TransportInterface_t transport;
     MQTTFixedBuffer_t networkBuffer;
+    MQTTPublishInfo_t lwtInfo;
 
     assert( pContext != NULL );
 
@@ -298,12 +304,16 @@ static void establishMqttSession( MQTTContext_t * pContext,
     networkBuffer.pBuffer = buffer;
     networkBuffer.size = NETWORK_BUFFER_SIZE;
 
+    transport.pNetworkContext = pNetworkContext;
+    transport.send = pTestTransport->send;
+    transport.recv = pTestTransport->recv;
+
     /* Clear the state of the MQTT context when creating a clean session. */
     if( createCleanSession == true )
     {
         /* Initialize MQTT library. */
         TEST_ASSERT_EQUAL( MQTTSuccess, MQTT_Init( pContext,
-                                                   pTestTransport,
+                                                   &transport,
                                                    Clock_GetTimeMs,
                                                    eventCallback,
                                                    &networkBuffer ) );
@@ -313,13 +323,26 @@ static void establishMqttSession( MQTTContext_t * pContext,
 
     connectInfo.cleanSession = createCleanSession;
 
-    /* Populate client identifier with random number. */
-    connectInfo.clientIdentifierLength =
-        snprintf( clientIdBuffer,
-                  sizeof( clientIdBuffer ),
-                  "%d%s", clientIdRandNumber,
-                  TEST_CLIENT_IDENTIFIER );
-    connectInfo.pClientIdentifier = clientIdBuffer;
+    if( useLWTClientIdentifier )
+    {
+        /* Populate client identifier for connection with LWT topic with random number. */
+        connectInfo.clientIdentifierLength =
+            snprintf( clientIdBuffer, sizeof( clientIdBuffer ),
+                      "%d%s",
+                      clientIdRandNumber,
+                      TEST_CLIENT_IDENTIFIER_LWT );
+        connectInfo.pClientIdentifier = clientIdBuffer;
+    }
+    else
+    {
+        /* Populate client identifier with random number. */
+        connectInfo.clientIdentifierLength =
+            snprintf( clientIdBuffer,
+                      sizeof( clientIdBuffer ),
+                      "%d%s", clientIdRandNumber,
+                      TEST_CLIENT_IDENTIFIER );
+        connectInfo.pClientIdentifier = clientIdBuffer;
+    }
 
     LogDebug( ( "Created randomized client ID for MQTT connection: ClientID={%.*s}", connectInfo.clientIdentifierLength,
                 connectInfo.pClientIdentifier ) );
@@ -333,10 +356,19 @@ static void establishMqttSession( MQTTContext_t * pContext,
     connectInfo.pPassword = NULL;
     connectInfo.passwordLength = 0U;
 
+    /* LWT Info. */
+    lwtInfo.pTopicName = TEST_MQTT_LWT_TOPIC;
+    lwtInfo.topicNameLength = TEST_MQTT_LWT_TOPIC_LENGTH;
+    lwtInfo.pPayload = MQTT_EXAMPLE_MESSAGE;
+    lwtInfo.payloadLength = strlen( MQTT_EXAMPLE_MESSAGE );
+    lwtInfo.qos = MQTTQoS0;
+    lwtInfo.dup = false;
+    lwtInfo.retain = false;
+
     /* Send MQTT CONNECT packet to broker. */
     TEST_ASSERT_EQUAL( MQTTSuccess, MQTT_Connect( pContext,
                                                   &connectInfo,
-                                                  NULL,
+                                                  &lwtInfo,
                                                   CONNACK_RECV_TIMEOUT_MS,
                                                   pSessionPresent ) );
 }
@@ -590,10 +622,11 @@ void setUp(void) {
     /* Establish a TCP connection with the server endpoint, then
      * establish TLS session on top of TCP connection. */
     TEST_ASSERT_EQUAL( pdPASS, (*pTestNetworkConnect)( pTestNetworkContext,
-                pTestHostInfo, pTestNetworkCredentials ) );
+                                                       pTestHostInfo,
+                                                       pTestNetworkCredentials ) );
 
     /* Establish MQTT session on top of the TCP+TLS connection. */
-    establishMqttSession( &context, true, &persistentSession );
+    establishMqttSession( &context, pTestNetworkContext, true, &persistentSession );
 }
 
 void tearDown(void) {
@@ -628,6 +661,7 @@ void setupMqttTest( MqttTestParam_t * pTestParam,
     pTestHostInfo = pTestParam->pHostInfo;
     pTestNetworkCredentials = pTestParam->pNetworkCredentials;
     pTestNetworkContext = pTestParam->pNetworkContext;
+    pTestSecondNetworkContext = pTestParam->pSecondNetworkContext;
     pTestNetworkConnect = pNetworkConnect;
     pTestNetworkDisconnect = pNetworkDisconnect;
 }
@@ -683,9 +717,66 @@ void test_MQTT_Subscribe_Publish_With_Qos_0( void )
     TEST_ASSERT_TRUE( receivedUnsubAck );
 }
 
+void test_MQTT_Connect_LWT( void )
+{
+    bool sessionPresent;
+    MQTTContext_t secondMqttContext;
+
+    /* Establish a second TCP connection with the server endpoint, then
+     * a TLS session. The server info and credentials can be reused. */
+    TEST_ASSERT_EQUAL( pdPASS, (*pTestNetworkConnect)( pTestSecondNetworkContext,
+                                                                pTestHostInfo,
+                                                                pTestNetworkCredentials ) );
+    /* TEST_ASSERT_NOT_EQUAL( -1, secondOpensslParams.socketDescriptor ); */
+    /* TEST_ASSERT_NOT_NULL( secondOpensslParams.pSsl ); */
+
+    /* Establish MQTT session on top of the TCP+TLS connection. */
+    useLWTClientIdentifier = true;
+    establishMqttSession( &secondMqttContext, pTestSecondNetworkContext, true, &sessionPresent );
+
+    /* Subscribe to LWT Topic. */
+    TEST_ASSERT_EQUAL( MQTTSuccess, subscribeToTopic(
+                           &context, TEST_MQTT_LWT_TOPIC, MQTTQoS0 ) );
+
+    /* Wait for the SUBACK response from the broker for the subscribe request. */
+    TEST_ASSERT_EQUAL( MQTTSuccess,
+                       MQTT_ProcessLoop( &context, MQTT_PROCESS_LOOP_TIMEOUT_MS ) );
+    TEST_ASSERT_TRUE( receivedSubAck );
+
+    /* Abruptly terminate TCP connection. */
+    ( void ) (*pTestNetworkDisconnect)( pTestSecondNetworkContext );
+
+    /* Run the process loop to receive the LWT. Allow some more time for the
+     * server to realize the connection is closed. */
+    TEST_ASSERT_EQUAL( MQTTSuccess,
+                       MQTT_ProcessLoop( &context, 2 * MQTT_PROCESS_LOOP_TIMEOUT_MS ) );
+
+    /* Test if we have received the LWT. */
+    TEST_ASSERT_EQUAL( MQTTQoS0, incomingInfo.qos );
+    TEST_ASSERT_EQUAL( TEST_MQTT_LWT_TOPIC_LENGTH, incomingInfo.topicNameLength );
+    TEST_ASSERT_EQUAL_MEMORY( TEST_MQTT_LWT_TOPIC,
+                              incomingInfo.pTopicName,
+                              TEST_MQTT_LWT_TOPIC_LENGTH );
+    TEST_ASSERT_EQUAL( strlen( MQTT_EXAMPLE_MESSAGE ), incomingInfo.payloadLength );
+    TEST_ASSERT_EQUAL_MEMORY( MQTT_EXAMPLE_MESSAGE,
+                              incomingInfo.pPayload,
+                              incomingInfo.payloadLength );
+
+    /* Un-subscribe from a topic with Qos 0. */
+    TEST_ASSERT_EQUAL( MQTTSuccess, unsubscribeFromTopic(
+                           &context, TEST_MQTT_TOPIC, MQTTQoS0 ) );
+
+    /* We expect an UNSUBACK from the broker for the unsubscribe operation. */
+    TEST_ASSERT_FALSE( receivedUnsubAck );
+    TEST_ASSERT_EQUAL( MQTTSuccess,
+                       MQTT_ProcessLoop( &context, MQTT_PROCESS_LOOP_TIMEOUT_MS ) );
+    TEST_ASSERT_TRUE( receivedUnsubAck );
+}
+
 int runMqttTest()
 {
     UNITY_BEGIN();
-    RUN_TEST(test_MQTT_Subscribe_Publish_With_Qos_0);
+    /* RUN_TEST(test_MQTT_Subscribe_Publish_With_Qos_0); */
+    RUN_TEST(test_MQTT_Connect_LWT);
     return UNITY_END();
 }

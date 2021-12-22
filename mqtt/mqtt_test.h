@@ -28,6 +28,7 @@ typedef struct MqttTestParam
     TestHostInfo_t * pHostInfo;
     TestNetworkCredentials_t * pNetworkCredentials;
     void * pNetworkContext;
+    void * pSecondNetworkContext;
 } MqttTestParam_t;
 
 // Network_Disconnect_Func takes three arguments: network context, hostinfo and networkcredentials
