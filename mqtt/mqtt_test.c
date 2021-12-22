@@ -139,12 +139,13 @@
 #define MQTT_EXAMPLE_MESSAGE                    "Hello World!"
 
 static TransportInterface_t * pTestTransport;
+static TestHostInfo_t * pTestHostInfo;
+static TestNetworkCredentials_t * pTestNetworkCredentials;
+static void * pTestNetworkContext;
 
 static Network_Connect_Func pTestNetworkConnect;
-
 static Network_Disconnect_Func pTestNetworkDisconnect;
 
-static HostInfo_t * pTestHostInfo;
 
 /**
  * @brief Packet Identifier generated when Subscribe request was sent to the broker;
@@ -361,7 +362,7 @@ static void eventCallback( MQTTContext_t * pContext,
     {
         /* Terminate TLS session and TCP connection to test session restoration
          * across network connection. */
-         (*pTestNetworkDisconnect)();
+         (*pTestNetworkDisconnect)( pTestNetworkContext );
     }
     else
     {
@@ -588,7 +589,8 @@ void setUp(void) {
 
     /* Establish a TCP connection with the server endpoint, then
      * establish TLS session on top of TCP connection. */
-    TEST_ASSERT_EQUAL( pdPASS, (*pTestNetworkConnect)( pTestHostInfo ) );
+    TEST_ASSERT_EQUAL( pdPASS, (*pTestNetworkConnect)( pTestNetworkContext,
+                pTestHostInfo, pTestNetworkCredentials ) );
 
     /* Establish MQTT session on top of the TCP+TLS connection. */
     establishMqttSession( &context, true, &persistentSession );
@@ -611,22 +613,23 @@ void tearDown(void) {
     /* Terminate MQTT connection. */
     mqttStatus = MQTT_Disconnect( &context );
 
-    (*pTestNetworkDisconnect)();
+    (*pTestNetworkDisconnect)( pTestNetworkContext );
 
     /* Make any assertions at the end so that all memory is deallocated before
      * the end of this function. */
     TEST_ASSERT_EQUAL( MQTTSuccess, mqttStatus );
 }
 
-void setupMqttTest( TransportInterface_t * pTransport,
+void setupMqttTest( MqttTestParam_t * pTestParam,
                     Network_Connect_Func pNetworkConnect,
-                    Network_Disconnect_Func pNetworkDisconnect,
-                    HostInfo_t * pHostInfo )
+                    Network_Disconnect_Func pNetworkDisconnect )
 {
-    pTestTransport = pTransport;
+    pTestTransport = pTestParam->pTransport;
+    pTestHostInfo = pTestParam->pHostInfo;
+    pTestNetworkCredentials = pTestParam->pNetworkCredentials;
+    pTestNetworkContext = pTestParam->pNetworkContext;
     pTestNetworkConnect = pNetworkConnect;
     pTestNetworkDisconnect = pNetworkDisconnect;
-    pTestHostInfo = pHostInfo;
 }
 
 void test_MQTT_Subscribe_Publish_With_Qos_0( void )
