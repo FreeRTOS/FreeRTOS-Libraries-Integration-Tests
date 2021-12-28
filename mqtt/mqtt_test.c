@@ -278,6 +278,38 @@ static void eventCallback( MQTTContext_t * pContext,
                            MQTTPacketInfo_t * pPacketInfo,
                            MQTTDeserializedInfo_t * pDeserializedInfo );
 
+/**
+ * @brief Implementation of TransportSend_t interface that terminates the TLS
+ * and TCP connection with the broker and returns failure.
+ *
+ * @param[in] pNetworkContext The context associated with the network connection
+ * to be disconnected.
+ * @param[in] pBuffer This parameter is ignored.
+ * @param[in] bytesToRecv This parameter is ignored.
+ *
+ * @return -1 to represent failure.
+ */
+static int32_t failedRecv( NetworkContext_t * pNetworkContext,
+                           void * pBuffer,
+                           size_t bytesToRecv );
+
+
+/**
+ * @brief Helper function to start a new persistent session.
+ * It terminates the existing "clean session", and creates a new connection
+ * with the "clean session" flag set to 0 to create a persistent session
+ * with the broker.
+ */
+static void startPersistentSession();
+
+/**
+ * @brief Helper function to resume connection in persistent session
+ * with the broker.
+ * It resumes the session with the broker by establishing a new connection
+ * with the "clean session" flag set to 0.
+ */
+static void resumePersistentSession();
+
 
 static void establishMqttSession( MQTTContext_t * pContext,
                                   void * pNetworkContext,
@@ -428,6 +460,54 @@ static void eventCallback( MQTTContext_t * pContext,
             handleAckEvents( pPacketInfo, pDeserializedInfo->packetIdentifier );
         }
     }
+}
+
+static int32_t failedRecv( NetworkContext_t * pNetworkContext,
+                           void * pBuffer,
+                           size_t bytesToRecv )
+{
+    ( void ) pBuffer;
+    ( void ) bytesToRecv;
+
+    /* Terminate the TLS+TCP connection with the broker for the test. */
+    ( void ) (*pTestNetworkDisconnect)( pNetworkContext );
+
+    return -1;
+}
+
+static void startPersistentSession()
+{
+    /* Terminate TLS session and TCP network connection to discard the current MQTT session
+     * that was created as a "clean session". */
+    ESP_LOGI("MQTT", "startpersistentsession");
+    ( void ) (*pTestNetworkDisconnect)( pTestNetworkContext );
+
+    /* Establish a new MQTT connection over TLS with the broker with the "clean session" flag set to 0
+     * to start a persistent session with the broker. */
+
+    /* Create the TLS+TCP connection with the broker. */
+    TEST_ASSERT_EQUAL( pdPASS, (*pTestNetworkConnect)( pTestNetworkContext,
+                                                       pTestHostInfo,
+                                                       pTestNetworkCredentials ) );
+
+    /* Establish a new MQTT connection for a persistent session with the broker. */
+    establishMqttSession( &context, pTestNetworkContext, false, &persistentSession );
+    TEST_ASSERT_FALSE( persistentSession );
+}
+
+static void resumePersistentSession()
+{
+    /* Create a new TLS+TCP network connection with the server. */
+    TEST_ASSERT_EQUAL( pdPASS, (*pTestNetworkConnect)( pTestNetworkContext,
+                                                       pTestHostInfo,
+                                                       pTestNetworkCredentials ) );
+
+    /* Re-establish the persistent session with the broker by connecting with "clean session" flag set to 0. */
+    TEST_ASSERT_FALSE( persistentSession );
+    establishMqttSession( &context, pTestNetworkContext, false, &persistentSession );
+
+    /* Verify that the session was resumed. */
+    TEST_ASSERT_TRUE( persistentSession );
 }
 
 static void handleAckEvents( MQTTPacketInfo_t * pPacketInfo,
@@ -593,7 +673,8 @@ static MQTTStatus_t publishToTopic( MQTTContext_t * pContext,
                          packetId );
 }
 
-void setUp(void) {
+void setUp(void)
+{
     struct timespec tp;
 
     /* Reset file-scoped global variables. */
@@ -608,7 +689,6 @@ void setUp(void) {
     useLWTClientIdentifier = false;
     packetTypeForDisconnection = MQTT_PACKET_TYPE_INVALID;
     memset( &incomingInfo, 0u, sizeof( MQTTPublishInfo_t ) );
-    /* memset( &opensslParams, 0u, sizeof( OpensslParams_t ) ); */
 
     /* Get current time to seed pseudo random number generator. */
     ( void ) clock_gettime( CLOCK_REALTIME, &tp );
@@ -717,6 +797,72 @@ void test_MQTT_Subscribe_Publish_With_Qos_0( void )
     TEST_ASSERT_TRUE( receivedUnsubAck );
 }
 
+/**
+ * @brief Tests Subscribe and Publish operations with the MQTT broken using QoS 1.
+ * The test subscribes to a topic, and then publishes to the same topic. The
+ * broker is expected to route the publish message back to the test.
+ */
+void test_MQTT_Subscribe_Publish_With_Qos_1( void )
+{
+    /* Subscribe to a topic with Qos 1. */
+    TEST_ASSERT_EQUAL( MQTTSuccess, subscribeToTopic(
+                           &context, TEST_MQTT_TOPIC, MQTTQoS1 ) );
+
+    /* Expect a SUBACK from the broker for the subscribe operation. */
+    TEST_ASSERT_FALSE( receivedSubAck );
+    TEST_ASSERT_EQUAL( MQTTSuccess,
+                       MQTT_ProcessLoop( &context, MQTT_PROCESS_LOOP_TIMEOUT_MS ) );
+    TEST_ASSERT_TRUE( receivedSubAck );
+
+    /* Publish to the same topic, that we subscribed to, with Qos 1. */
+    TEST_ASSERT_EQUAL( MQTTSuccess, publishToTopic(
+                           &context,
+                           TEST_MQTT_TOPIC,
+                           false, /* setRetainFlag */
+                           false, /* isDuplicate */
+                           MQTTQoS1,
+                           MQTT_GetPacketId( &context ) ) );
+
+    /* Make sure that the MQTT context state was updated after the PUBLISH request. */
+    TEST_ASSERT_EQUAL( MQTTQoS1, context.outgoingPublishRecords[ 0 ].qos );
+    TEST_ASSERT_EQUAL( globalPublishPacketIdentifier, context.outgoingPublishRecords[ 0 ].packetId );
+    TEST_ASSERT_EQUAL( MQTTPubAckPending, context.outgoingPublishRecords[ 0 ].publishState );
+
+    /* Expect a PUBACK response for the PUBLISH and an incoming PUBLISH for the
+     * same message that we published (as we have subscribed to the same topic). */
+    TEST_ASSERT_FALSE( receivedPubAck );
+    TEST_ASSERT_EQUAL( MQTTSuccess,
+                       MQTT_ProcessLoop( &context, MQTT_PROCESS_LOOP_TIMEOUT_MS ) );
+    /* Make sure we have received PUBACK response. */
+    TEST_ASSERT_TRUE( receivedPubAck );
+
+    /* Make sure that we have received the same message from the server,
+     * that was published (as we have subscribed to the same topic). */
+    TEST_ASSERT_EQUAL( MQTTQoS1, incomingInfo.qos );
+    TEST_ASSERT_EQUAL( TEST_MQTT_TOPIC_LENGTH, incomingInfo.topicNameLength );
+    TEST_ASSERT_EQUAL_MEMORY( TEST_MQTT_TOPIC,
+                              incomingInfo.pTopicName,
+                              TEST_MQTT_TOPIC_LENGTH );
+    TEST_ASSERT_EQUAL( strlen( MQTT_EXAMPLE_MESSAGE ), incomingInfo.payloadLength );
+    TEST_ASSERT_EQUAL_MEMORY( MQTT_EXAMPLE_MESSAGE,
+                              incomingInfo.pPayload,
+                              incomingInfo.payloadLength );
+
+    /* Un-subscribe from a topic with Qos 1. */
+    TEST_ASSERT_EQUAL( MQTTSuccess, unsubscribeFromTopic(
+                           &context, TEST_MQTT_TOPIC, MQTTQoS1 ) );
+
+    /* Expect an UNSUBACK from the broker for the unsubscribe operation. */
+    TEST_ASSERT_EQUAL( MQTTSuccess,
+                       MQTT_ProcessLoop( &context, MQTT_PROCESS_LOOP_TIMEOUT_MS ) );
+    TEST_ASSERT_TRUE( receivedUnsubAck );
+}
+
+/**
+ * @brief Tests Subscribe and Publish operations with the MQTT broken using QoS 1.
+ * The test subscribes to a topic, and then publishes to the same topic. The
+ * broker is expected to route the publish message back to the test.
+ */
 void test_MQTT_Connect_LWT( void )
 {
     bool sessionPresent;
@@ -727,8 +873,6 @@ void test_MQTT_Connect_LWT( void )
     TEST_ASSERT_EQUAL( pdPASS, (*pTestNetworkConnect)( pTestSecondNetworkContext,
                                                                 pTestHostInfo,
                                                                 pTestNetworkCredentials ) );
-    /* TEST_ASSERT_NOT_EQUAL( -1, secondOpensslParams.socketDescriptor ); */
-    /* TEST_ASSERT_NOT_NULL( secondOpensslParams.pSsl ); */
 
     /* Establish MQTT session on top of the TCP+TLS connection. */
     useLWTClientIdentifier = true;
@@ -773,10 +917,229 @@ void test_MQTT_Connect_LWT( void )
     TEST_ASSERT_TRUE( receivedUnsubAck );
 }
 
+/**
+ * @brief Verifies that the MQTT library sends a Ping Request packet if the connection is
+ * idle for more than the keep-alive period.
+ */
+void test_MQTT_ProcessLoop_KeepAlive( void )
+{
+    uint32_t connectPacketTime = context.lastPacketTime;
+    uint32_t elapsedTime = 0;
+
+    TEST_ASSERT_EQUAL( 0, context.pingReqSendTimeMs );
+
+    /* Sleep until control packet needs to be sent. */
+    Clock_SleepMs( MQTT_KEEP_ALIVE_INTERVAL_SECONDS * 1000 );
+    TEST_ASSERT_EQUAL( MQTTSuccess, MQTT_ProcessLoop( &context, MQTT_PROCESS_LOOP_TIMEOUT_MS ) );
+
+    TEST_ASSERT_NOT_EQUAL( 0, context.pingReqSendTimeMs );
+    TEST_ASSERT_NOT_EQUAL( connectPacketTime, context.lastPacketTime );
+    /* Test that the ping was sent within 1.5 times the keep alive interval. */
+    elapsedTime = context.lastPacketTime - connectPacketTime;
+    TEST_ASSERT_LESS_OR_EQUAL( MQTT_KEEP_ALIVE_INTERVAL_SECONDS * 1500, elapsedTime );
+}
+
+/**
+ * @brief Verifies that the MQTT library supports resending a PUBLISH QoS 1 packet which is
+ * un-acknowledged in its first attempt.
+ * Tests that the library is able to support resending the PUBLISH packet with the DUP flag.
+ */
+void test_MQTT_Resend_Unacked_Publish_QoS1( void )
+{
+    /* Start a persistent session with the broker. */
+    startPersistentSession();
+
+    /* Initiate the PUBLISH operation at QoS 1. The library should add an
+     * outgoing PUBLISH record in the context. */
+    TEST_ASSERT_EQUAL( MQTTSuccess, publishToTopic(
+                           &context,
+                           TEST_MQTT_TOPIC,
+                           false, /* setRetainFlag */
+                           false, /* isDuplicate */
+                           MQTTQoS1,
+                           MQTT_GetPacketId( &context ) ) );
+
+    /* Setup the MQTT connection to terminate to simulate incomplete PUBLISH operation. */
+    context.transportInterface.recv = failedRecv;
+
+    /* Attempt to complete the PUBLISH operation at QoS1 which should fail due
+     * to terminated network connection.
+     * The abrupt network disconnection should cause the PUBLISH packet to be left
+     * in an un-acknowledged state in the MQTT context. */
+    TEST_ASSERT_EQUAL( MQTTRecvFailed,
+                       MQTT_ProcessLoop( &context, 2 * MQTT_PROCESS_LOOP_TIMEOUT_MS ) );
+
+    /* Verify that the library has stored the PUBLISH as an incomplete operation. */
+    TEST_ASSERT_NOT_EQUAL( MQTT_PACKET_ID_INVALID, context.outgoingPublishRecords[ 0 ].packetId );
+
+    /* Reset the transport receive function in the context. */
+    context.transportInterface.recv = pTestTransport->recv;
+
+    /* We will re-establish an MQTT over TLS connection with the broker to restore
+     * the persistent session. */
+    resumePersistentSession();
+
+    /* Obtain the packet ID of the PUBLISH packet that didn't complete in the previous connection. */
+    MQTTStateCursor_t cursor = MQTT_STATE_CURSOR_INITIALIZER;
+    uint16_t publishPackedId = MQTT_PublishToResend( &context, &cursor );
+    TEST_ASSERT_NOT_EQUAL( MQTT_PACKET_ID_INVALID, publishPackedId );
+
+    /* Make sure that the packet ID is maintained in the outgoing publish state records. */
+    TEST_ASSERT_EQUAL( context.outgoingPublishRecords[ 0 ].packetId, publishPackedId );
+
+    /* Resend the PUBLISH packet that didn't complete in the previous connection. */
+    TEST_ASSERT_EQUAL( MQTTSuccess, publishToTopic(
+                           &context,
+                           TEST_MQTT_TOPIC,
+                           false, /* setRetainFlag */
+                           true,  /* isDuplicate */
+                           MQTTQoS1,
+                           publishPackedId ) );
+
+    /* Complete the QoS 1 PUBLISH resend operation. */
+    TEST_ASSERT_FALSE( receivedPubAck );
+    TEST_ASSERT_EQUAL( MQTTSuccess,
+                       MQTT_ProcessLoop( &context, 2 * MQTT_PROCESS_LOOP_TIMEOUT_MS ) );
+
+    /* Make sure that the PUBLISH resend was complete. */
+    TEST_ASSERT_TRUE( receivedPubAck );
+
+    /* Make sure that the library has removed the record for the outgoing PUBLISH packet. */
+    TEST_ASSERT_EQUAL( MQTT_PACKET_ID_INVALID, context.outgoingPublishRecords[ 0 ].packetId );
+}
+
+/**
+ * @brief Verifies the behavior of the MQTT library on receiving a duplicate
+ * QoS 1 PUBLISH packet from the broker in a restored session connection.
+ * Tests that the library responds with a PUBACK to the duplicate incoming QoS 1 PUBLISH
+ * packet that was un-acknowledged in a previous connection of the same session.
+ */
+void test_MQTT_Restore_Session_Duplicate_Incoming_Publish_Qos1( void )
+{
+    /* Start a persistent session with the broker. */
+    startPersistentSession();
+
+    /* Subscribe to a topic from which we will be receiving an incomplete incoming
+     * QoS 2 PUBLISH transaction in this connection. */
+    TEST_ASSERT_EQUAL( MQTTSuccess, subscribeToTopic(
+                           &context, TEST_MQTT_TOPIC, MQTTQoS1 ) );
+    TEST_ASSERT_FALSE( receivedSubAck );
+    TEST_ASSERT_EQUAL( MQTTSuccess,
+                       MQTT_ProcessLoop( &context, MQTT_PROCESS_LOOP_TIMEOUT_MS ) );
+    TEST_ASSERT_TRUE( receivedSubAck );
+
+    /* Publish to the same topic with Qos 1 (so that the broker can re-publish it back to us). */
+    TEST_ASSERT_EQUAL( MQTTSuccess, publishToTopic(
+                           &context,
+                           TEST_MQTT_TOPIC,
+                           false, /* setRetainFlag */
+                           false, /* isDuplicate */
+                           MQTTQoS1,
+                           MQTT_GetPacketId( &context ) ) );
+
+    /* Disconnect on receiving the incoming PUBLISH packet from the broker so that
+     * an acknowledgement cannot be sent to the broker. */
+    packetTypeForDisconnection = MQTT_PACKET_TYPE_PUBLISH;
+    TEST_ASSERT_EQUAL( MQTTSendFailed,
+                       MQTT_ProcessLoop( &context, 2 * MQTT_PROCESS_LOOP_TIMEOUT_MS ) );
+
+    /* Make sure that a record was created for the incoming PUBLISH packet. */
+    TEST_ASSERT_NOT_EQUAL( MQTT_PACKET_ID_INVALID, context.incomingPublishRecords[ 0 ].packetId );
+
+    Clock_SleepMs( 30000 );
+
+    /* We will re-establish an MQTT over TLS connection with the broker to restore
+     * the persistent session. */
+    resumePersistentSession();
+
+    /* Clear the global variable for not disconnecting on the duplicate PUBLISH
+     * packet that we receive from the broker on the session restoration. */
+    packetTypeForDisconnection = MQTT_PACKET_TYPE_INVALID;
+
+    /* Process the duplicate incoming QoS 1 PUBLISH that will be sent by the broker
+     * to re-attempt the PUBLISH operation. */
+    TEST_ASSERT_EQUAL( MQTTSuccess,
+                       MQTT_ProcessLoop( &context, 2 * MQTT_PROCESS_LOOP_TIMEOUT_MS ) );
+    ESP_LOGI("MQTT", "before last assert");
+    /* Make sure that the library cleared the record for the incoming QoS 1 PUBLISH packet. */
+    TEST_ASSERT_EQUAL( MQTT_PACKET_ID_INVALID, context.incomingPublishRecords[ 0 ].packetId );
+}
+
+/**
+ * @brief Verifies that the library supports notifying the broker to retain a PUBLISH message
+ * for a topic using the retain flag.
+ */
+void test_MQTT_Publish_With_Retain_Flag( void )
+{
+    /* Publish to a topic with the "retain" flag set. */
+    TEST_ASSERT_EQUAL( MQTTSuccess, publishToTopic( &context,
+                                                    TEST_MQTT_TOPIC,
+                                                    true,  /* setRetainFlag */
+                                                    false, /* isDuplicate */
+                                                    MQTTQoS1,
+                                                    MQTT_GetPacketId( &context ) ) );
+    /* Complete the QoS 1 PUBLISH operation. */
+    TEST_ASSERT_FALSE( receivedPubAck );
+    TEST_ASSERT_EQUAL( MQTTSuccess,
+                       MQTT_ProcessLoop( &context, 2 * MQTT_PROCESS_LOOP_TIMEOUT_MS ) );
+    TEST_ASSERT_TRUE( receivedPubAck );
+
+    /* Subscribe to the same topic that we published the message to.
+     * The broker should send the "retained" message with the "retain" flag set. */
+    TEST_ASSERT_EQUAL( MQTTSuccess, subscribeToTopic(
+                           &context, TEST_MQTT_TOPIC, MQTTQoS1 ) );
+    TEST_ASSERT_FALSE( receivedSubAck );
+    TEST_ASSERT_EQUAL( MQTTSuccess,
+                       MQTT_ProcessLoop( &context, 2 * MQTT_PROCESS_LOOP_TIMEOUT_MS ) );
+    TEST_ASSERT_TRUE( receivedSubAck );
+
+    /* Make sure that the library invoked the event callback with the incoming PUBLISH from
+     * the broker containing the "retained" flag set. */
+    TEST_ASSERT_TRUE( receivedRetainedMessage );
+
+    /* Reset the global variables for the remainder of the test. */
+    receivedPubAck = false;
+    receivedSubAck = false;
+    receivedUnsubAck = false;
+    receivedRetainedMessage = false;
+
+    /* Publish to another topic with the "retain" flag set to 0. */
+    TEST_ASSERT_EQUAL( MQTTSuccess, publishToTopic( &context,
+                                                    TEST_MQTT_TOPIC_2,
+                                                    false, /* setRetainFlag */
+                                                    false, /* isDuplicate */
+                                                    MQTTQoS1,
+                                                    MQTT_GetPacketId( &context ) ) );
+
+    /* Complete the QoS 1 PUBLISH operation. */
+    TEST_ASSERT_FALSE( receivedPubAck );
+    TEST_ASSERT_EQUAL( MQTTSuccess,
+                       MQTT_ProcessLoop( &context, 2 * MQTT_PROCESS_LOOP_TIMEOUT_MS ) );
+    TEST_ASSERT_TRUE( receivedPubAck );
+
+    /* Again, subscribe to the same topic that we just published to.
+     * We don't expect the broker to send the message to us (as we
+     * PUBLISHed without a retain flag set). */
+    TEST_ASSERT_EQUAL( MQTTSuccess, subscribeToTopic(
+                           &context, TEST_MQTT_TOPIC_2, MQTTQoS1 ) );
+    TEST_ASSERT_FALSE( receivedSubAck );
+    TEST_ASSERT_EQUAL( MQTTSuccess,
+                       MQTT_ProcessLoop( &context, 2 * MQTT_PROCESS_LOOP_TIMEOUT_MS ) );
+    TEST_ASSERT_TRUE( receivedSubAck );
+
+    /* Make sure that the library did not receive an incoming PUBLISH from the broker. */
+    TEST_ASSERT_FALSE( receivedRetainedMessage );
+}
+
 int runMqttTest()
 {
     UNITY_BEGIN();
-    /* RUN_TEST(test_MQTT_Subscribe_Publish_With_Qos_0); */
-    RUN_TEST(test_MQTT_Connect_LWT);
+    RUN_TEST( test_MQTT_Subscribe_Publish_With_Qos_0 );
+    RUN_TEST( test_MQTT_Subscribe_Publish_With_Qos_1 );
+    RUN_TEST( test_MQTT_Connect_LWT );
+    RUN_TEST( test_MQTT_ProcessLoop_KeepAlive );
+    RUN_TEST( test_MQTT_Resend_Unacked_Publish_QoS1 );
+    RUN_TEST( test_MQTT_Restore_Session_Duplicate_Incoming_Publish_Qos1 );
+    RUN_TEST( test_MQTT_Publish_With_Retain_Flag );
     return UNITY_END();
 }
