@@ -1,0 +1,7 @@
+#ifndef _TEST_EXECUTION_CONFIG_H_
+#define _TEST_EXECUTION_CONFIG_H_
+
+#define MQTT_TEST_ENABLED                 (0)
+#define TRANSPORT_INTERFACE_TEST_ENABLED  (0)
+
+#endif /* _TEST_EXECUTION_CONFIG_H_ */

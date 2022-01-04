@@ -11,6 +11,7 @@
 #include "unity.h"
 
 #include "mqtt_test.h"
+#include "test_execution_config.h"
 
 /**
  * @brief Length of MQTT server host name.
@@ -146,6 +147,8 @@ static void * pTestSecondNetworkContext;
 
 static Network_Connect_Func pTestNetworkConnect;
 static Network_Disconnect_Func pTestNetworkDisconnect;
+
+static bool setupComplete = false;
 
 
 /**
@@ -737,6 +740,7 @@ void setupMqttTest( MqttTestParam_t * pTestParam,
                     Network_Connect_Func pNetworkConnect,
                     Network_Disconnect_Func pNetworkDisconnect )
 {
+#if ( MQTT_TEST_ENABLED == 1 )
     pTestTransport = pTestParam->pTransport;
     pTestHostInfo = pTestParam->pHostInfo;
     pTestNetworkCredentials = pTestParam->pNetworkCredentials;
@@ -744,6 +748,8 @@ void setupMqttTest( MqttTestParam_t * pTestParam,
     pTestSecondNetworkContext = pTestParam->pSecondNetworkContext;
     pTestNetworkConnect = pNetworkConnect;
     pTestNetworkDisconnect = pNetworkDisconnect;
+    setupComplete = true;
+#endif
 }
 
 void test_MQTT_Subscribe_Publish_With_Qos_0( void )
@@ -1133,6 +1139,9 @@ void test_MQTT_Publish_With_Retain_Flag( void )
 
 int runMqttTest()
 {
+    int status = -1;
+#if ( MQTT_TEST_ENABLED == 1 )
+    assert( setupComplete );
     UNITY_BEGIN();
     RUN_TEST( test_MQTT_Subscribe_Publish_With_Qos_0 );
     RUN_TEST( test_MQTT_Subscribe_Publish_With_Qos_1 );
@@ -1141,5 +1150,7 @@ int runMqttTest()
     RUN_TEST( test_MQTT_Resend_Unacked_Publish_QoS1 );
     RUN_TEST( test_MQTT_Restore_Session_Duplicate_Incoming_Publish_Qos1 );
     RUN_TEST( test_MQTT_Publish_With_Retain_Flag );
-    return UNITY_END();
+    status = UNITY_END();
+#endif
+    return status;
 }
