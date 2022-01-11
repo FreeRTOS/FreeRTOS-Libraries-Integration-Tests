@@ -428,7 +428,7 @@ static void eventCallback( MQTTContext_t * pContext,
     {
         /* Terminate TLS session and TCP connection to test session restoration
          * across network connection. */
-         NetworkDisconnect( testParam.pNetworkContext );
+         (*testParam.pNetworkDisconnect)( testParam.pNetworkContext );
     }
     else
     {
@@ -472,7 +472,7 @@ static int32_t failedRecv( NetworkContext_t * pNetworkContext,
     ( void ) bytesToRecv;
 
     /* Terminate the TLS+TCP connection with the broker for the test. */
-    ( void ) NetworkDisconnect( pNetworkContext );
+    ( void ) (*testParam.pNetworkDisconnect)( pNetworkContext );
 
     return -1;
 }
@@ -482,15 +482,15 @@ static void startPersistentSession()
     /* Terminate TLS session and TCP network connection to discard the current MQTT session
      * that was created as a "clean session". */
     ESP_LOGI("MQTT", "startpersistentsession");
-    ( void ) NetworkDisconnect( testParam.pNetworkContext );
+    ( void ) (*testParam.pNetworkDisconnect)( testParam.pNetworkContext );
 
     /* Establish a new MQTT connection over TLS with the broker with the "clean session" flag set to 0
      * to start a persistent session with the broker. */
 
     /* Create the TLS+TCP connection with the broker. */
-    TEST_ASSERT_EQUAL( pdPASS, NetworkConnect( testParam.pNetworkContext,
-                                               &testHostInfo,
-                                               testParam.pNetworkCredentials ) );
+    TEST_ASSERT_EQUAL( pdPASS, (*testParam.pNetworkConnect)( testParam.pNetworkContext,
+                                                             &testHostInfo,
+                                                             testParam.pNetworkCredentials ) );
 
     /* Establish a new MQTT connection for a persistent session with the broker. */
     establishMqttSession( &context, testParam.pNetworkContext, false, &persistentSession );
@@ -500,9 +500,9 @@ static void startPersistentSession()
 static void resumePersistentSession()
 {
     /* Create a new TLS+TCP network connection with the server. */
-    TEST_ASSERT_EQUAL( pdPASS, NetworkConnect( testParam.pNetworkContext,
-                                               &testHostInfo,
-                                               testParam.pNetworkCredentials ) );
+    TEST_ASSERT_EQUAL( pdPASS, (*testParam.pNetworkConnect)( testParam.pNetworkContext,
+                                                             &testHostInfo,
+                                                             testParam.pNetworkCredentials ) );
 
     /* Re-establish the persistent session with the broker by connecting with "clean session" flag set to 0. */
     TEST_ASSERT_FALSE( persistentSession );
@@ -703,9 +703,9 @@ void setUp(void)
 
     /* Establish a TCP connection with the server endpoint, then
      * establish TLS session on top of TCP connection. */
-    TEST_ASSERT_EQUAL( pdPASS, NetworkConnect( testParam.pNetworkContext,
-                                               &testHostInfo,
-                                               testParam.pNetworkCredentials ) );
+    TEST_ASSERT_EQUAL( pdPASS, (*testParam.pNetworkConnect)( testParam.pNetworkContext,
+                                                             &testHostInfo,
+                                                             testParam.pNetworkCredentials ) );
 
     /* Establish MQTT session on top of the TCP+TLS connection. */
     establishMqttSession( &context, testParam.pNetworkContext, true, &persistentSession );
@@ -728,7 +728,7 @@ void tearDown(void) {
     /* Terminate MQTT connection. */
     mqttStatus = MQTT_Disconnect( &context );
 
-    NetworkDisconnect( testParam.pNetworkContext );
+    (*testParam.pNetworkDisconnect)( testParam.pNetworkContext );
 
     /* Make any assertions at the end so that all memory is deallocated before
      * the end of this function. */
@@ -859,9 +859,9 @@ void test_MQTT_Connect_LWT( void )
 
     /* Establish a second TCP connection with the server endpoint, then
      * a TLS session. The server info and credentials can be reused. */
-    TEST_ASSERT_EQUAL( pdPASS, NetworkConnect( testParam.pSecondNetworkContext,
-                                               &testHostInfo,
-                                               testParam.pNetworkCredentials ) );
+    TEST_ASSERT_EQUAL( pdPASS, (*testParam.pNetworkConnect)( testParam.pSecondNetworkContext,
+                                                             &testHostInfo,
+                                                             testParam.pNetworkCredentials ) );
 
     /* Establish MQTT session on top of the TCP+TLS connection. */
     useLWTClientIdentifier = true;
@@ -877,7 +877,7 @@ void test_MQTT_Connect_LWT( void )
     TEST_ASSERT_TRUE( receivedSubAck );
 
     /* Abruptly terminate TCP connection. */
-    ( void ) NetworkDisconnect( testParam.pSecondNetworkContext );
+    ( void ) (*testParam.pNetworkDisconnect)( testParam.pSecondNetworkContext );
 
     /* Run the process loop to receive the LWT. Allow some more time for the
      * server to realize the connection is closed. */

@@ -6,7 +6,9 @@
 typedef struct MqttTestParam
 {
     TransportInterface_t * pTransport; /**< @brief pNetworkContext, send, receive fields of the TransportInterface_t struct should be filled out. */
-    TestNetworkCredentials_t * pNetworkCredentials;
+    NetworkConnectFunc pNetworkConnect;
+    NetworkDisconnectFunc pNetworkDisconnect;
+    void * pNetworkCredentials;
     void * pNetworkContext;
     void * pSecondNetworkContext;
 } MqttTestParam_t;

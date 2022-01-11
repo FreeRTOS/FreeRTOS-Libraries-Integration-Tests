@@ -7,18 +7,24 @@ typedef struct TestHostInfo
     uint16_t port;          /**< @brief Server port in host-order. */
 } TestHostInfo_t;
 
-typedef struct TestNetworkCredentials
-{
-    const uint8_t * pRootCa;     /**< @brief String representing a trusted server root certificate. */
-    size_t rootCaSize;           /**< @brief Size associated with #NetworkCredentials.pRootCa. */
-    const uint8_t * pClientCert; /**< @brief String representing the client certificate. */
-    size_t clientCertSize;       /**< @brief Size associated with #NetworkCredentials.pClientCert. */
-    const uint8_t * pPrivateKey; /**< @brief String representing the client certificate's private key. */
-    size_t privateKeySize;       /**< @brief Size associated with #NetworkCredentials.pPrivateKey. */
-} TestNetworkCredentials_t;
+/**
+ * NetworkConnectFunc is a function pointer type for functions that
+ * establish a network connection with a server. It takes three arguments:
+ * a void * network context,
+ * a TestHostInfo_t * host info about which server to connect to,
+ * a void * network credentials.
+ *
+ * Network context and crendentials are defined by application implementations.
+ */
+typedef int (*NetworkConnectFunc)( void *, TestHostInfo_t *, void * );
 
-int NetworkConnect( void * pNetworkContext, TestHostInfo_t * pHostInfo,  TestNetworkCredentials_t * pNetworkCredentials );
-
-void NetworkDisconnect( void * pNetworkContext );
+/**
+ * NetworkDisconnectFunc is a function pointer type for functions that
+ * disconnect a previously established network connection. It takes one argument:
+ * a void * network context.
+ *
+ * Network context is defined by application implementations.
+ */
+typedef void (*NetworkDisconnectFunc)( void * );
 
 #endif /* _NETWORK_CONNECTION_H_ */
