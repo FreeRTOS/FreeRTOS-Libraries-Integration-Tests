@@ -23,6 +23,12 @@
 #ifndef TRANSPORT_INTERFACE_TESTS_H_
 #define TRANSPORT_INTERFACE_TESTS_H_
 
+/* Standard header includes. */
+#include <stdint.h>
+
+/* Include for transport interface. */
+#include "transport_interface.h"
+
 /**
  * @brief Hook function to initialize the transport interface.
  *
@@ -32,8 +38,10 @@
  * in case of TCP/IP means, that a connection with the server is established.
  *
  * @param[in] pTransport The transport interface to init.
+ *
+ * @return 0 if transport interface init succes or other value to indicate error.
  */
-void TransportInit( TransportInterface_t * pTransport );
+int32_t TransportInit( TransportInterface_t * pTransport );
 
 /**
  * @brief Hook function to de-initialize the transport interface.
