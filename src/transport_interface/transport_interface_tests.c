@@ -26,11 +26,7 @@
  */
 
 /* Standard header includes. */
-#include <stdbool.h>
 #include <string.h>
-
-/* Include for transport interface. */
-#include "transport_interface.h"
 
 /* Include for init and de-init functions. */
 #include "transport_interface_tests.h"
@@ -64,6 +60,11 @@
       TRANSPORT_TEST_BUFFER_SUFFIX_GUARD_LENGTH )
 
 /**
+ * @brief Transport Interface test buffer guard pattern.
+ */
+#define TRANSPORT_TEST_BUFFER_GUARD_PATTERN        ( 0xA5 )
+
+/**
  * @brief Transport Interface send receive retry count.
  */
 #define TRANSPORT_TEST_SEND_RECEIVE_RETRY_COUNT    ( 10U )
@@ -72,7 +73,8 @@
  * @brief Transport Interface delay in milliseconds.
  *
  * The Delay time for the transport interface test to wait for the data echo-ed
- * back from transport network. */
+ * back from transport network.
+ */
 #define TRANSPORT_TEST_DELAY_MS                    ( 150U )
 
 /**
@@ -85,11 +87,11 @@
 /**
  * @brief Transport Interface disconnect delay in milliseconds.
  *
- * The Delay time for the transport interface test to wait for the disconnect command
- * received and disconnection from remote server. The delay time should be long enough
- * to cover different network environment.
+ * The Delay time for the transport interface test to wait for the send operation
+ * and response from the network. The delay time should be long enough to cover different
+ * network environment.
  */
-#define TRANSPORT_TEST_DISCONNECT_DELAY_MS         ( 3000U )
+#define TRANSPORT_TEST_NETWORK_DELAY_MS            ( 3000U )
 
 /*-----------------------------------------------------------*/
 
@@ -128,10 +130,10 @@ static void prvInitializeTestData( uint8_t * pTransportTestBuffer,
 /*-----------------------------------------------------------*/
 
 /**
- * @brief Verify the data received and buffer after testSize should remain untouched.
+ * @brief Verify the data received and buffer after testSize should remain unchanged.
  *
  * The received data is verified with the pattern initialized in prvInitializeTestData.
- * The test buffer after testSize should remain untouched. It is verified in this
+ * The test buffer after testSize should remain unchanged. It is verified in this
  * function.
  */
 static void prvVerifyTestData( uint8_t * pTransportTestBuffer,
@@ -143,16 +145,17 @@ static void prvVerifyTestData( uint8_t * pTransportTestBuffer,
     /* Check the data received is correct. */
     for( i = 0U; i < testSize; i++ )
     {
-        TEST_ASSERT_MESSAGE( pTransportTestBuffer[ i ] == ( ( uint8_t ) i ),
-                             "Received data is not the same as expected." );
+        TEST_ASSERT_EQUAL_UINT8_MESSAGE( ( ( uint8_t ) i ), pTransportTestBuffer[ i ],
+                                         "Received data is not the same as expected." );
     }
 
-    /* Check the buffer after testSize is untouched. */
+    /* Check the buffer after testSize is unchanged. */
     if( testSize < maxBufferSize )
     {
-        TEST_ASSERT_EACH_EQUAL_HEX8( 0xA5,
-                                     &( pTransportTestBuffer[ testSize ] ),
-                                     ( maxBufferSize - testSize ) );
+        TEST_ASSERT_EACH_EQUAL_HEX8_MESSAGE( TRANSPORT_TEST_BUFFER_GUARD_PATTERN,
+                                             &( pTransportTestBuffer[ testSize ] ),
+                                             ( maxBufferSize - testSize ),
+                                             "Buffer after testSize should not be altered." );
     }
 }
 
@@ -179,11 +182,11 @@ static void prvTransportSendData( TransportInterface_t * pTransport,
                                             &pTransportTestBuffer[ transferTotal ],
                                             sendSize - transferTotal );
         /* Send should not have any error. */
-        TEST_ASSERT_GREATER_OR_EQUAL( 0, transportResult );
+        TEST_ASSERT_GREATER_OR_EQUAL_INT32_MESSAGE( 0, transportResult,
+                                                    "Transport send data should not have any error." );
+        TEST_ASSERT_LESS_OR_EQUAL_UINT32_MESSAGE( ( sendSize - transferTotal ), ( uint32_t ) transportResult,
+                                                  "More data is sent than expected." );
         transferTotal = transferTotal + ( uint32_t ) transportResult;
-
-        /* Ensure the send size is no more than expected. */
-        TEST_ASSERT_MESSAGE( sendSize >= transferTotal, "More data is sent than expected." );
 
         if( sendSize == transferTotal )
         {
@@ -193,7 +196,7 @@ static void prvTransportSendData( TransportInterface_t * pTransport,
     }
 
     /* Check if all the data is sent. */
-    TEST_ASSERT_MESSAGE( sendSize == transferTotal, "Fail to send all the data expected." );
+    TEST_ASSERT_EQUAL_UINT32_MESSAGE( sendSize, transferTotal, "Fail to send all the data expected." );
 }
 
 /*-----------------------------------------------------------*/
@@ -213,8 +216,8 @@ static void prvTransportRecvData( TransportInterface_t * pTransport,
     int32_t transportResult = 0;
     uint32_t i = 0U;
 
-    /* Initialize the receive buffer with 0xA5. */
-    memset( &( pTransportTestBuffer[ 0 ] ), 0xA5, recvSize );
+    /* Initialize the receive buffer with TRANSPORT_TEST_BUFFER_GUARD_PATTERN. */
+    memset( &( pTransportTestBuffer[ 0 ] ), TRANSPORT_TEST_BUFFER_GUARD_PATTERN, recvSize );
 
     for( i = 0U; i < TRANSPORT_TEST_SEND_RECEIVE_RETRY_COUNT; i++ )
     {
@@ -223,18 +226,19 @@ static void prvTransportRecvData( TransportInterface_t * pTransport,
                                             recvSize - transferTotal );
 
         /* Receive should not have any error. */
-        TEST_ASSERT( transportResult >= 0 );
+        TEST_ASSERT_GREATER_OR_EQUAL_INT32_MESSAGE( 0, transportResult,
+                                                    "Transport receive data should not have any error." );
+        TEST_ASSERT_LESS_OR_EQUAL_UINT32_MESSAGE( ( recvSize - transferTotal ), ( uint32_t ) transportResult,
+                                                  "More data is received than expected." );
         transferTotal = transferTotal + transportResult;
-
-        /* Ensure the receive size is no more than expected. */
-        TEST_ASSERT_MESSAGE( recvSize >= transferTotal, "More data is received than expected." );
 
         if( recvSize > transferTotal )
         {
             /* Check the remain buffer after receive. */
-            TEST_ASSERT_EACH_EQUAL_HEX8( 0xA5,
-                                         &( pTransportTestBuffer[ transferTotal ] ),
-                                         ( recvSize - transferTotal ) );
+            TEST_ASSERT_EACH_EQUAL_HEX8_MESSAGE( TRANSPORT_TEST_BUFFER_GUARD_PATTERN,
+                                                 &( pTransportTestBuffer[ transferTotal ] ),
+                                                 ( recvSize - transferTotal ),
+                                                 "Buffer after received data should not be altered." );
         }
         else
         {
@@ -248,7 +252,7 @@ static void prvTransportRecvData( TransportInterface_t * pTransport,
     }
 
     /* Check if all the data is recevied. */
-    TEST_ASSERT_MESSAGE( recvSize == transferTotal, "Fail to receive all the data expected." );
+    TEST_ASSERT_EQUAL_UINT32_MESSAGE( recvSize, transferTotal, "Fail to receive all the data expected." );
 }
 
 /*-----------------------------------------------------------*/
@@ -258,17 +262,20 @@ static void prvTransportRecvData( TransportInterface_t * pTransport,
  */
 TEST_SETUP( Full_TransportInterfaceTest )
 {
-    /* Ensure the tranpsort interface is valid. */
-    TEST_ASSERT_MESSAGE( pTestTransport != NULL, "pTestTransport is NULL" );
-    TEST_ASSERT_MESSAGE( pTestTransport->pNetworkContext != NULL, "pTestTransport->pNetworkContext is NULL" );
-    TEST_ASSERT_MESSAGE( pTestTransport->send != NULL, "pTestTransport->send is NULL" );
-    TEST_ASSERT_MESSAGE( pTestTransport->recv != NULL, "pTestTransport->recv is NULL" );
+    int32_t transportInitResult = 0;
 
-    /* Initialize the topic buffer with 0xA5. */
-    memset( &( transportTestBuffer[ 0 ] ), 0xA5, TRANSPORT_TEST_BUFFER_TOTAL_LENGTH );
+    /* Ensure the tranpsort interface is valid. */
+    TEST_ASSERT_NOT_NULL_MESSAGE( pTestTransport, "pTestTransport should not be NULL." );
+    TEST_ASSERT_NOT_NULL_MESSAGE( pTestTransport->pNetworkContext, "pTestTransport->pNetworkContext should not be NULL." );
+    TEST_ASSERT_NOT_NULL_MESSAGE( pTestTransport->send, "pTestTransport->send should not be NULL." );
+    TEST_ASSERT_NOT_NULL_MESSAGE( pTestTransport->recv, "pTestTransport->recv should not be NULL." );
+
+    /* Initialize the transport test buffer with TRANSPORT_TEST_BUFFER_GUARD_PATTERN. */
+    memset( &( transportTestBuffer[ 0 ] ), TRANSPORT_TEST_BUFFER_GUARD_PATTERN, TRANSPORT_TEST_BUFFER_TOTAL_LENGTH );
 
     /* Call the hook function implemented by the application to initialize the transport interface. */
-    TransportInit( pTestTransport );
+    transportInitResult = TransportInit( pTestTransport );
+    TEST_ASSERT_EQUAL_INT32_MESSAGE( 0, transportInitResult, "TransportInit failed." );
 }
 
 /*-----------------------------------------------------------*/
@@ -279,13 +286,15 @@ TEST_SETUP( Full_TransportInterfaceTest )
 TEST_TEAR_DOWN( Full_TransportInterfaceTest )
 {
     /* Prefix and Suffix guard buffers must never change. */
-    TEST_ASSERT_EACH_EQUAL_HEX8( 0xA5,
-                                 &( transportTestBuffer[ 0 ] ),
-                                 TRANSPORT_TEST_BUFFER_PREFIX_GUARD_LENGTH );
-    TEST_ASSERT_EACH_EQUAL_HEX8( 0xA5,
-                                 &( transportTestBuffer[ TRANSPORT_TEST_BUFFER_PREFIX_GUARD_LENGTH +
-                                                         TRANSPORT_TEST_BUFFER_WRITABLE_LENGTH ] ),
-                                 TRANSPORT_TEST_BUFFER_SUFFIX_GUARD_LENGTH );
+    TEST_ASSERT_EACH_EQUAL_HEX8_MESSAGE( TRANSPORT_TEST_BUFFER_GUARD_PATTERN,
+                                         &( transportTestBuffer[ 0 ] ),
+                                         TRANSPORT_TEST_BUFFER_PREFIX_GUARD_LENGTH,
+                                         "transportTestBuffer prefix guard should not be altered." );
+    TEST_ASSERT_EACH_EQUAL_HEX8_MESSAGE( TRANSPORT_TEST_BUFFER_GUARD_PATTERN,
+                                         &( transportTestBuffer[ TRANSPORT_TEST_BUFFER_PREFIX_GUARD_LENGTH +
+                                                                 TRANSPORT_TEST_BUFFER_WRITABLE_LENGTH ] ),
+                                         TRANSPORT_TEST_BUFFER_SUFFIX_GUARD_LENGTH,
+                                         "transportTestBuffer suffix guard should not be altered." );
 
     /* Call the hook function implemented by the application to de-initialize the transport interface. */
     TransportDeinit( pTestTransport );
@@ -304,9 +313,8 @@ TEST( Full_TransportInterfaceTest, TransportSend_NetworkContextNullPtr )
     sendResult = pTestTransport->send( NULL,
                                        &( transportTestBuffer[ TRANSPORT_TEST_BUFFER_PREFIX_GUARD_LENGTH ] ),
                                        TRANSPORT_TEST_BUFFER_WRITABLE_LENGTH );
-    TEST_ASSERT_LESS_THAN( 0, sendResult );
-    TEST_ASSERT_MESSAGE( sendResult < 0, "Transport interface send with NULL NetworkContext_t "
-                                         "pointer should return negative value." );
+    TEST_ASSERT_LESS_THAN_INT32_MESSAGE( 0, sendResult, "Transport interface send with NULL NetworkContext_t "
+                                                        "pointer should return negative value." );
 }
 
 /*-----------------------------------------------------------*/
@@ -320,8 +328,8 @@ TEST( Full_TransportInterfaceTest, TransportSend_BufferNullPtr )
 
     /* Send with NULL buffer pointer should return negative value. */
     sendResult = pTestTransport->send( pTestTransport->pNetworkContext, NULL, 1 );
-    TEST_ASSERT_MESSAGE( sendResult < 0, "Transport interface send with NULL buffer "
-                                         "pointer should return negative value." );
+    TEST_ASSERT_LESS_THAN_INT32_MESSAGE( 0, sendResult, "Transport interface send with NULL buffer "
+                                                        "pointer should return negative value." );
 }
 
 /*-----------------------------------------------------------*/
@@ -333,12 +341,12 @@ TEST( Full_TransportInterfaceTest, TransportSend_ZeroByteToSend )
 {
     int32_t sendResult = 0;
 
-    /* Send with zero bytes to send should return 0. */
+    /* Send with zero byte to send should return negative value. */
     sendResult = pTestTransport->send( pTestTransport->pNetworkContext,
                                        &( transportTestBuffer[ TRANSPORT_TEST_BUFFER_PREFIX_GUARD_LENGTH ] ),
                                        0 );
-    TEST_ASSERT_MESSAGE( sendResult == 0, "Transport interface send with zero bytes "
-                                          "to send should return 0." );
+    TEST_ASSERT_LESS_THAN_INT32_MESSAGE( 0, sendResult, "Transport interface send with zero byte "
+                                                        "to send should return negative value." );
 }
 
 /*-----------------------------------------------------------*/
@@ -354,12 +362,13 @@ TEST( Full_TransportInterfaceTest, TransportRecv_NetworkContextNullPtr )
     recvResult = pTestTransport->recv( NULL,
                                        &( transportTestBuffer[ TRANSPORT_TEST_BUFFER_PREFIX_GUARD_LENGTH ] ),
                                        TRANSPORT_TEST_BUFFER_WRITABLE_LENGTH );
-    TEST_ASSERT_MESSAGE( recvResult < 0, "Transport interface recv with NULL network "
-                                         "context pointer should return negative value." );
+    TEST_ASSERT_LESS_THAN_INT32_MESSAGE( 0, recvResult, "Transport interface recv with NULL network "
+                                                        "context pointer should return negative value." );
 
-    TEST_ASSERT_EACH_EQUAL_HEX8( 0xA5,
-                                 &( transportTestBuffer[ TRANSPORT_TEST_BUFFER_PREFIX_GUARD_LENGTH ] ),
-                                 TRANSPORT_TEST_BUFFER_WRITABLE_LENGTH );
+    TEST_ASSERT_EACH_EQUAL_HEX8_MESSAGE( TRANSPORT_TEST_BUFFER_GUARD_PATTERN,
+                                         &( transportTestBuffer[ TRANSPORT_TEST_BUFFER_PREFIX_GUARD_LENGTH ] ),
+                                         TRANSPORT_TEST_BUFFER_WRITABLE_LENGTH,
+                                         "transportTestBuffer should not be altered." );
 }
 
 /*-----------------------------------------------------------*/
@@ -374,8 +383,8 @@ TEST( Full_TransportInterfaceTest, TransportRecv_BufferNullPtr )
     /* Receive with NULL buffer pointer should return negative value. */
     recvResult = pTestTransport->recv( pTestTransport->pNetworkContext, NULL,
                                        TRANSPORT_TEST_BUFFER_WRITABLE_LENGTH );
-    TEST_ASSERT_MESSAGE( recvResult < 0, "Transport interface recv with NULL buffer "
-                                         "pointer should return negative value." );
+    TEST_ASSERT_LESS_THAN_INT32_MESSAGE( 0, recvResult, "Transport interface recv with NULL buffer "
+                                                        "pointer should return negative value." );
 }
 
 /*-----------------------------------------------------------*/
@@ -387,16 +396,17 @@ TEST( Full_TransportInterfaceTest, TransportRecv_ZeroByteToRecv )
 {
     int32_t recvResult = 0;
 
-    /* Receive with zero bytes to recv should return 0. */
+    /* Receive with zero byte to recv should return negative value. */
     recvResult = pTestTransport->recv( pTestTransport->pNetworkContext,
                                        &( transportTestBuffer[ TRANSPORT_TEST_BUFFER_PREFIX_GUARD_LENGTH ] ),
                                        0 );
-    TEST_ASSERT_MESSAGE( recvResult == 0, "Transport interface recv with zero "
-                                          "bytes to recv should return 0." );
+    TEST_ASSERT_LESS_THAN_INT32_MESSAGE( 0, recvResult, "Transport interface recv with zero "
+                                                        "byte to recv should return negative value." );
 
-    TEST_ASSERT_EACH_EQUAL_HEX8( 0xA5,
-                                 &( transportTestBuffer[ TRANSPORT_TEST_BUFFER_PREFIX_GUARD_LENGTH ] ),
-                                 TRANSPORT_TEST_BUFFER_WRITABLE_LENGTH );
+    TEST_ASSERT_EACH_EQUAL_HEX8_MESSAGE( TRANSPORT_TEST_BUFFER_GUARD_PATTERN,
+                                         &( transportTestBuffer[ TRANSPORT_TEST_BUFFER_PREFIX_GUARD_LENGTH ] ),
+                                         TRANSPORT_TEST_BUFFER_WRITABLE_LENGTH,
+                                         "transportTestBuffer should not be altered." );
 }
 
 /*-----------------------------------------------------------*/
@@ -414,7 +424,7 @@ TEST( Full_TransportInterfaceTest, Transport_SendOneByteRecvCompare )
     uint8_t * pTrasnportTestBufferStart =
         &( transportTestBuffer[ TRANSPORT_TEST_BUFFER_PREFIX_GUARD_LENGTH ] );
 
-    /* Initialize the test data buffer.*/
+    /* Initialize the test data buffer. */
     prvInitializeTestData( pTrasnportTestBufferStart, 1U );
 
     /* Send the test data to the server. */
@@ -443,18 +453,21 @@ TEST( Full_TransportInterfaceTest, Transport_SendRecvOneByteCompare )
     uint8_t * pTrasnportTestBufferStart =
         &( transportTestBuffer[ TRANSPORT_TEST_BUFFER_PREFIX_GUARD_LENGTH ] );
 
-    /* Initialize the test data buffer.*/
+    /* Initialize the test data buffer. */
     prvInitializeTestData( pTrasnportTestBufferStart, TRANSPORT_TEST_BUFFER_WRITABLE_LENGTH );
 
     /* Send the test data to the server. */
     prvTransportSendData( pTestTransport, pTrasnportTestBufferStart,
                           TRANSPORT_TEST_BUFFER_WRITABLE_LENGTH );
 
+    /* Reset the buffer. The buffer after received data is verified in prvVerifyTestData. */
+    memset( pTrasnportTestBufferStart, TRANSPORT_TEST_BUFFER_GUARD_PATTERN, TRANSPORT_TEST_BUFFER_WRITABLE_LENGTH );
+
     /* Receive one byte test data from server. */
     prvTransportRecvData( pTestTransport, pTrasnportTestBufferStart, 1U );
 
     /* Compare the test data received from server. */
-    prvVerifyTestData( pTrasnportTestBufferStart, 1U, 1U );
+    prvVerifyTestData( pTrasnportTestBufferStart, 1U, TRANSPORT_TEST_BUFFER_WRITABLE_LENGTH );
 
     /* Receive remain test data from server. */
     prvTransportRecvData( pTestTransport, &pTrasnportTestBufferStart[ 1U ],
@@ -480,7 +493,7 @@ TEST( Full_TransportInterfaceTest, Transport_SendRecvCompare )
     uint8_t * pTrasnportTestBufferStart =
         &( transportTestBuffer[ TRANSPORT_TEST_BUFFER_PREFIX_GUARD_LENGTH ] );
 
-    /* Initialize the test data buffer.*/
+    /* Initialize the test data buffer. */
     prvInitializeTestData( pTrasnportTestBufferStart, TRANSPORT_TEST_BUFFER_WRITABLE_LENGTH );
 
     /* Send the test data to the server. */
@@ -512,16 +525,18 @@ TEST( Full_TransportInterfaceTest, TransportSend_RemoteDisconnect )
     transportResult = pTestTransport->send( pTestTransport->pNetworkContext,
                                             TRANSPORT_TEST_DISCONNECT_COMMAND,
                                             strlen( TRANSPORT_TEST_DISCONNECT_COMMAND ) );
-    TEST_ASSERT( transportResult == strlen( TRANSPORT_TEST_DISCONNECT_COMMAND ) );
+    TEST_ASSERT_EQUAL_INT32_MESSAGE( strlen( TRANSPORT_TEST_DISCONNECT_COMMAND ), transportResult,
+                                     "Transport send should not have any error." );
 
     /* Delay to wait for the command send to server and server disconnection. */
-    TransportTestDelay( TRANSPORT_TEST_DISCONNECT_DELAY_MS );
+    TransportTestDelay( TRANSPORT_TEST_NETWORK_DELAY_MS );
 
     /* Negative value should be returned if a network disconnection has occurred. */
     transportResult = pTestTransport->send( pTestTransport->pNetworkContext,
                                             pTrasnportTestBufferStart,
                                             TRANSPORT_TEST_BUFFER_WRITABLE_LENGTH );
-    TEST_ASSERT_MESSAGE( transportResult < 0, "Transport send should return negative value when disconnected." );
+    TEST_ASSERT_LESS_THAN_INT32_MESSAGE( 0, transportResult,
+                                         "Transport send should return negative value when disconnected." );
 }
 
 /*-----------------------------------------------------------*/
@@ -540,20 +555,91 @@ TEST( Full_TransportInterfaceTest, TransportRecv_RemoteDisconnect )
     transportResult = pTestTransport->send( pTestTransport->pNetworkContext,
                                             TRANSPORT_TEST_DISCONNECT_COMMAND,
                                             strlen( TRANSPORT_TEST_DISCONNECT_COMMAND ) );
-    TEST_ASSERT( transportResult == strlen( TRANSPORT_TEST_DISCONNECT_COMMAND ) );
+    TEST_ASSERT_EQUAL_INT32_MESSAGE( strlen( TRANSPORT_TEST_DISCONNECT_COMMAND ), transportResult,
+                                     "Transport send should not have any error." );
 
     /* Delay to wait for the command send to server. */
-    TransportTestDelay( TRANSPORT_TEST_DELAY_MS );
+    TransportTestDelay( TRANSPORT_TEST_NETWORK_DELAY_MS );
 
     /* Negative value should be returned if a network disconnection has occurred. */
     transportResult = pTestTransport->recv( pTestTransport->pNetworkContext,
                                             pTrasnportTestBufferStart,
                                             TRANSPORT_TEST_BUFFER_WRITABLE_LENGTH );
-    TEST_ASSERT_MESSAGE( transportResult < 0, "Transport receive should return negative value when disconnected." );
+    TEST_ASSERT_LESS_THAN_INT32_MESSAGE( 0, transportResult,
+                                         "Transport receive should return negative value when disconnected." );
 
+    /* The buffer should remain unchanged when negative value returned. */
+    TEST_ASSERT_EACH_EQUAL_HEX8_MESSAGE( TRANSPORT_TEST_BUFFER_GUARD_PATTERN,
+                                         &( transportTestBuffer[ TRANSPORT_TEST_BUFFER_PREFIX_GUARD_LENGTH ] ),
+                                         TRANSPORT_TEST_BUFFER_WRITABLE_LENGTH,
+                                         "transportTestBuffer should not be altered." );
+}
 
-    /* The buffer should remain untouched when negative value returned. */
-    TEST_ASSERT_EACH_EQUAL_HEX8( 0xA5, pTrasnportTestBufferStart, TRANSPORT_TEST_BUFFER_WRITABLE_LENGTH );
+/*-----------------------------------------------------------*/
+
+/**
+ * @brief Test transport interface receive function return value when no data to receive.
+ */
+TEST( Full_TransportInterfaceTest, TransportRecv_NoDataToReceive )
+{
+    int32_t transportResult = 0;
+    /* Pointer of writable test buffer. */
+    uint8_t * pTrasnportTestBufferStart =
+        &( transportTestBuffer[ TRANSPORT_TEST_BUFFER_PREFIX_GUARD_LENGTH ] );
+
+    /* Receive from remote server. No data will be recevied since no data is sent. */
+    transportResult = pTestTransport->recv( pTestTransport->pNetworkContext,
+                                            pTrasnportTestBufferStart,
+                                            TRANSPORT_TEST_BUFFER_WRITABLE_LENGTH );
+    TEST_ASSERT_EQUAL_INT32_MESSAGE( 0, transportResult, "No data to receive should return 0." );
+
+    /* The buffer should remain unchanged when zero returned. */
+    TEST_ASSERT_EACH_EQUAL_HEX8_MESSAGE( TRANSPORT_TEST_BUFFER_GUARD_PATTERN,
+                                         &( transportTestBuffer[ TRANSPORT_TEST_BUFFER_PREFIX_GUARD_LENGTH ] ),
+                                         TRANSPORT_TEST_BUFFER_WRITABLE_LENGTH,
+                                         "transportTestBuffer should not be altered." );
+}
+
+/*-----------------------------------------------------------*/
+
+/**
+ * @brief Test transport interface receive return zero retry.
+ *
+ * Transport interface recv function returns zero due to no data to receive. The test
+ * sends test data to remote server and retry the transport receive operation. Transport
+ * receive function should return postivie value after retry.
+ */
+TEST( Full_TransportInterfaceTest, TransportRecv_ReturnZeroRetry )
+{
+    int32_t transportResult = 0;
+    uint32_t transportSendTotal = 0, transportRecvTotal = 0;
+    /* Pointer of writable test buffer. */
+    uint8_t * pTrasnportTestBufferStart =
+        &( transportTestBuffer[ TRANSPORT_TEST_BUFFER_PREFIX_GUARD_LENGTH ] );
+
+    /* Receive from remote server. No data will be recevied since no data is sent. */
+    transportResult = pTestTransport->recv( pTestTransport->pNetworkContext,
+                                            pTrasnportTestBufferStart,
+                                            TRANSPORT_TEST_BUFFER_WRITABLE_LENGTH );
+    TEST_ASSERT_EQUAL_INT32_MESSAGE( 0, transportResult, "No data to receive should return 0." );
+
+    /* The buffer should remain unchanged when zero returned. */
+    TEST_ASSERT_EACH_EQUAL_HEX8_MESSAGE( TRANSPORT_TEST_BUFFER_GUARD_PATTERN,
+                                         &( transportTestBuffer[ TRANSPORT_TEST_BUFFER_PREFIX_GUARD_LENGTH ] ),
+                                         TRANSPORT_TEST_BUFFER_WRITABLE_LENGTH,
+                                         "transportTestBuffer should not be altered." );
+
+    /* Initialize the test data buffer. */
+    prvInitializeTestData( pTrasnportTestBufferStart, 1U );
+
+    /* Send the test data to the server. */
+    prvTransportSendData( pTestTransport, pTrasnportTestBufferStart, 1U );
+
+    /* Receive the test data from server. */
+    prvTransportRecvData( pTestTransport, pTrasnportTestBufferStart, 1U );
+
+    /* Compare the test data received from server. */
+    prvVerifyTestData( pTrasnportTestBufferStart, 1U, TRANSPORT_TEST_BUFFER_WRITABLE_LENGTH );
 }
 
 /*-----------------------------------------------------------*/
@@ -564,21 +650,25 @@ TEST( Full_TransportInterfaceTest, TransportRecv_RemoteDisconnect )
 TEST_GROUP_RUNNER( Full_TransportInterfaceTest )
 {
     /* Invalid parameter test. */
-    /* RUN_TEST_CASE( Full_TransportInterfaceTest, TransportSend_NetworkContextNullPtr ); */
-    /* RUN_TEST_CASE( Full_TransportInterfaceTest, TransportSend_BufferNullPtr ); */
-    /* RUN_TEST_CASE( Full_TransportInterfaceTest, TransportSend_ZeroByteToSend ); */
-    /* RUN_TEST_CASE( Full_TransportInterfaceTest, TransportRecv_NetworkContextNullPtr ); */
-    /* RUN_TEST_CASE( Full_TransportInterfaceTest, TransportRecv_BufferNullPtr ); */
-    /* RUN_TEST_CASE( Full_TransportInterfaceTest, TransportRecv_ZeroByteToRecv ); */
+    RUN_TEST_CASE( Full_TransportInterfaceTest, TransportSend_NetworkContextNullPtr );
+    RUN_TEST_CASE( Full_TransportInterfaceTest, TransportSend_BufferNullPtr );
+    RUN_TEST_CASE( Full_TransportInterfaceTest, TransportSend_ZeroByteToSend );
+    RUN_TEST_CASE( Full_TransportInterfaceTest, TransportRecv_NetworkContextNullPtr );
+    RUN_TEST_CASE( Full_TransportInterfaceTest, TransportRecv_BufferNullPtr );
+    RUN_TEST_CASE( Full_TransportInterfaceTest, TransportRecv_ZeroByteToRecv );
 
-    /* /1* Send and receive correctness test. *1/ */
+    /* Send and receive correctness test. */
     RUN_TEST_CASE( Full_TransportInterfaceTest, Transport_SendOneByteRecvCompare );
     RUN_TEST_CASE( Full_TransportInterfaceTest, Transport_SendRecvOneByteCompare );
     RUN_TEST_CASE( Full_TransportInterfaceTest, Transport_SendRecvCompare );
 
-    /* /1* Disconnect test. *1/ */
+    /* Disconnect test. */
     RUN_TEST_CASE( Full_TransportInterfaceTest, TransportSend_RemoteDisconnect );
     RUN_TEST_CASE( Full_TransportInterfaceTest, TransportRecv_RemoteDisconnect );
+
+    /* Transport behavior test. */
+    RUN_TEST_CASE( Full_TransportInterfaceTest, TransportRecv_NoDataToReceive );
+    RUN_TEST_CASE( Full_TransportInterfaceTest, TransportRecv_ReturnZeroRetry );
 }
 
 /*-----------------------------------------------------------*/
