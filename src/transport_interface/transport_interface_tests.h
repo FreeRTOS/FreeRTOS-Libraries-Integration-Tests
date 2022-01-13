@@ -26,52 +26,48 @@
 /* Standard header includes. */
 #include <stdint.h>
 
+/* Include for network connection. */
+#include "network_connection.h"
+
 /* Include for transport interface. */
 #include "transport_interface.h"
 
 /**
- * @brief Hook function to initialize the transport interface.
- *
- * This function needs to be supplied by the application and is called at the
- * start of each test case. The application needs to ensure that the transport
- * interface can be used to send and receive data after this function returns - this,
- * in case of TCP/IP means, that a connection with the server is established.
- *
- * @param[in] pTransport The transport interface to init.
- *
- * @return 0 if transport interface init succes or other value to indicate error.
- */
-int32_t TransportInit( TransportInterface_t * pTransport );
-
-/**
- * @brief Hook function to de-initialize the transport interface.
- *
- * This function needs to be supplied by the application and is called at the
- * end of each test case. The application should free all the resources allocated in
- * TransportInit.
- *
- * @param[in] pTransport The transport interface to de-init.
- */
-void TransportDeinit( TransportInterface_t * pTransport );
-
-/**
  * @brief Delay function to wait for the data transfer over transport network.
- *
- * This function needs to be supplied by the application and is called during the
- * test to wait for the response from the transport network.
  *
  * @param[in] delayMs Delay in milliseconds.
  */
-void TransportTestDelay( uint32_t delayMs );
+typedef void (* TransportTestDelayFunc)( uint32_t delayMs );
 
 /**
- * @brief Run transport interface tests.
- *
- * The application needs to pass supply the transport interface to be used in
- * tests.
- *
- * @param[in] pTransport transport interface to be used in the tests.
+ * @brief A struct representing transport interface test parameters.
  */
-void RunTransportInterfaceTests( TransportInterface_t * pTransport );
+typedef struct TransportTestParam
+{
+    TransportInterface_t * pTransport;          /**< @brief Transport interface structure to test. */
+    NetworkConnectFunc pNetworkConnect;         /**< @brief Network connect function pointer. */
+    NetworkDisconnectFunc pNetworkDisconnect;   /**< @brief Network disconnect function pointer. */
+    TransportTestDelayFunc pTransportTestDelay; /**< @brief Transport test delay function pointer. */
+    void * pNetworkCredentials;                 /**< @brief Network credentials for network connection. */
+    void * pNetworkContext;                     /**< @brief Primary network context. */
+    void * pSecondNetworkContext;               /**< @brief Secondary network context. */
+} TransportTestParam_t;
+
+/**
+ * @brief Customers need to implement this fuction by filling in parameters
+ * in the provided TransportTestParam_t.
+ *
+ * @param[in] pTestParam a pointer to TransportTestParam_t struct to be filled out by
+ * caller.
+ */
+void SetupTransportTestParam( TransportTestParam_t * pTestParam );
+
+/**
+ * @brief Run Transport interface tests. This function should be called after calling `setupTransportTestParam()`.
+ *
+ * @return Negative value if the transport test execution config is not set. Otherwise,
+ * number of failure test cases is returned.
+ */
+int RunTransportInterfaceTests( void );
 
 #endif /* TRANSPORT_INTERFACE_TESTS_H_ */
