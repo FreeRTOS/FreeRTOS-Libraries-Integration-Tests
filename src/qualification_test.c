@@ -10,11 +10,11 @@
 
 void runQualificationTest( void )
 {
-    #if ( MQTT_TEST_ENABLED == 1 )
-        runMqttTest();
-    #endif
-
     #if ( TRANSPORT_INTERFACE_TEST_ENABLED == 1 )
         RunTransportInterfaceTests();
+    #endif
+
+    #if ( MQTT_TEST_ENABLED == 1 )
+        runMqttTest();
     #endif
 }

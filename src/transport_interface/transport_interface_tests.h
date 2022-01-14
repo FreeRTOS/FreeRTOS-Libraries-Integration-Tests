@@ -50,7 +50,6 @@ typedef struct TransportTestParam
     TransportTestDelayFunc pTransportTestDelay; /**< @brief Transport test delay function pointer. */
     void * pNetworkCredentials;                 /**< @brief Network credentials for network connection. */
     void * pNetworkContext;                     /**< @brief Primary network context. */
-    void * pSecondNetworkContext;               /**< @brief Secondary network context. */
 } TransportTestParam_t;
 
 /**
