@@ -31,6 +31,10 @@
 /* Include for init and de-init functions. */
 #include "transport_interface_tests.h"
 
+/* Include for test parameter and execution configs. */
+#include "test_execution_config.h"
+#include "test_param_config.h"
+
 /* Include for Unity framework. */
 #include "unity.h"
 #include "unity_fixture.h"
@@ -94,6 +98,16 @@
 #define TRANSPORT_TEST_NETWORK_DELAY_MS            ( 3000U )
 
 /*-----------------------------------------------------------*/
+
+/**
+ * @brief Struct of test parameters filled in by user.
+ */
+static TransportTestParam_t testParam = { 0 };
+
+/**
+ * @brief Info of the server to connect to for tests.
+ */
+static TestHostInfo_t testHostInfo = { 0 };
 
 /**
  * @brief Transport Interface used in test cases.
@@ -248,7 +262,7 @@ static void prvTransportRecvData( TransportInterface_t * pTransport,
         }
 
         /* Delay to wait for the test data from the transport network. */
-        TransportTestDelay( TRANSPORT_TEST_DELAY_MS );
+        testParam.pTransportTestDelay( TRANSPORT_TEST_DELAY_MS );
     }
 
     /* Check if all the data is recevied. */
@@ -262,20 +276,26 @@ static void prvTransportRecvData( TransportInterface_t * pTransport,
  */
 TEST_SETUP( Full_TransportInterfaceTest )
 {
-    int32_t transportInitResult = 0;
+    int32_t networkConnectResult = 0;
 
     /* Ensure the tranpsort interface is valid. */
-    TEST_ASSERT_NOT_NULL_MESSAGE( pTestTransport, "pTestTransport should not be NULL." );
-    TEST_ASSERT_NOT_NULL_MESSAGE( pTestTransport->pNetworkContext, "pTestTransport->pNetworkContext should not be NULL." );
-    TEST_ASSERT_NOT_NULL_MESSAGE( pTestTransport->send, "pTestTransport->send should not be NULL." );
-    TEST_ASSERT_NOT_NULL_MESSAGE( pTestTransport->recv, "pTestTransport->recv should not be NULL." );
+    TEST_ASSERT_NOT_NULL_MESSAGE( testParam.pTransport, "testParam.pTransport should not be NULL." );
+    TEST_ASSERT_NOT_NULL_MESSAGE( testParam.pNetworkContext, "testParam.pNetworkContext should not be NULL." );
+    TEST_ASSERT_NOT_NULL_MESSAGE( testParam.pTransport->send, "testParam.pTransport->send should not be NULL." );
+    TEST_ASSERT_NOT_NULL_MESSAGE( testParam.pTransport->recv, "testParam.pTransport->recv should not be NULL." );
+    TEST_ASSERT_NOT_NULL_MESSAGE( testParam.pTransportTestDelay, "testParam.pTransportTestDelay should not be NULL." );
+
+    /* Setup the trasnport structure to use the primary network context. */
+    testParam.pTransport->pNetworkContext = testParam.pNetworkContext;
+    pTestTransport = testParam.pTransport;
 
     /* Initialize the transport test buffer with TRANSPORT_TEST_BUFFER_GUARD_PATTERN. */
     memset( &( transportTestBuffer[ 0 ] ), TRANSPORT_TEST_BUFFER_GUARD_PATTERN, TRANSPORT_TEST_BUFFER_TOTAL_LENGTH );
 
     /* Call the hook function implemented by the application to initialize the transport interface. */
-    transportInitResult = TransportInit( pTestTransport );
-    TEST_ASSERT_EQUAL_INT32_MESSAGE( 0, transportInitResult, "TransportInit failed." );
+    networkConnectResult = testParam.pNetworkConnect( pTestTransport->pNetworkContext,
+                                                      &testHostInfo, testParam.pNetworkCredentials );
+    TEST_ASSERT_EQUAL_INT32_MESSAGE( 0, networkConnectResult, "Network connect failed." );
 }
 
 /*-----------------------------------------------------------*/
@@ -297,7 +317,7 @@ TEST_TEAR_DOWN( Full_TransportInterfaceTest )
                                          "transportTestBuffer suffix guard should not be altered." );
 
     /* Call the hook function implemented by the application to de-initialize the transport interface. */
-    TransportDeinit( pTestTransport );
+    testParam.pNetworkDisconnect( pTestTransport->pNetworkContext );
 }
 
 /*-----------------------------------------------------------*/
@@ -529,7 +549,7 @@ TEST( Full_TransportInterfaceTest, TransportSend_RemoteDisconnect )
                                      "Transport send should not have any error." );
 
     /* Delay to wait for the command send to server and server disconnection. */
-    TransportTestDelay( TRANSPORT_TEST_NETWORK_DELAY_MS );
+    testParam.pTransportTestDelay( TRANSPORT_TEST_NETWORK_DELAY_MS );
 
     /* Negative value should be returned if a network disconnection has occurred. */
     transportResult = pTestTransport->send( pTestTransport->pNetworkContext,
@@ -559,7 +579,7 @@ TEST( Full_TransportInterfaceTest, TransportRecv_RemoteDisconnect )
                                      "Transport send should not have any error." );
 
     /* Delay to wait for the command send to server. */
-    TransportTestDelay( TRANSPORT_TEST_NETWORK_DELAY_MS );
+    testParam.pTransportTestDelay( TRANSPORT_TEST_NETWORK_DELAY_MS );
 
     /* Negative value should be returned if a network disconnection has occurred. */
     transportResult = pTestTransport->recv( pTestTransport->pNetworkContext,
@@ -673,22 +693,29 @@ TEST_GROUP_RUNNER( Full_TransportInterfaceTest )
 
 /*-----------------------------------------------------------*/
 
-void RunTransportInterfaceTests( TransportInterface_t * pTransport )
+int RunTransportInterfaceTests( void )
 {
-    /* Assign the TransportInterface_t pointer used in test cases. */
-    pTestTransport = pTransport;
+    int status = -1;
 
-    /* Initialize unity. */
-    UnityFixture.Verbose = 1;
-    UnityFixture.GroupFilter = 0;
-    UnityFixture.NameFilter = 0;
-    UnityFixture.RepeatCount = 1;
-    UNITY_BEGIN();
+    #if ( TRANSPORT_INTERFACE_TEST_ENABLED == 1 )
+        /* Assign the TransportInterface_t pointer used in test cases. */
+        SetupTransportTestParam( &testParam );
+        testHostInfo.pHostName = ECHO_SERVER_ENDPOINT;
+        testHostInfo.port = ECHO_SERVER_PORT;
 
-    /* Run the test group. */
-    RUN_TEST_GROUP( Full_TransportInterfaceTest );
+        /* Initialize unity. */
+        UnityFixture.Verbose = 1;
+        UnityFixture.GroupFilter = 0;
+        UnityFixture.NameFilter = 0;
+        UnityFixture.RepeatCount = 1;
+        UNITY_BEGIN();
 
-    UNITY_END();
+        /* Run the test group. */
+        RUN_TEST_GROUP( Full_TransportInterfaceTest );
+
+        status = UNITY_END();
+    #endif /* if ( TRANSPORT_INTERFACE_TEST_ENABLED == 1 ) */
+    return status;
 }
 
 /*-----------------------------------------------------------*/
