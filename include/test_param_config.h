@@ -1,6 +1,10 @@
 #ifndef _TEST_PARAM_CONFIG_H_
 #define _TEST_PARAM_CONFIG_H_
 
+/* When FORCE_GENERATE_NEW_KEY_PAIR is set to 1, the device should generate
+ * a new on-device key pair and output public key. When set to 0, the device
+ * should keep existing key pair.
+ */
 #define FORCE_GENERATE_NEW_KEY_PAIR   0
 
 #define MQTT_SERVER_ENDPOINT   "PLACE_HOLDER"
