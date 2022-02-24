@@ -30,6 +30,6 @@
 /**
  * @brief Entry function for the LTS qualification test.
  */
-void RunQualificationTest(void);
+void RunQualificationTest( void );
 
 #endif /* QUALIFICATION_TEST_H */

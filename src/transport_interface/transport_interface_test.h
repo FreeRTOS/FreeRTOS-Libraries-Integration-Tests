@@ -48,12 +48,12 @@ typedef void (* TransportTestDelayFunc_t )( uint32_t delayMs );
  */
 typedef struct TransportTestParam
 {
-    TransportInterface_t * pTransport;              /**< @brief Transport interface structure to test. */
-    NetworkConnectFunc_t pNetworkConnect;           /**< @brief Network connect function pointer. */
-    NetworkDisconnectFunc_t pNetworkDisconnect;     /**< @brief Network disconnect function pointer. */
-    TransportTestDelayFunc_t pTransportTestDelay;   /**< @brief Transport test delay function pointer. */
-    void * pNetworkCredentials;                     /**< @brief Network credentials for network connection. */
-    void * pNetworkContext;                         /**< @brief Primary network context. */
+    TransportInterface_t * pTransport;            /**< @brief Transport interface structure to test. */
+    NetworkConnectFunc_t pNetworkConnect;         /**< @brief Network connect function pointer. */
+    NetworkDisconnectFunc_t pNetworkDisconnect;   /**< @brief Network disconnect function pointer. */
+    TransportTestDelayFunc_t pTransportTestDelay; /**< @brief Transport test delay function pointer. */
+    void * pNetworkCredentials;                   /**< @brief Network credentials for network connection. */
+    void * pNetworkContext;                       /**< @brief Primary network context. */
 } TransportTestParam_t;
 
 /**

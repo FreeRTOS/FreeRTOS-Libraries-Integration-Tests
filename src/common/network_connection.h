@@ -62,7 +62,8 @@ typedef enum NetworkConnectStatus
  * Otherwise, return other network connect status to indicate error.
  */
 typedef NetworkConnectStatus_t ( * NetworkConnectFunc_t )( void * pNetworkContext,
-    TestHostInfo_t * pHostInfo, void * pNetworkCredentials );
+                                                           TestHostInfo_t * pHostInfo,
+                                                           void * pNetworkCredentials );
 
 /**
  * @brief A function pointer type for function that disconnect a previously established

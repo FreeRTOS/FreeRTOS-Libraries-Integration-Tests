@@ -26,7 +26,7 @@
  */
 #ifndef MQTT_TEST_H
 #define MQTT_TEST_H
- 
+
 #include "transport_interface.h"
 #include "network_connection.h"
 
@@ -59,4 +59,3 @@ void SetupMqttTestParam( MqttTestParam_t * pTestParam );
 int RunMqttTest( void );
 
 #endif /* MQTT_TEST_H */
-
