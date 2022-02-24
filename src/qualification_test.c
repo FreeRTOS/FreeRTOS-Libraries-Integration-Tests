@@ -39,7 +39,7 @@
 void RunQualificationTest( void )
 {
     #if ( TRANSPORT_INTERFACE_TEST_ENABLED == 1 )
-        RunTransportInterfaceTests();
+        RunTransportInterfaceTest();
     #endif
 
     #if ( MQTT_TEST_ENABLED == 1 )
