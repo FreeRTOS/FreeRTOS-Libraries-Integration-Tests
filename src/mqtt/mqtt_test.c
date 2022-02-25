@@ -32,7 +32,6 @@
 #include "demo_config.h"
 #include "core_mqtt.h"
 #include "core_mqtt_state.h"
-#include "tls_freertos.h"
 #include "clock.h"
 #include "unity.h"
 
@@ -518,7 +517,6 @@ static void startPersistentSession()
 {
     /* Terminate TLS session and TCP network connection to discard the current MQTT session
      * that was created as a "clean session". */
-    ESP_LOGI( "MQTT", "startpersistentsession" );
     ( void ) ( *testParam.pNetworkDisconnect )( testParam.pNetworkContext );
 
     /* Establish a new MQTT connection over TLS with the broker with the "clean session" flag set to 0
@@ -1114,7 +1112,6 @@ void test_MQTT_Restore_Session_Duplicate_Incoming_Publish_Qos1( void )
      * to re-attempt the PUBLISH operation. */
     TEST_ASSERT_EQUAL( MQTTSuccess,
                        MQTT_ProcessLoop( &context, 2 * MQTT_PROCESS_LOOP_TIMEOUT_MS ) );
-    ESP_LOGI( "MQTT", "before last assert" );
     /* Make sure that the library cleared the record for the incoming QoS 1 PUBLISH packet. */
     TEST_ASSERT_EQUAL( MQTT_PACKET_ID_INVALID, context.incomingPublishRecords[ 0 ].packetId );
 }
