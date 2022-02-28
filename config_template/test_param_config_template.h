@@ -34,28 +34,33 @@
  * @note When FORCE_GENERATE_NEW_KEY_PAIR is set to 1, the device should generate
  * a new on-device key pair and output public key. When set to 0, the device
  * should keep existing key pair.
+ *
+ * #define FORCE_GENERATE_NEW_KEY_PAIR   0
  */
-#define FORCE_GENERATE_NEW_KEY_PAIR   0
 
 /**
  * @brief Endpoint of the MQTT broker to connect to in mqtt test.
+ *
+ * #define MQTT_SERVER_ENDPOINT   "PLACE_HOLDER"
  */
-#define MQTT_SERVER_ENDPOINT   "PLACE_HOLDER"
 
 /**
  * @brief Port of the MQTT broker to connect to in mqtt test.
+ *
+ * #define MQTT_SERVER_PORT       (8883)
  */
-#define MQTT_SERVER_PORT       (8883)
 
 /**
  * @brief Endpoint of the echo server to connect to in transport interface test.
+ *
+ * #define ECHO_SERVER_ENDPOINT   "PLACE_HOLDER"
  */
-#define ECHO_SERVER_ENDPOINT   "PLACE_HOLDER"
 
 /**
  * @brief Port of the echo server to connect to in transport interface test.
+ *
+ * #define ECHO_SERVER_PORT       (9000)
  */
-#define ECHO_SERVER_PORT       (9000)
 
 /**
  * @brief Root certificate of the echo server.
@@ -66,8 +71,9 @@
  * "-----BEGIN CERTIFICATE-----\n"\
  * "...base64 data...\n"\
  * "-----END CERTIFICATE-----\n"
+ *
+ * #define ECHO_SERVER_ROOT_CA "PLACE_HOLDER"
  */
-#define ECHO_SERVER_ROOT_CA "PLACE_HOLDER"
 
 /**
  * @brief Client certificate to connect to echo server.
@@ -78,8 +84,9 @@
  * "-----BEGIN CERTIFICATE-----\n"\
  * "...base64 data...\n"\
  * "-----END CERTIFICATE-----\n"
+ *
+ * #define TRANSPORT_CLIENT_CA NULL
  */
-#define TRANSPORT_CLIENT_CA NULL
 
 /**
  * @brief Client private key to connect to echo server.
@@ -87,7 +94,8 @@
  * @note This is should only be used for testing purpose.
  *
  * For qualification, the key should be generated on-device.
+ *
+ * #define TRANSPORT_CLIENT_KEY  NULL
  */
-#define TRANSPORT_CLIENT_KEY  NULL
 
 #endif /* TEST_PARAM_CONFIG_H */
