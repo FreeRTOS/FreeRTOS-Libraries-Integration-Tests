@@ -1,3 +1,29 @@
+/*
+ * FreeRTOS FreeRTOS LTS Qualification Tests preview
+ * Copyright (C) 2022 Amazon.com, Inc. or its affiliates.  All Rights Reserved.
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of
+ * this software and associated documentation files (the "Software"), to deal in
+ * the Software without restriction, including without limitation the rights to
+ * use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
+ * the Software, and to permit persons to whom the Software is furnished to do so,
+ * subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
+ * FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
+ * COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
+ * IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+ * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ */
+
+/**
+ * @file mqtt_test.c
+ * @brief Implements test functions for MQTT test.
+ */
 #include <assert.h>
 #include <stdlib.h>
 #include <string.h>
@@ -6,13 +32,14 @@
 #include "demo_config.h"
 #include "core_mqtt.h"
 #include "core_mqtt_state.h"
-#include "tls_freertos.h"
 #include "clock.h"
 #include "unity.h"
 
 #include "mqtt_test.h"
 #include "test_execution_config.h"
 #include "test_param_config.h"
+
+/*-----------------------------------------------------------*/
 
 /**
  * @brief Length of MQTT server host name.
@@ -80,7 +107,6 @@
  */
 #define TEST_MQTT_LWT_TOPIC_LENGTH              ( sizeof( TEST_MQTT_LWT_TOPIC ) - 1 )
 
-
 /**
  * @brief Client identifier for MQTT session in the tests.
  */
@@ -119,13 +145,13 @@
 /**
  * @brief Timeout for receiving CONNACK packet in milli seconds.
  */
-#define CONNACK_RECV_TIMEOUT_MS                 ( 1000U )
+#define CONNACK_RECV_TIMEOUT_MS             ( 1000U )
 
 /**
  * @brief Time interval in seconds at which an MQTT PINGREQ need to be sent to
  * broker.
  */
-#define MQTT_KEEP_ALIVE_INTERVAL_SECONDS        ( 5U )
+#define MQTT_KEEP_ALIVE_INTERVAL_SECONDS    ( 5U )
 
 /**
  * @brief Timeout for MQTT_ProcessLoop() function in milliseconds.
@@ -133,12 +159,14 @@
  * PUBLISH message and ack responses for QoS 1 and QoS 2 communications
  * with the broker.
  */
-#define MQTT_PROCESS_LOOP_TIMEOUT_MS            ( 700U )
+#define MQTT_PROCESS_LOOP_TIMEOUT_MS        ( 700U )
 
 /**
  * @brief The MQTT message published in this example.
  */
-#define MQTT_EXAMPLE_MESSAGE                    "Hello World!"
+#define MQTT_EXAMPLE_MESSAGE                "Hello World!"
+
+/*-----------------------------------------------------------*/
 
 /**
  * @brief a struct of test parameters filled in by user.
@@ -243,6 +271,7 @@ static uint8_t packetTypeForDisconnection = MQTT_PACKET_TYPE_INVALID;
  */
 static int clientIdRandNumber;
 
+/*-----------------------------------------------------------*/
 
 /**
  * @brief Sends an MQTT CONNECT packet over the already connected TCP socket.
@@ -312,6 +341,7 @@ static void startPersistentSession();
  */
 static void resumePersistentSession();
 
+/*-----------------------------------------------------------*/
 
 static void establishMqttSession( MQTTContext_t * pContext,
                                   void * pNetworkContext,
@@ -407,6 +437,8 @@ static void establishMqttSession( MQTTContext_t * pContext,
                                                   pSessionPresent ) );
 }
 
+/*-----------------------------------------------------------*/
+
 static void eventCallback( MQTTContext_t * pContext,
                            MQTTPacketInfo_t * pPacketInfo,
                            MQTTDeserializedInfo_t * pDeserializedInfo )
@@ -428,7 +460,7 @@ static void eventCallback( MQTTContext_t * pContext,
     {
         /* Terminate TLS session and TCP connection to test session restoration
          * across network connection. */
-         (*testParam.pNetworkDisconnect)( testParam.pNetworkContext );
+        ( *testParam.pNetworkDisconnect )( testParam.pNetworkContext );
     }
     else
     {
@@ -464,6 +496,8 @@ static void eventCallback( MQTTContext_t * pContext,
     }
 }
 
+/*-----------------------------------------------------------*/
+
 static int32_t failedRecv( NetworkContext_t * pNetworkContext,
                            void * pBuffer,
                            size_t bytesToRecv )
@@ -472,37 +506,40 @@ static int32_t failedRecv( NetworkContext_t * pNetworkContext,
     ( void ) bytesToRecv;
 
     /* Terminate the TLS+TCP connection with the broker for the test. */
-    ( void ) (*testParam.pNetworkDisconnect)( pNetworkContext );
+    ( void ) ( *testParam.pNetworkDisconnect )( pNetworkContext );
 
     return -1;
 }
+
+/*-----------------------------------------------------------*/
 
 static void startPersistentSession()
 {
     /* Terminate TLS session and TCP network connection to discard the current MQTT session
      * that was created as a "clean session". */
-    ESP_LOGI("MQTT", "startpersistentsession");
-    ( void ) (*testParam.pNetworkDisconnect)( testParam.pNetworkContext );
+    ( void ) ( *testParam.pNetworkDisconnect )( testParam.pNetworkContext );
 
     /* Establish a new MQTT connection over TLS with the broker with the "clean session" flag set to 0
      * to start a persistent session with the broker. */
 
     /* Create the TLS+TCP connection with the broker. */
-    TEST_ASSERT_EQUAL( pdPASS, (*testParam.pNetworkConnect)( testParam.pNetworkContext,
-                                                             &testHostInfo,
-                                                             testParam.pNetworkCredentials ) );
+    TEST_ASSERT_EQUAL( NETWORK_CONNECT_SUCCESS, ( *testParam.pNetworkConnect )( testParam.pNetworkContext,
+                                                                                &testHostInfo,
+                                                                                testParam.pNetworkCredentials ) );
 
     /* Establish a new MQTT connection for a persistent session with the broker. */
     establishMqttSession( &context, testParam.pNetworkContext, false, &persistentSession );
     TEST_ASSERT_FALSE( persistentSession );
 }
 
+/*-----------------------------------------------------------*/
+
 static void resumePersistentSession()
 {
     /* Create a new TLS+TCP network connection with the server. */
-    TEST_ASSERT_EQUAL( pdPASS, (*testParam.pNetworkConnect)( testParam.pNetworkContext,
-                                                             &testHostInfo,
-                                                             testParam.pNetworkCredentials ) );
+    TEST_ASSERT_EQUAL( NETWORK_CONNECT_SUCCESS, ( *testParam.pNetworkConnect )( testParam.pNetworkContext,
+                                                                                &testHostInfo,
+                                                                                testParam.pNetworkCredentials ) );
 
     /* Re-establish the persistent session with the broker by connecting with "clean session" flag set to 0. */
     TEST_ASSERT_FALSE( persistentSession );
@@ -511,6 +548,8 @@ static void resumePersistentSession()
     /* Verify that the session was resumed. */
     TEST_ASSERT_TRUE( persistentSession );
 }
+
+/*-----------------------------------------------------------*/
 
 static void handleAckEvents( MQTTPacketInfo_t * pPacketInfo,
                              uint16_t packetIdentifier )
@@ -597,6 +636,8 @@ static void handleAckEvents( MQTTPacketInfo_t * pPacketInfo,
     }
 }
 
+/*-----------------------------------------------------------*/
+
 static MQTTStatus_t subscribeToTopic( MQTTContext_t * pContext,
                                       const char * pTopic,
                                       MQTTQoS_t qos )
@@ -622,6 +663,8 @@ static MQTTStatus_t subscribeToTopic( MQTTContext_t * pContext,
                            globalSubscribePacketIdentifier );
 }
 
+/*-----------------------------------------------------------*/
+
 static MQTTStatus_t unsubscribeFromTopic( MQTTContext_t * pContext,
                                           const char * pTopic,
                                           MQTTQoS_t qos )
@@ -646,6 +689,8 @@ static MQTTStatus_t unsubscribeFromTopic( MQTTContext_t * pContext,
                              sizeof( pSubscriptionList ) / sizeof( MQTTSubscribeInfo_t ),
                              globalUnsubscribePacketIdentifier );
 }
+
+/*-----------------------------------------------------------*/
 
 static MQTTStatus_t publishToTopic( MQTTContext_t * pContext,
                                     const char * pTopic,
@@ -675,7 +720,9 @@ static MQTTStatus_t publishToTopic( MQTTContext_t * pContext,
                          packetId );
 }
 
-void setUp(void)
+/*-----------------------------------------------------------*/
+
+void setUp( void )
 {
     struct timespec tp;
 
@@ -703,15 +750,18 @@ void setUp(void)
 
     /* Establish a TCP connection with the server endpoint, then
      * establish TLS session on top of TCP connection. */
-    TEST_ASSERT_EQUAL( pdPASS, (*testParam.pNetworkConnect)( testParam.pNetworkContext,
-                                                             &testHostInfo,
-                                                             testParam.pNetworkCredentials ) );
+    TEST_ASSERT_EQUAL( NETWORK_CONNECT_SUCCESS, ( *testParam.pNetworkConnect )( testParam.pNetworkContext,
+                                                                                &testHostInfo,
+                                                                                testParam.pNetworkCredentials ) );
 
     /* Establish MQTT session on top of the TCP+TLS connection. */
     establishMqttSession( &context, testParam.pNetworkContext, true, &persistentSession );
 }
 
-void tearDown(void) {
+/*-----------------------------------------------------------*/
+
+void tearDown( void )
+{
     MQTTStatus_t mqttStatus;
 
     /* Free memory, if allocated during test case execution. */
@@ -728,12 +778,14 @@ void tearDown(void) {
     /* Terminate MQTT connection. */
     mqttStatus = MQTT_Disconnect( &context );
 
-    (*testParam.pNetworkDisconnect)( testParam.pNetworkContext );
+    ( *testParam.pNetworkDisconnect )( testParam.pNetworkContext );
 
     /* Make any assertions at the end so that all memory is deallocated before
      * the end of this function. */
     TEST_ASSERT_EQUAL( MQTTSuccess, mqttStatus );
 }
+
+/*-----------------------------------------------------------*/
 
 void test_MQTT_Subscribe_Publish_With_Qos_0( void )
 {
@@ -785,6 +837,8 @@ void test_MQTT_Subscribe_Publish_With_Qos_0( void )
                        MQTT_ProcessLoop( &context, MQTT_PROCESS_LOOP_TIMEOUT_MS ) );
     TEST_ASSERT_TRUE( receivedUnsubAck );
 }
+
+/*-----------------------------------------------------------*/
 
 /**
  * @brief Tests Subscribe and Publish operations with the MQTT broken using QoS 1.
@@ -847,6 +901,8 @@ void test_MQTT_Subscribe_Publish_With_Qos_1( void )
     TEST_ASSERT_TRUE( receivedUnsubAck );
 }
 
+/*-----------------------------------------------------------*/
+
 /**
  * @brief Tests Subscribe and Publish operations with the MQTT broken using QoS 1.
  * The test subscribes to a topic, and then publishes to the same topic. The
@@ -859,9 +915,9 @@ void test_MQTT_Connect_LWT( void )
 
     /* Establish a second TCP connection with the server endpoint, then
      * a TLS session. The server info and credentials can be reused. */
-    TEST_ASSERT_EQUAL( pdPASS, (*testParam.pNetworkConnect)( testParam.pSecondNetworkContext,
-                                                             &testHostInfo,
-                                                             testParam.pNetworkCredentials ) );
+    TEST_ASSERT_EQUAL( NETWORK_CONNECT_SUCCESS, ( *testParam.pNetworkConnect )( testParam.pSecondNetworkContext,
+                                                                                &testHostInfo,
+                                                                                testParam.pNetworkCredentials ) );
 
     /* Establish MQTT session on top of the TCP+TLS connection. */
     useLWTClientIdentifier = true;
@@ -877,7 +933,7 @@ void test_MQTT_Connect_LWT( void )
     TEST_ASSERT_TRUE( receivedSubAck );
 
     /* Abruptly terminate TCP connection. */
-    ( void ) (*testParam.pNetworkDisconnect)( testParam.pSecondNetworkContext );
+    ( void ) ( *testParam.pNetworkDisconnect )( testParam.pSecondNetworkContext );
 
     /* Run the process loop to receive the LWT. Allow some more time for the
      * server to realize the connection is closed. */
@@ -906,6 +962,8 @@ void test_MQTT_Connect_LWT( void )
     TEST_ASSERT_TRUE( receivedUnsubAck );
 }
 
+/*-----------------------------------------------------------*/
+
 /**
  * @brief Verifies that the MQTT library sends a Ping Request packet if the connection is
  * idle for more than the keep-alive period.
@@ -927,6 +985,8 @@ void test_MQTT_ProcessLoop_KeepAlive( void )
     elapsedTime = context.lastPacketTime - connectPacketTime;
     TEST_ASSERT_LESS_OR_EQUAL( MQTT_KEEP_ALIVE_INTERVAL_SECONDS * 1500, elapsedTime );
 }
+
+/*-----------------------------------------------------------*/
 
 /**
  * @brief Verifies that the MQTT library supports resending a PUBLISH QoS 1 packet which is
@@ -971,6 +1031,7 @@ void test_MQTT_Resend_Unacked_Publish_QoS1( void )
     /* Obtain the packet ID of the PUBLISH packet that didn't complete in the previous connection. */
     MQTTStateCursor_t cursor = MQTT_STATE_CURSOR_INITIALIZER;
     uint16_t publishPackedId = MQTT_PublishToResend( &context, &cursor );
+
     TEST_ASSERT_NOT_EQUAL( MQTT_PACKET_ID_INVALID, publishPackedId );
 
     /* Make sure that the packet ID is maintained in the outgoing publish state records. */
@@ -996,6 +1057,8 @@ void test_MQTT_Resend_Unacked_Publish_QoS1( void )
     /* Make sure that the library has removed the record for the outgoing PUBLISH packet. */
     TEST_ASSERT_EQUAL( MQTT_PACKET_ID_INVALID, context.outgoingPublishRecords[ 0 ].packetId );
 }
+
+/*-----------------------------------------------------------*/
 
 /**
  * @brief Verifies the behavior of the MQTT library on receiving a duplicate
@@ -1049,10 +1112,11 @@ void test_MQTT_Restore_Session_Duplicate_Incoming_Publish_Qos1( void )
      * to re-attempt the PUBLISH operation. */
     TEST_ASSERT_EQUAL( MQTTSuccess,
                        MQTT_ProcessLoop( &context, 2 * MQTT_PROCESS_LOOP_TIMEOUT_MS ) );
-    ESP_LOGI("MQTT", "before last assert");
     /* Make sure that the library cleared the record for the incoming QoS 1 PUBLISH packet. */
     TEST_ASSERT_EQUAL( MQTT_PACKET_ID_INVALID, context.incomingPublishRecords[ 0 ].packetId );
 }
+
+/*-----------------------------------------------------------*/
 
 /**
  * @brief Verifies that the library supports notifying the broker to retain a PUBLISH message
@@ -1120,23 +1184,28 @@ void test_MQTT_Publish_With_Retain_Flag( void )
     TEST_ASSERT_FALSE( receivedRetainedMessage );
 }
 
-int runMqttTest()
+/*-----------------------------------------------------------*/
+
+int RunMqttTest( void )
 {
     int status = -1;
-#if ( MQTT_TEST_ENABLED == 1 )
-    /* Calls user-implemented setupMqttTestParam to fill in testParam */
-    setupMqttTestParam( &testParam );
-    testHostInfo.pHostName = MQTT_SERVER_ENDPOINT;
-    testHostInfo.port = MQTT_SERVER_PORT;
-    UNITY_BEGIN();
-    RUN_TEST( test_MQTT_Subscribe_Publish_With_Qos_0 );
-    RUN_TEST( test_MQTT_Subscribe_Publish_With_Qos_1 );
-    RUN_TEST( test_MQTT_Connect_LWT );
-    RUN_TEST( test_MQTT_ProcessLoop_KeepAlive );
-    RUN_TEST( test_MQTT_Resend_Unacked_Publish_QoS1 );
-    RUN_TEST( test_MQTT_Restore_Session_Duplicate_Incoming_Publish_Qos1 );
-    RUN_TEST( test_MQTT_Publish_With_Retain_Flag );
-    status = UNITY_END();
-#endif
+
+    #if ( MQTT_TEST_ENABLED == 1 )
+        /* Calls user-implemented SetupMqttTestParam to fill in testParam */
+        SetupMqttTestParam( &testParam );
+        testHostInfo.pHostName = MQTT_SERVER_ENDPOINT;
+        testHostInfo.port = MQTT_SERVER_PORT;
+        UNITY_BEGIN();
+        RUN_TEST( test_MQTT_Subscribe_Publish_With_Qos_0 );
+        RUN_TEST( test_MQTT_Subscribe_Publish_With_Qos_1 );
+        RUN_TEST( test_MQTT_Connect_LWT );
+        RUN_TEST( test_MQTT_ProcessLoop_KeepAlive );
+        RUN_TEST( test_MQTT_Resend_Unacked_Publish_QoS1 );
+        RUN_TEST( test_MQTT_Restore_Session_Duplicate_Incoming_Publish_Qos1 );
+        RUN_TEST( test_MQTT_Publish_With_Retain_Flag );
+        status = UNITY_END();
+    #endif /* if ( MQTT_TEST_ENABLED == 1 ) */
     return status;
 }
+
+/*-----------------------------------------------------------*/

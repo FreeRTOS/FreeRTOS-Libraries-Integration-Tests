@@ -1,4 +1,31 @@
-#pragma once
+/*
+ * FreeRTOS FreeRTOS LTS Qualification Tests preview
+ * Copyright (C) 2022 Amazon.com, Inc. or its affiliates.  All Rights Reserved.
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of
+ * this software and associated documentation files (the "Software"), to deal in
+ * the Software without restriction, including without limitation the rights to
+ * use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
+ * the Software, and to permit persons to whom the Software is furnished to do so,
+ * subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
+ * FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
+ * COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
+ * IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+ * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ */
+
+/**
+ * @file mqtt_test.h
+ * @brief Test functions for MQTT test.
+ */
+#ifndef MQTT_TEST_H
+#define MQTT_TEST_H
 
 #include "transport_interface.h"
 #include "network_connection.h"
@@ -6,8 +33,8 @@
 typedef struct MqttTestParam
 {
     TransportInterface_t * pTransport; /**< @brief pNetworkContext, send, receive fields of the TransportInterface_t struct should be filled out. */
-    NetworkConnectFunc pNetworkConnect;
-    NetworkDisconnectFunc pNetworkDisconnect;
+    NetworkConnectFunc_t pNetworkConnect;
+    NetworkDisconnectFunc_t pNetworkDisconnect;
     void * pNetworkCredentials;
     void * pNetworkContext;
     void * pSecondNetworkContext;
@@ -21,9 +48,14 @@ typedef struct MqttTestParam
  * caller.
  *
  */
-void setupMqttTestParam( MqttTestParam_t * pTestParam );
+void SetupMqttTestParam( MqttTestParam_t * pTestParam );
 
 /**
- * @brief Run MQTT test. This function should be called after calling `setupMqttTest()`.
+ * @brief Run MQTT test. This function should be called after calling `SetupMqttTest()`.
+ *
+ * @return Negative value if the transport test execution config is not set. Otherwise,
+ * number of failure test cases is returned.
  */
-int runMqttTest();
+int RunMqttTest( void );
+
+#endif /* MQTT_TEST_H */

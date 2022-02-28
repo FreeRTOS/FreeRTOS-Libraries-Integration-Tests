@@ -1,6 +1,6 @@
 /*
- * FreeRTOS Integration Toolkit preview
- * Copyright (C) 2021 Amazon.com, Inc. or its affiliates.  All Rights Reserved.
+ * FreeRTOS FreeRTOS LTS Qualification Tests preview
+ * Copyright (C) 2022 Amazon.com, Inc. or its affiliates.  All Rights Reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the "Software"), to deal in
@@ -20,8 +20,12 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#ifndef TRANSPORT_INTERFACE_TESTS_H_
-#define TRANSPORT_INTERFACE_TESTS_H_
+/**
+ * @file transport_interface_test.h
+ * @brief Test function for transport interface test.
+ */
+#ifndef TRANSPORT_INTERFACE_TEST_H
+#define TRANSPORT_INTERFACE_TEST_H
 
 /* Standard header includes. */
 #include <stdint.h>
@@ -37,19 +41,19 @@
  *
  * @param[in] delayMs Delay in milliseconds.
  */
-typedef void (* TransportTestDelayFunc)( uint32_t delayMs );
+typedef void (* TransportTestDelayFunc_t )( uint32_t delayMs );
 
 /**
  * @brief A struct representing transport interface test parameters.
  */
 typedef struct TransportTestParam
 {
-    TransportInterface_t * pTransport;          /**< @brief Transport interface structure to test. */
-    NetworkConnectFunc pNetworkConnect;         /**< @brief Network connect function pointer. */
-    NetworkDisconnectFunc pNetworkDisconnect;   /**< @brief Network disconnect function pointer. */
-    TransportTestDelayFunc pTransportTestDelay; /**< @brief Transport test delay function pointer. */
-    void * pNetworkCredentials;                 /**< @brief Network credentials for network connection. */
-    void * pNetworkContext;                     /**< @brief Primary network context. */
+    TransportInterface_t * pTransport;            /**< @brief Transport interface structure to test. */
+    NetworkConnectFunc_t pNetworkConnect;         /**< @brief Network connect function pointer. */
+    NetworkDisconnectFunc_t pNetworkDisconnect;   /**< @brief Network disconnect function pointer. */
+    TransportTestDelayFunc_t pTransportTestDelay; /**< @brief Transport test delay function pointer. */
+    void * pNetworkCredentials;                   /**< @brief Network credentials for network connection. */
+    void * pNetworkContext;                       /**< @brief Primary network context. */
 } TransportTestParam_t;
 
 /**
@@ -67,6 +71,6 @@ void SetupTransportTestParam( TransportTestParam_t * pTestParam );
  * @return Negative value if the transport test execution config is not set. Otherwise,
  * number of failure test cases is returned.
  */
-int RunTransportInterfaceTests( void );
+int RunTransportInterfaceTest( void );
 
-#endif /* TRANSPORT_INTERFACE_TESTS_H_ */
+#endif /* TRANSPORT_INTERFACE_TEST_H */

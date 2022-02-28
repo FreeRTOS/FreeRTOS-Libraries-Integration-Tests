@@ -29,7 +29,7 @@
 #include <string.h>
 
 /* Include for init and de-init functions. */
-#include "transport_interface_tests.h"
+#include "transport_interface_test.h"
 
 /* Include for test parameter and execution configs. */
 #include "test_execution_config.h"
@@ -125,7 +125,6 @@ static uint8_t transportTestBuffer[ TRANSPORT_TEST_BUFFER_TOTAL_LENGTH ];
 TEST_GROUP( Full_TransportInterfaceTest );
 
 /*-----------------------------------------------------------*/
-
 
 /**
  * @brief Initialize the test data with 0,1,...,255,0,1,...
@@ -276,7 +275,7 @@ static void prvTransportRecvData( TransportInterface_t * pTransport,
  */
 TEST_SETUP( Full_TransportInterfaceTest )
 {
-    int32_t networkConnectResult = 0;
+    NetworkConnectStatus_t networkConnectResult = NETWORK_CONNECT_SUCCESS;
 
     /* Ensure the tranpsort interface is valid. */
     TEST_ASSERT_NOT_NULL_MESSAGE( testParam.pTransport, "testParam.pTransport should not be NULL." );
@@ -295,7 +294,7 @@ TEST_SETUP( Full_TransportInterfaceTest )
     /* Call the hook function implemented by the application to initialize the transport interface. */
     networkConnectResult = testParam.pNetworkConnect( pTestTransport->pNetworkContext,
                                                       &testHostInfo, testParam.pNetworkCredentials );
-    TEST_ASSERT_EQUAL_INT32_MESSAGE( 0, networkConnectResult, "Network connect failed." );
+    TEST_ASSERT_EQUAL_INT32_MESSAGE( NETWORK_CONNECT_SUCCESS, networkConnectResult, "Network connect failed." );
 }
 
 /*-----------------------------------------------------------*/
@@ -693,7 +692,7 @@ TEST_GROUP_RUNNER( Full_TransportInterfaceTest )
 
 /*-----------------------------------------------------------*/
 
-int RunTransportInterfaceTests( void )
+int RunTransportInterfaceTest( void )
 {
     int status = -1;
 
