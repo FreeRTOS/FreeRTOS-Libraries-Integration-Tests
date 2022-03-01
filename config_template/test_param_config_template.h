@@ -85,7 +85,7 @@
  * "...base64 data...\n"\
  * "-----END CERTIFICATE-----\n"
  *
- * #define TRANSPORT_CLIENT_CA NULL
+ * #define TRANSPORT_CLIENT_CERTIFICATE NULL
  */
 
 /**
@@ -95,7 +95,7 @@
  *
  * For qualification, the key should be generated on-device.
  *
- * #define TRANSPORT_CLIENT_KEY  NULL
+ * #define TRANSPORT_CLIENT_PRIVATE_KEY  NULL
  */
 
 #endif /* TEST_PARAM_CONFIG_H */
