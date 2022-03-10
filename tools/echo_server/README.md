@@ -34,7 +34,7 @@ The JSON file contains the following options:
     "secure-connection": false,
     "server-port": "9000",
     "server-certificate-location": "./certs/server.pem",
-    "server-key-location": "./certs/server.pem"
+    "server-key-location": "./certs/server.key"
 }
 ```
 
