@@ -244,7 +244,7 @@ go run echo_server.go -config=example_config.json
 ### 6.2. Start the echo server with TLS
 Developer’s can also setup the transport interface test over mutual authenticated TLS with this echo server tool. Echo server must setup with the **secure-connection** configuration and provide server certificate and key in the configuration file. TLS connection capability and client certificate will be verified by the echo server.
 
-This [document](https://github.com/FreeRTOS/freertos-integration-toolkit/blob/main/transport_interface_test/tools/echo_server/readme.md) describes how to create self-signed credentials for the echo server. The self-signed credentials is only for test transport interface test.
+This document describes how to create self-signed credentials for the echo server. The self-signed credentials is only for test transport interface test.
 
 To run the echo serve with TLS, the following configuraition file, "example_tls_config.json", can be referenced as an example to run the echo server. 
 ```
