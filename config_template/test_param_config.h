@@ -51,42 +51,6 @@
  */
 
 /**
- * @brief Root certificate of the IoT Core.
- *
- * @note This certificate should be PEM-encoded.
- *
- * Must include the PEM header and footer:
- * "-----BEGIN CERTIFICATE-----\n"\
- * "...base64 data...\n"\
- * "-----END CERTIFICATE-----\n"
- *
- * #define IOT_CORE_ROOT_CA NULL
- */
-
-/**
- * @brief Client certificate to connect to MQTT server.
- *
- * @note This certificate should be PEM-encoded.
- *
- * Must include the PEM header and footer:
- * "-----BEGIN CERTIFICATE-----\n"\
- * "...base64 data...\n"\
- * "-----END CERTIFICATE-----\n"
- *
- * #define MQTT_CLIENT_CERTIFICATE NULL
- */
-
-/**
- * @brief Client private key to connect to MQTT server.
- *
- * @note This is should only be used for testing purpose.
- *
- * For qualification, the key should be generated on-device.
- *
- * #define MQTT_CLIENT_PRIVATE_KEY  NULL
- */
-
-/**
  * @brief Endpoint of the echo server to connect to in transport interface test.
  *
  * #define ECHO_SERVER_ENDPOINT   "PLACE_HOLDER"
@@ -134,13 +98,6 @@
  * #define TRANSPORT_CLIENT_PRIVATE_KEY  NULL
  */
 
-/**
- * @brief Microseconds to delay the start of test.
- *
- * @note This configuration is optional. Default is 5000.
- *
- * #define TEST_START_DELAY_MS  5000
- */
 
 #define OTA_RSA_SHA1      1
 #define OTA_RSA_SHA256    2
@@ -151,45 +108,40 @@
  *
  * #define OTA_PAL_TEST_CERT_TYPE OTA_ECDSA_SHA256
  */
+#define OTA_PAL_TEST_CERT_TYPE OTA_ECDSA_SHA256
 
 /**
  * @brief Path to cert for OTA test PAL. Used to verify signature.
  * If applicable, the device must be pre-provisioned with this certificate. Please see
  * test/common/ota/test_files for the set of certificates.
- *
- * #define OTA_PAL_CERTIFICATE_FILE    "ecdsa-sha256-signer.crt.pem"
  */
+#define OTA_PAL_CERTIFICATE_FILE                         "ecdsa-sha256-signer.crt.pem"
 
 /**
  * @brief Some devices have a hard-coded name for the firmware image to boot.
- *
- * #define OTA_PAL_FIRMWARE_FILE   "dummy.bin"
  */
+#define OTA_PAL_FIRMWARE_FILE                            "dummy.bin"
 
 /**
  * @brief Some boards OTA PAL layers will use the file names passed into it for the
  * image and the certificates because their non-volatile memory is abstracted by a
  * file system. Set this to 1 if that is the case for your device.
- *
- * #define OTA_PAL_USE_FILE_SYSTEM                          0
  */
+#define OTA_PAL_USE_FILE_SYSTEM                          0
 
 /**
  * @brief 1 if otaPal_CheckFileSignature() is implemented in aws_ota_pal.c.
- *
- * #define OTA_PAL_CHECK_FILE_SIGNATURE_SUPPORTED           1
  */
+#define OTA_PAL_CHECK_FILE_SIGNATURE_SUPPORTED           1
 
 /**
  * @brief 1 if otaPal_ReadAndAssumeCertificate() is implemented in aws_ota_pal.c.
- *
- * #define OTA_PAL_READ_AND_ASSUME_CERTIFICATE_SUPPORTED    1
  */
+#define OTA_PAL_READ_AND_ASSUME_CERTIFICATE_SUPPORTED    1
 
 /**
  * @brief 1 if using PKCS #11 to access the code sign certificate from NVM.
- *
- * #define OTA_PAL_READ_CERTIFICATE_FROM_NVM_WITH_PKCS11    0
  */
+#define OTA_PAL_READ_CERTIFICATE_FROM_NVM_WITH_PKCS11    0
 
 #endif /* TEST_PARAM_CONFIG_H */

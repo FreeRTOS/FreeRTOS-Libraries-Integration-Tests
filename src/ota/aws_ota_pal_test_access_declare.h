@@ -1,6 +1,6 @@
 /*
- * FreeRTOS FreeRTOS LTS Qualification Tests preview
- * Copyright (C) 2022 Amazon.com, Inc. or its affiliates.  All Rights Reserved.
+ * FreeRTOS V202107.00
+ * Copyright (C) 2021 Amazon.com, Inc. or its affiliates.  All Rights Reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the "Software"), to deal in
@@ -18,47 +18,31 @@
  * COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
  * IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ *
+ * http://aws.amazon.com/freertos
+ * http://www.FreeRTOS.org
  */
 
 /**
- * @file qualification_test.c
- * @brief Implements the entry function for LTS qualification test.
+ * @file aws_ota_pal_test_access_declare.h
+ * @brief Function wrappers that access private methods in ota_pal.c.
+ *
+ * Needed for testing private functions.
  */
-#include "test_execution_config.h"
-#include "platform_function.h"
 
-#if ( TRANSPORT_INTERFACE_TEST_ENABLED == 1 )
-    #include "transport_interface_test.h"
+#ifndef AWS_OTA_PAL_TEST_ACCESS_DECLARE_H_
+#define AWS_OTA_PAL_TEST_ACCESS_DECLARE_H_
+
+#include "ota.h"
+#include "test_param_config.h"
+
+#if OTA_PAL_CHECK_FILE_SIGNATURE_SUPPORTED
+    OtaPalStatus_t test_otaPal_CheckFileSignature( OtaFileContext_t * const C );
 #endif
 
-#if ( MQTT_TEST_ENABLED == 1 )
-    #include "mqtt_test.h"
+#if OTA_PAL_READ_AND_ASSUME_CERTIFICATE_SUPPORTED
+    uint8_t * test_otaPal_ReadAndAssumeCertificate( const uint8_t * const pucCertName,
+                                                    uint32_t * const ulSignerCertSize );
 #endif
 
-#if ( OTA_PAL_TEST_ENABLED == 1 )
-    #include "ota_pal_test.h"
-#endif
-
-#ifndef TEST_START_DELAY_MS
-    #define TEST_START_DELAY_MS  5000
-#endif
-
-/*-----------------------------------------------------------*/
-
-void RunQualificationTest( void )
-{
-    FRTest_TimeDelay( TEST_START_DELAY_MS );
-    #if ( TRANSPORT_INTERFACE_TEST_ENABLED == 1 )
-        RunTransportInterfaceTest();
-    #endif
-
-    #if ( MQTT_TEST_ENABLED == 1 )
-        RunMqttTest();
-    #endif
-
-    #if ( OTA_PAL_TEST_ENABLED == 1 )
-        RunOtaPalTest();
-    #endif
-}
-
-/*-----------------------------------------------------------*/
+#endif /* ifndef AWS_OTA_PAL_TEST_ACCESS_DECLARE_H_ */

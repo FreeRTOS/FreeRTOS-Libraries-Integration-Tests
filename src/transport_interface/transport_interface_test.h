@@ -36,6 +36,9 @@
 /* Include for thread function. */
 #include "thread_function.h"
 
+/* Include for time delay function. */
+#include "time_delay.h"
+
 /* Include for transport interface. */
 #include "transport_interface.h"
 
