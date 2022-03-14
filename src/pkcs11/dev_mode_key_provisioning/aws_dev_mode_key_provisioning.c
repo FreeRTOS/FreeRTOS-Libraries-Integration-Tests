@@ -41,8 +41,8 @@
 #include "core_pkcs11_config.h"
 #include "core_pkcs11.h"
 
-#include "core_pkcs11_test_config.h"
 #include "core_pkcs11_test.h"
+#include "test_param_config.h"
 
 /* Client credential includes. */
 #include "aws_clientcredential_keys.h"

@@ -30,7 +30,6 @@
 /* corePKCS11 includes. */
 #include "core_pki_utils.h"
 #include "core_pkcs11.h"
-#include "core_pkcs11_test_config.h"
 
 /* Device provisioning. */
 #include "aws_dev_mode_key_provisioning.h"
@@ -51,6 +50,7 @@
 
 /* corePKCS11 test includes. */
 #include "core_pkcs11_test.h"
+#include "test_param_config.h"
 
 /**
  * @brief Number of simultaneous tasks for multithreaded tests.
@@ -58,16 +58,16 @@
  * Each task consumes both stack and heap space, which may cause memory allocation
  * failures if too many tasks are created.
  */
-#define pkcs11testMULTI_THREAD_TASK_COUNT     ( 2 )   /* FIXME. */
+#define PKCS11_TEST_MULTI_THREAD_TASK_COUNT     ( 2 )   /* FIXME. */
 
 /**
  * @brief The number of iterations of the test that will run in multithread tests.
  *
  * A single iteration of Signing and Verifying may take up to a minute on some
- * boards. Ensure that pkcs11testEVENT_GROUP_TIMEOUT is long enough to accommodate
+ * boards. Ensure that PKCS11_TEST_EVENT_GROUP_TIMEOUT is long enough to accommodate
  * all iterations of the loop.
  */
-#define pkcs11testMULTI_THREAD_LOOP_COUNT     ( 10 )  /* FIXME. */
+#define PKCS11_TEST_MULTI_THREAD_LOOP_COUNT     ( 10 )  /* FIXME. */
 
 /**
  * @brief
@@ -75,19 +75,19 @@
  * All tasks of the SignVerifyRoundTrip_MultitaskLoop test must finish within
  * this timeout, or the test will fail.
  */
-#define pkcs11testEVENT_GROUP_TIMEOUT_MS      ( pdMS_TO_TICKS( 1000000UL ) )  /* FIXME. */
+#define PKCS11_TEST_WAIT_THREAD_TIMEOUT_MS      ( 1000000UL )
 
-#define pkcs11testMULTI_THREADED            ( 1 )
+#define PKCS11_TEST_MULTI_THREADED            ( 1 )
 
 #ifndef TEST_PRINTF
     #define TEST_PRINTF( ... )
 #endif
 
-#if ( pkcs11testRSA_KEY_SUPPORT == 0 ) && ( pkcs11testEC_KEY_SUPPORT == 0 )
+#if ( PKCS11_TEST_RSA_KEY_SUPPORT == 0 ) && ( PKCS11_TEST_EC_KEY_SUPPORT == 0 )
     #error "RSA or Elliptic curve keys (or both) must be supported."
 #endif
 
-#if ( pkcs11testIMPORT_PRIVATE_KEY_SUPPORT == 0 ) && ( pkcs11testGENERATE_KEYPAIR_SUPPORT == 0 ) && ( pkcs11testPREPROVISIONED_SUPPORT == 0 )
+#if ( PKCS11_TEST_IMPORT_PRIVATE_KEY_SUPPORT == 0 ) && ( PKCS11_TEST_GENERATE_KEYPAIR_SUPPORT == 0 ) && ( PKCS11_TEST_PREPROVISIONED_SUPPORT == 0 )
     #error "The device must have some mechanism configured to provision the PKCS #11 stack."
 #endif
 
@@ -227,7 +227,7 @@ TEST_GROUP_RUNNER( Full_PKCS11_NoObject )
     RUN_TEST_CASE( Full_PKCS11_NoObject, AFQP_Digest );
     RUN_TEST_CASE( Full_PKCS11_NoObject, AFQP_Digest_ErrorConditions );
     RUN_TEST_CASE( Full_PKCS11_NoObject, AFQP_GenerateRandom );
-#if ( pkcs11testMULTI_THREADED == 1 )
+#if ( PKCS11_TEST_MULTI_THREADED == 1 )
     RUN_TEST_CASE( Full_PKCS11_NoObject, AFQP_GenerateRandomMultiThread );
 #endif
 
@@ -257,31 +257,31 @@ TEST_TEAR_DOWN( Full_PKCS11_RSA )
 
 TEST_GROUP_RUNNER( Full_PKCS11_RSA )
 {
-    #if ( pkcs11testRSA_KEY_SUPPORT == 1 )
+    #if ( PKCS11_TEST_RSA_KEY_SUPPORT == 1 )
         prvBeforeRunningTests();
-        #if ( pkcs11testIMPORT_PRIVATE_KEY_SUPPORT == 1 )
+        #if ( PKCS11_TEST_IMPORT_PRIVATE_KEY_SUPPORT == 1 )
             RUN_TEST_CASE( Full_PKCS11_RSA, AFQP_CreateObject );
         #endif
 
         /* Generating RSA keys is not currently supported.
-         #if ( pkcs11testGENERATE_KEYPAIR_SUPPORT == 1 )
+         #if ( PKCS11_TEST_GENERATE_KEYPAIR_SUPPORT == 1 )
          *   RUN_TEST_CASE( Full_PKCS11_RSA, AFQP_GenerateKeyPair );
          #endif
          */
 
         RUN_TEST_CASE( Full_PKCS11_RSA, AFQP_FindObject );
-        #if ( pkcs11testMULTI_THREADED == 1 )
+        #if ( PKCS11_TEST_MULTI_THREADED == 1 )
             RUN_TEST_CASE( Full_PKCS11_RSA, AFQP_FindObjectMultiThread );
         #endif
         RUN_TEST_CASE( Full_PKCS11_RSA, AFQP_GetAttributeValue );
         RUN_TEST_CASE( Full_PKCS11_RSA, AFQP_Sign );
 
-        #if ( pkcs11testPREPROVISIONED_SUPPORT != 1 )
+        #if ( PKCS11_TEST_PREPROVISIONED_SUPPORT != 1 )
             /* Always destroy objects last. */
             RUN_TEST_CASE( Full_PKCS11_RSA, AFQP_DestroyObject );
         #endif
 
-        #if ( pkcs11testIMPORT_PRIVATE_KEY_SUPPORT == 1 )
+        #if ( PKCS11_TEST_IMPORT_PRIVATE_KEY_SUPPORT == 1 )
 
             /* This will re-import credentials if supported, it is expected that
              * secure elements do not destroy the "real" credentials and the test
@@ -291,7 +291,7 @@ TEST_GROUP_RUNNER( Full_PKCS11_RSA )
              */
             prvAfterRunningTests_Object();
         #endif
-    #endif /* if ( pkcs11testRSA_KEY_SUPPORT == 1 ) */
+    #endif /* if ( PKCS11_TEST_RSA_KEY_SUPPORT == 1 ) */
 }
 
 
@@ -318,10 +318,10 @@ TEST_TEAR_DOWN( Full_PKCS11_EC )
 
 TEST_GROUP_RUNNER( Full_PKCS11_EC )
 {
-    #if ( pkcs11testEC_KEY_SUPPORT == 1 )
+    #if ( PKCS11_TEST_EC_KEY_SUPPORT == 1 )
         prvBeforeRunningTests();
 
-        #if ( pkcs11testGENERATE_KEYPAIR_SUPPORT == 1 )
+        #if ( PKCS11_TEST_GENERATE_KEYPAIR_SUPPORT == 1 )
             RUN_TEST_CASE( Full_PKCS11_EC, AFQP_GenerateKeyPair );
         #endif
 
@@ -329,7 +329,7 @@ TEST_GROUP_RUNNER( Full_PKCS11_EC )
          * supports both. Ports that support object importing have extra checks
          * as the contents of the private key and public key are well known.
          */
-        #if ( pkcs11testIMPORT_PRIVATE_KEY_SUPPORT == 1 )
+        #if ( PKCS11_TEST_IMPORT_PRIVATE_KEY_SUPPORT == 1 )
             RUN_TEST_CASE( Full_PKCS11_EC, AFQP_CreateObject );
         #endif
 
@@ -338,17 +338,17 @@ TEST_GROUP_RUNNER( Full_PKCS11_EC )
         RUN_TEST_CASE( Full_PKCS11_EC, AFQP_Sign );
         RUN_TEST_CASE( Full_PKCS11_EC, AFQP_Verify );
 
-        #if ( pkcs11testMULTI_THREADED == 1 )
+        #if ( PKCS11_TEST_MULTI_THREADED == 1 )
             RUN_TEST_CASE( Full_PKCS11_EC, AFQP_FindObjectMultiThread );
             RUN_TEST_CASE( Full_PKCS11_EC, AFQP_GetAttributeValueMultiThread );
             RUN_TEST_CASE( Full_PKCS11_EC, AFQP_SignVerifyMultiThread );
         #endif
 
-        #if ( pkcs11testPREPROVISIONED_SUPPORT != 1 )
+        #if ( PKCS11_TEST_PREPROVISIONED_SUPPORT != 1 )
             RUN_TEST_CASE( Full_PKCS11_EC, AFQP_DestroyObject );
         #endif
 
-        #if ( pkcs11testIMPORT_PRIVATE_KEY_SUPPORT == 1 )
+        #if ( PKCS11_TEST_IMPORT_PRIVATE_KEY_SUPPORT == 1 )
 
             /* This will re-import credentials if supported, it is expected that
              * secure elements do not destroy the "real" credentials and the test
@@ -358,11 +358,11 @@ TEST_GROUP_RUNNER( Full_PKCS11_EC )
              */
             prvAfterRunningTests_Object();
         #endif
-    #endif /* if ( pkcs11testEC_KEY_SUPPORT == 1 ) */
+    #endif /* if ( PKCS11_TEST_EC_KEY_SUPPORT == 1 ) */
 }
 
 /* Data structure to store results of multi-thread tests. */
-#if pkcs11testMULTI_THREADED
+#if ( PKCS11_TEST_MULTI_THREADED == 1 )
 typedef struct MultithreadTaskParams
 {
     uint32_t xTaskNumber;
@@ -371,25 +371,8 @@ typedef struct MultithreadTaskParams
 } MultithreadTaskParams_t;
 
 /* Event group used to synchronize tasks. */
-static MultithreadTaskParams_t xGlobalTaskParams[ pkcs11testMULTI_THREAD_TASK_COUNT ];
+static MultithreadTaskParams_t xGlobalTaskParams[ PKCS11_TEST_MULTI_THREAD_TASK_COUNT ];
 #endif
-
-/*-----------------------------------------------------------*/
-/*           Multitask loop configuration.                   */
-/*-----------------------------------------------------------*/
-/* Stack size of each task. This can be configured in core_pkcs11_test_config.h. */
-#ifndef pkcs11testMULTI_TASK_STACK_SIZE
-    #define pkcs11testMULTI_TASK_STACK_SIZE    ( configMINIMAL_STACK_SIZE * 6 )
-#endif
-
-/* Priority of each task. This can be configured in core_pkcs11_test_config.h. */
-#ifndef pkcs11testMULTI_TASK_PRIORITY
-    #define pkcs11testMULTI_TASK_PRIORITY    ( tskIDLE_PRIORITY )
-#endif
-
-/* Specifies bits for all tasks to the event group. */
-#define pkcs11testALL_BITS    ( ( 1 << pkcs11testMULTI_THREAD_TASK_COUNT ) - 1 )
-
 
 static CK_RV prvDestroyTestCredentials( void )
 {
@@ -400,13 +383,13 @@ static CK_RV prvDestroyTestCredentials( void )
 
     CK_BYTE * pxPkcsLabels[] =
     {
-        ( CK_BYTE * ) pkcs11testLABEL_DEVICE_CERTIFICATE_FOR_TLS,
-        ( CK_BYTE * ) pkcs11testLABEL_DEVICE_PRIVATE_KEY_FOR_TLS,
-        ( CK_BYTE * ) pkcs11testLABEL_DEVICE_PUBLIC_KEY_FOR_TLS,
+        ( CK_BYTE * ) PKCS11_TEST_LABEL_DEVICE_CERTIFICATE_FOR_TLS,
+        ( CK_BYTE * ) PKCS11_TEST_LABEL_DEVICE_PRIVATE_KEY_FOR_TLS,
+        ( CK_BYTE * ) PKCS11_TEST_LABEL_DEVICE_PUBLIC_KEY_FOR_TLS,
         #if ( pkcs11configJITP_CODEVERIFY_ROOT_CERT_SUPPORTED == 1 )
-            ( CK_BYTE * ) pkcs11testLABEL_CODE_VERIFICATION_KEY,
-            ( CK_BYTE * ) pkcs11testLABEL_JITP_CERTIFICATE,
-            ( CK_BYTE * ) pkcs11testLABEL_ROOT_CERTIFICATE
+            ( CK_BYTE * ) PKCS11_TEST_LABEL_CODE_VERIFICATION_KEY,
+            ( CK_BYTE * ) PKCS11_TEST_LABEL_JITP_CERTIFICATE,
+            ( CK_BYTE * ) PKCS11_TEST_LABEL_ROOT_CERTIFICATE
         #endif
     };
     CK_OBJECT_CLASS xClass[] =
@@ -475,12 +458,12 @@ void prvAfterRunningTests_Object( void )
     /* Check if the test label is the same as the run-time label. */
 
     /* Only reprovision a device that supports importing private keys. */
-    #if ( pkcs11testIMPORT_PRIVATE_KEY_SUPPORT == 1 )
+    #if ( PKCS11_TEST_IMPORT_PRIVATE_KEY_SUPPORT == 1 )
 
         /* If labels are the same, then we are assuming that this device does not
          * have a secure element. */
-        if( ( 0 == strcmp( pkcs11configLABEL_DEVICE_PRIVATE_KEY_FOR_TLS, pkcs11testLABEL_DEVICE_PRIVATE_KEY_FOR_TLS ) ) &&
-            ( 0 == strcmp( pkcs11configLABEL_DEVICE_CERTIFICATE_FOR_TLS, pkcs11testLABEL_DEVICE_CERTIFICATE_FOR_TLS ) ) )
+        if( ( 0 == strcmp( pkcs11configLABEL_DEVICE_PRIVATE_KEY_FOR_TLS, PKCS11_TEST_LABEL_DEVICE_PRIVATE_KEY_FOR_TLS ) ) &&
+            ( 0 == strcmp( pkcs11configLABEL_DEVICE_CERTIFICATE_FOR_TLS, PKCS11_TEST_LABEL_DEVICE_CERTIFICATE_FOR_TLS ) ) )
         {
             /* Delete the old device private key and certificate, if that
              * operation is supported by this port. Replace
@@ -499,33 +482,33 @@ void prvAfterRunningTests_Object( void )
              * slots which were not modified, so nothing special
              * needs to be done. */
         }
-    #endif /* if ( pkcs11testIMPORT_PRIVATE_KEY_SUPPORT == 1 ) */
+    #endif /* if ( PKCS11_TEST_IMPORT_PRIVATE_KEY_SUPPORT == 1 ) */
 }
 
 
-#if ( pkcs11testMULTI_THREADED == 1 )
+#if ( PKCS11_TEST_MULTI_THREADED == 1 )
 
 static void prvMultiThreadHelper( void * pvTaskFxnPtr )
 {
     uint32_t xTaskNumber;
-    ThreadHandle_t threadHandles[ pkcs11testMULTI_THREAD_TASK_COUNT ];
+    ThreadHandle_t threadHandles[ PKCS11_TEST_MULTI_THREAD_TASK_COUNT ];
 
     /* Create all the tasks. */
-    for( xTaskNumber = 0; xTaskNumber < pkcs11testMULTI_THREAD_TASK_COUNT; xTaskNumber++ )
+    for( xTaskNumber = 0; xTaskNumber < PKCS11_TEST_MULTI_THREAD_TASK_COUNT; xTaskNumber++ )
     {
         threadHandles[ xTaskNumber ] = testParam.pThreadCreate( pvTaskFxnPtr, &( xGlobalTaskParams[ xTaskNumber ] ) );
     }
 
     /* Wait for all the tasks. */
-    for( xTaskNumber = 0; xTaskNumber < pkcs11testMULTI_THREAD_TASK_COUNT; xTaskNumber++ )
+    for( xTaskNumber = 0; xTaskNumber < PKCS11_TEST_MULTI_THREAD_TASK_COUNT; xTaskNumber++ )
     {
-         testParam.pThreadTimedJoin( threadHandles[ xTaskNumber ], pkcs11testEVENT_GROUP_TIMEOUT_MS );
+         testParam.pThreadTimedJoin( threadHandles[ xTaskNumber ], PKCS11_TEST_WAIT_THREAD_TIMEOUT_MS );
     }
 
     /* Check the tasks' results. */
     if( TEST_PROTECT() )
     {
-        for( xTaskNumber = 0; xTaskNumber < pkcs11testMULTI_THREAD_TASK_COUNT; xTaskNumber++ )
+        for( xTaskNumber = 0; xTaskNumber < PKCS11_TEST_MULTI_THREAD_TASK_COUNT; xTaskNumber++ )
         {
             if( xGlobalTaskParams[ xTaskNumber ].xTestResult != 0 )
             {
@@ -548,8 +531,8 @@ static void prvFindObjectTest( CK_OBJECT_HANDLE_PTR pxPrivateKeyHandle,
 
     /* Happy Path - Find a previously created object. */
     xResult = xFindObjectWithLabelAndClass( xGlobalSession,
-                                            pkcs11testLABEL_DEVICE_PRIVATE_KEY_FOR_TLS,
-                                            sizeof( pkcs11testLABEL_DEVICE_PRIVATE_KEY_FOR_TLS ) - 1,
+                                            PKCS11_TEST_LABEL_DEVICE_PRIVATE_KEY_FOR_TLS,
+                                            sizeof( PKCS11_TEST_LABEL_DEVICE_PRIVATE_KEY_FOR_TLS ) - 1,
                                             CKO_PRIVATE_KEY,
                                             pxPrivateKeyHandle );
     TEST_ASSERT_EQUAL_MESSAGE( CKR_OK, xResult, "Failed to find private key after closing and reopening a session." );
@@ -557,8 +540,8 @@ static void prvFindObjectTest( CK_OBJECT_HANDLE_PTR pxPrivateKeyHandle,
 
     /* TODO: Add the code sign key and root ca. */
     xResult = xFindObjectWithLabelAndClass( xGlobalSession,
-                                            pkcs11testLABEL_DEVICE_PUBLIC_KEY_FOR_TLS,
-                                            sizeof( pkcs11testLABEL_DEVICE_PUBLIC_KEY_FOR_TLS ) - 1,
+                                            PKCS11_TEST_LABEL_DEVICE_PUBLIC_KEY_FOR_TLS,
+                                            sizeof( PKCS11_TEST_LABEL_DEVICE_PUBLIC_KEY_FOR_TLS ) - 1,
                                             CKO_PUBLIC_KEY,
                                             pxPublicKeyHandle );
     TEST_ASSERT_EQUAL_MESSAGE( CKR_OK, xResult, "Failed to find public key after closing and reopening a session." );
@@ -566,8 +549,8 @@ static void prvFindObjectTest( CK_OBJECT_HANDLE_PTR pxPrivateKeyHandle,
 
 
     xResult = xFindObjectWithLabelAndClass( xGlobalSession,
-                                            pkcs11testLABEL_DEVICE_CERTIFICATE_FOR_TLS,
-                                            sizeof( pkcs11testLABEL_DEVICE_CERTIFICATE_FOR_TLS ) - 1,
+                                            PKCS11_TEST_LABEL_DEVICE_CERTIFICATE_FOR_TLS,
+                                            sizeof( PKCS11_TEST_LABEL_DEVICE_CERTIFICATE_FOR_TLS ) - 1,
                                             CKO_CERTIFICATE,
                                             pxCertificateHandle );
 
@@ -723,7 +706,7 @@ TEST( Full_PKCS11_StartFinish, AFQP_OpenSessionCloseSession )
         xResult = xGetSlotList( &pxSlotId,
                                 &xSlotCount );
         TEST_ASSERT_EQUAL_MESSAGE( CKR_OK, xResult, "Failed to get slot list" );
-        xSlotId = pxSlotId[ pkcs11testSLOT_NUMBER ];
+        xSlotId = pxSlotId[ PKCS11_TEST_SLOT_NUMBER ];
 
         testParam.pPkcsFree( pxSlotId ); /* xGetSlotList allocates memory. */
         TEST_ASSERT_GREATER_THAN( 0, xSlotCount );
@@ -782,7 +765,7 @@ TEST( Full_PKCS11_Capabilities, AFQP_Capabilities )
     TEST_ASSERT_EQUAL_MESSAGE( CKR_OK, xResult, "Failed to get slot count" );
 
     /* Check for RSA PKCS #1 signing support. */
-    xResult = pxGlobalFunctionList->C_GetMechanismInfo( pxSlotId[ 0 ], CKM_RSA_PKCS, &MechanismInfo );
+    xResult = pxGlobalFunctionList->C_GetMechanismInfo( pxSlotId[ PKCS11_TEST_SLOT_NUMBER ], CKM_RSA_PKCS, &MechanismInfo );
     TEST_ASSERT_TRUE( CKR_OK == xResult || CKR_MECHANISM_INVALID == xResult );
 
     if( CKR_OK == xResult )
@@ -794,7 +777,7 @@ TEST( Full_PKCS11_Capabilities, AFQP_Capabilities )
 
         /* Check for pre-padded signature verification support. This is required
          * for round-trip testing. */
-        xResult = pxGlobalFunctionList->C_GetMechanismInfo( pxSlotId[ 0 ], CKM_RSA_X_509, &MechanismInfo );
+        xResult = pxGlobalFunctionList->C_GetMechanismInfo( pxSlotId[ PKCS11_TEST_SLOT_NUMBER ], CKM_RSA_X_509, &MechanismInfo );
         TEST_ASSERT_TRUE( CKR_OK == xResult );
 
         TEST_ASSERT_TRUE( 0 != ( CKF_VERIFY & MechanismInfo.flags ) );
@@ -803,7 +786,7 @@ TEST( Full_PKCS11_Capabilities, AFQP_Capabilities )
                           MechanismInfo.ulMinKeySize <= pkcs11RSA_2048_MODULUS_BITS );
 
         /* Check consistency with static configuration. */
-        #if ( 0 == pkcs11testRSA_KEY_SUPPORT )
+        #if ( 0 == PKCS11_TEST_RSA_KEY_SUPPORT )
             TEST_FAIL_MESSAGE( "Static and runtime configuration for key generation support are inconsistent." );
         #endif
 
@@ -811,7 +794,7 @@ TEST( Full_PKCS11_Capabilities, AFQP_Capabilities )
     }
 
     /* Check for ECDSA support, if applicable. */
-    xResult = pxGlobalFunctionList->C_GetMechanismInfo( pxSlotId[ 0 ], CKM_ECDSA, &MechanismInfo );
+    xResult = pxGlobalFunctionList->C_GetMechanismInfo( pxSlotId[ PKCS11_TEST_SLOT_NUMBER ], CKM_ECDSA, &MechanismInfo );
     TEST_ASSERT_TRUE( CKR_OK == xResult || CKR_MECHANISM_INVALID == xResult );
 
     if( CKR_OK == xResult )
@@ -822,16 +805,16 @@ TEST( Full_PKCS11_Capabilities, AFQP_Capabilities )
                           MechanismInfo.ulMinKeySize <= pkcs11ECDSA_P256_KEY_BITS );
 
         /* Check consistency with static configuration. */
-        #if ( 0 == pkcs11testEC_KEY_SUPPORT )
+        #if ( 0 == PKCS11_TEST_EC_KEY_SUPPORT )
             TEST_FAIL_MESSAGE( "Static and runtime configuration for key generation support are inconsistent." );
         #endif
 
         TEST_PRINTF( "The PKCS #11 module supports ECDSA.\r\n" );
     }
 
-    #if ( pkcs11testPREPROVISIONED_SUPPORT != 1 )
+    #if ( PKCS11_TEST_PREPROVISIONED_SUPPORT != 1 )
         /* Check for elliptic-curve key generation support. */
-        xResult = pxGlobalFunctionList->C_GetMechanismInfo( pxSlotId[ 0 ], CKM_EC_KEY_PAIR_GEN, &MechanismInfo );
+        xResult = pxGlobalFunctionList->C_GetMechanismInfo( pxSlotId[ PKCS11_TEST_SLOT_NUMBER ], CKM_EC_KEY_PAIR_GEN, &MechanismInfo );
         TEST_ASSERT_TRUE( CKR_OK == xResult || CKR_MECHANISM_INVALID == xResult );
 
         if( CKR_OK == xResult )
@@ -849,27 +832,27 @@ TEST( Full_PKCS11_Capabilities, AFQP_Capabilities )
          * generation settings. */
         if( CK_TRUE == xSupportsKeyGen )
         {
-            #if ( 0 == pkcs11testGENERATE_KEYPAIR_SUPPORT )
+            #if ( 0 == PKCS11_TEST_GENERATE_KEYPAIR_SUPPORT )
                 TEST_FAIL_MESSAGE( "Static and runtime configuration for key generation support are inconsistent." );
             #endif
         }
         else
         {
-            #if ( 1 == pkcs11testGENERATE_KEYPAIR_SUPPORT )
+            #if ( 1 == PKCS11_TEST_GENERATE_KEYPAIR_SUPPORT )
                 TEST_FAIL_MESSAGE( "Static and runtime configuration for key generation support are inconsistent." );
             #endif
         }
-    #endif /* if ( pkcs11testPREPROVISIONED_SUPPORT != 1 ) */
+    #endif /* if ( PKCS11_TEST_PREPROVISIONED_SUPPORT != 1 ) */
 
     /* SHA-256 support is required. */
-    xResult = pxGlobalFunctionList->C_GetMechanismInfo( pxSlotId[ 0 ], CKM_SHA256, &MechanismInfo );
+    xResult = pxGlobalFunctionList->C_GetMechanismInfo( pxSlotId[ PKCS11_TEST_SLOT_NUMBER ], CKM_SHA256, &MechanismInfo );
     TEST_ASSERT_TRUE( CKR_OK == xResult );
     TEST_ASSERT_TRUE( 0 != ( CKF_DIGEST & MechanismInfo.flags ) );
 
     testParam.pPkcsFree( pxSlotId );
 
     /* Report on static configuration for key import support. */
-    #if ( 1 == pkcs11testIMPORT_PRIVATE_KEY_SUPPORT )
+    #if ( 1 == PKCS11_TEST_IMPORT_PRIVATE_KEY_SUPPORT )
         TEST_PRINTF( "The PKCS #11 module supports private key import.\r\n" );
     #endif
 }
@@ -1054,19 +1037,19 @@ TEST( Full_PKCS11_NoObject, AFQP_GenerateRandom )
     TEST_ASSERT_LESS_THAN( 2, xDifferentSessions );
 }
 
-#if pkcs11testMULTI_THREADED
-#define pkcs11testRANDOM_DATA_LENGTH    10
+#if ( PKCS11_TEST_MULTI_THREADED == 1 )
+#define PKCS11_TEST_RANDOM_DATA_LENGTH    10
 static void prvGenerateRandomMultiThreadTask( void * pvParameters )
 {
     MultithreadTaskParams_t * pxMultiTaskParam = pvParameters;
     uint32_t xCount;
     CK_RV xResult;
-    CK_BYTE xRandomData[ pkcs11testRANDOM_DATA_LENGTH ];
+    CK_BYTE xRandomData[ PKCS11_TEST_RANDOM_DATA_LENGTH ];
     CK_SESSION_HANDLE xSession;
 
     memcpy( &xSession, pxMultiTaskParam->pvTaskData, sizeof( CK_SESSION_HANDLE ) );
 
-    for( xCount = 0; xCount < pkcs11testMULTI_THREAD_LOOP_COUNT; xCount++ )
+    for( xCount = 0; xCount < PKCS11_TEST_MULTI_THREAD_LOOP_COUNT; xCount++ )
     {
         xResult = pxGlobalFunctionList->C_GenerateRandom( xSession,
                                                           xRandomData,
@@ -1084,13 +1067,13 @@ static void prvGenerateRandomMultiThreadTask( void * pvParameters )
 }
 #endif
 
-#if pkcs11testMULTI_THREADED
+#if ( PKCS11_TEST_MULTI_THREADED == 1 )
 TEST( Full_PKCS11_NoObject, AFQP_GenerateRandomMultiThread )
 {
     uint32_t xTaskNumber;
-    CK_SESSION_HANDLE xSessionHandle[ pkcs11testMULTI_THREAD_TASK_COUNT ];
+    CK_SESSION_HANDLE xSessionHandle[ PKCS11_TEST_MULTI_THREAD_TASK_COUNT ];
 
-    for( xTaskNumber = 0; xTaskNumber < pkcs11testMULTI_THREAD_TASK_COUNT; xTaskNumber++ )
+    for( xTaskNumber = 0; xTaskNumber < PKCS11_TEST_MULTI_THREAD_TASK_COUNT; xTaskNumber++ )
     {
         xInitializePkcs11Session( &xSessionHandle[ xTaskNumber ] );
         xGlobalTaskParams[ xTaskNumber ].pvTaskData = &xSessionHandle[ xTaskNumber ];
@@ -1098,7 +1081,7 @@ TEST( Full_PKCS11_NoObject, AFQP_GenerateRandomMultiThread )
 
     prvMultiThreadHelper( ( void * ) prvGenerateRandomMultiThreadTask );
 
-    for( xTaskNumber = 0; xTaskNumber < pkcs11testMULTI_THREAD_TASK_COUNT; xTaskNumber++ )
+    for( xTaskNumber = 0; xTaskNumber < PKCS11_TEST_MULTI_THREAD_TASK_COUNT; xTaskNumber++ )
     {
         pxGlobalFunctionList->C_CloseSession( xSessionHandle[ xTaskNumber ] );
     }
@@ -1192,7 +1175,7 @@ void prvProvisionRsaTestCredentials( CK_OBJECT_HANDLE_PTR pxPrivateKeyHandle,
                                        ( uint8_t * ) cValidRSAPublicKey,
                                        sizeof( cValidRSAPublicKey ),
                                        CKK_RSA,
-                                       ( uint8_t * ) pkcs11testLABEL_DEVICE_PUBLIC_KEY_FOR_TLS,
+                                       ( uint8_t * ) PKCS11_TEST_LABEL_DEVICE_PUBLIC_KEY_FOR_TLS,
                                        pxPublicKeyHandle );
 
         TEST_ASSERT_EQUAL_MESSAGE( CKR_OK, xResult, "Failed to create RSA public key." );
@@ -1202,7 +1185,7 @@ void prvProvisionRsaTestCredentials( CK_OBJECT_HANDLE_PTR pxPrivateKeyHandle,
         xResult = xProvisionPrivateKey( xGlobalSession,
                                         ( uint8_t * ) cValidRSAPrivateKey,
                                         sizeof( cValidRSAPrivateKey ),
-                                        ( uint8_t * ) pkcs11testLABEL_DEVICE_PRIVATE_KEY_FOR_TLS,
+                                        ( uint8_t * ) PKCS11_TEST_LABEL_DEVICE_PRIVATE_KEY_FOR_TLS,
                                         pxPrivateKeyHandle );
 
         TEST_ASSERT_EQUAL_MESSAGE( CKR_OK, xResult, "Failed to create RSA private key." );
@@ -1212,7 +1195,7 @@ void prvProvisionRsaTestCredentials( CK_OBJECT_HANDLE_PTR pxPrivateKeyHandle,
         xResult = xProvisionCertificate( xGlobalSession,
                                          ( uint8_t * ) cValidRSACertificate,
                                          sizeof( cValidRSACertificate ),
-                                         ( uint8_t * ) pkcs11testLABEL_DEVICE_CERTIFICATE_FOR_TLS,
+                                         ( uint8_t * ) PKCS11_TEST_LABEL_DEVICE_CERTIFICATE_FOR_TLS,
                                          pxCertificateHandle );
 
         TEST_ASSERT_EQUAL_MESSAGE( CKR_OK, xResult, "Failed to create RSA certificate." );
@@ -1222,16 +1205,16 @@ void prvProvisionRsaTestCredentials( CK_OBJECT_HANDLE_PTR pxPrivateKeyHandle,
     else
     {
         xResult = xFindObjectWithLabelAndClass( xGlobalSession,
-                                                pkcs11testLABEL_DEVICE_PRIVATE_KEY_FOR_TLS,
-                                                sizeof( pkcs11testLABEL_DEVICE_PRIVATE_KEY_FOR_TLS ) - 1,
+                                                PKCS11_TEST_LABEL_DEVICE_PRIVATE_KEY_FOR_TLS,
+                                                sizeof( PKCS11_TEST_LABEL_DEVICE_PRIVATE_KEY_FOR_TLS ) - 1,
                                                 CKO_PRIVATE_KEY,
                                                 pxPrivateKeyHandle );
         TEST_ASSERT_EQUAL_MESSAGE( CKR_OK, xResult, "Failed to find RSA private key." );
         TEST_ASSERT_NOT_EQUAL_MESSAGE( CK_INVALID_HANDLE, *pxPrivateKeyHandle, "Invalid object handle found for RSA private key." );
 
         xResult = xFindObjectWithLabelAndClass( xGlobalSession,
-                                                pkcs11testLABEL_DEVICE_CERTIFICATE_FOR_TLS,
-                                                sizeof( pkcs11testLABEL_DEVICE_CERTIFICATE_FOR_TLS ) - 1,
+                                                PKCS11_TEST_LABEL_DEVICE_CERTIFICATE_FOR_TLS,
+                                                sizeof( PKCS11_TEST_LABEL_DEVICE_CERTIFICATE_FOR_TLS ) - 1,
                                                 CKO_CERTIFICATE,
                                                 pxCertificateHandle );
         TEST_ASSERT_EQUAL_MESSAGE( CKR_OK, xResult, "Failed to find RSA certificate." );
@@ -1284,16 +1267,16 @@ TEST( Full_PKCS11_RSA, AFQP_GetAttributeValue )
     CK_BYTE xKeyComponent[ ( pkcs11RSA_2048_MODULUS_BITS / 8 ) + 1 ] = { 0 };
 
     xResult = xFindObjectWithLabelAndClass( xGlobalSession,
-                                            pkcs11testLABEL_DEVICE_PRIVATE_KEY_FOR_TLS,
-                                            sizeof( pkcs11testLABEL_DEVICE_PRIVATE_KEY_FOR_TLS ) - 1,
+                                            PKCS11_TEST_LABEL_DEVICE_PRIVATE_KEY_FOR_TLS,
+                                            sizeof( PKCS11_TEST_LABEL_DEVICE_PRIVATE_KEY_FOR_TLS ) - 1,
                                             CKO_PRIVATE_KEY,
                                             &xPrivateKeyHandle );
     TEST_ASSERT_EQUAL_MESSAGE( CKR_OK, xResult, "Failed to find RSA private key." );
     TEST_ASSERT_NOT_EQUAL_MESSAGE( CK_INVALID_HANDLE, xPrivateKeyHandle, "Invalid object handle found for RSA private key." );
 
     xResult = xFindObjectWithLabelAndClass( xGlobalSession,
-                                            pkcs11testLABEL_DEVICE_CERTIFICATE_FOR_TLS,
-                                            sizeof( pkcs11testLABEL_DEVICE_CERTIFICATE_FOR_TLS ) - 1,
+                                            PKCS11_TEST_LABEL_DEVICE_CERTIFICATE_FOR_TLS,
+                                            sizeof( PKCS11_TEST_LABEL_DEVICE_CERTIFICATE_FOR_TLS ) - 1,
                                             CKO_CERTIFICATE,
                                             &xCertificateHandle );
     TEST_ASSERT_EQUAL_MESSAGE( CKR_OK, xResult, "Failed to find RSA certificate." );
@@ -1406,8 +1389,8 @@ TEST( Full_PKCS11_RSA, AFQP_GenerateKeyPair )
     TEST_ASSERT_EQUAL_MESSAGE( CKR_OK, xResult, "Failed to destroy credentials before RSA generate key pair test." );
 
     xResult = xProvisionGenerateKeyPairRSA( xGlobalSession,
-                                            ( uint8_t * ) pkcs11testLABEL_DEVICE_PRIVATE_KEY_FOR_TLS,
-                                            ( uint8_t * ) pkcs11testLABEL_DEVICE_PUBLIC_KEY_FOR_TLS,
+                                            ( uint8_t * ) PKCS11_TEST_LABEL_DEVICE_PRIVATE_KEY_FOR_TLS,
+                                            ( uint8_t * ) PKCS11_TEST_LABEL_DEVICE_PUBLIC_KEY_FOR_TLS,
                                             &xPrivateKeyHandle,
                                             &xPublicKeyHandle );
     TEST_ASSERT_EQUAL( CKR_OK, xResult );
@@ -1528,7 +1511,7 @@ void prvProvisionCredentialsWithKeyImport( CK_OBJECT_HANDLE_PTR pxPrivateKeyHand
                                        ( uint8_t * ) cValidECDSAPublicKey,
                                        sizeof( cValidECDSAPublicKey ),
                                        CKK_EC,
-                                       ( uint8_t * ) pkcs11testLABEL_DEVICE_PUBLIC_KEY_FOR_TLS,
+                                       ( uint8_t * ) PKCS11_TEST_LABEL_DEVICE_PUBLIC_KEY_FOR_TLS,
                                        pxPublicKeyHandle );
         TEST_ASSERT_EQUAL_MESSAGE( CKR_OK, xResult, "Failed to create EC public key." );
         TEST_ASSERT_NOT_EQUAL_MESSAGE( 0, *pxPublicKeyHandle, "Invalid object handle returned for EC public key." );
@@ -1536,7 +1519,7 @@ void prvProvisionCredentialsWithKeyImport( CK_OBJECT_HANDLE_PTR pxPrivateKeyHand
         xResult = xProvisionPrivateKey( xGlobalSession,
                                         ( uint8_t * ) cValidECDSAPrivateKey,
                                         sizeof( cValidECDSAPrivateKey ),
-                                        ( uint8_t * ) pkcs11testLABEL_DEVICE_PRIVATE_KEY_FOR_TLS,
+                                        ( uint8_t * ) PKCS11_TEST_LABEL_DEVICE_PRIVATE_KEY_FOR_TLS,
                                         pxPrivateKeyHandle );
         TEST_ASSERT_EQUAL_MESSAGE( CKR_OK, xResult, "Failed to create EC private key." );
         TEST_ASSERT_NOT_EQUAL_MESSAGE( 0, *pxPrivateKeyHandle, "Invalid object handle returned for EC private key." );
@@ -1544,7 +1527,7 @@ void prvProvisionCredentialsWithKeyImport( CK_OBJECT_HANDLE_PTR pxPrivateKeyHand
         xResult = xProvisionCertificate( xGlobalSession,
                                          ( uint8_t * ) cValidECDSACertificate,
                                          sizeof( cValidECDSACertificate ),
-                                         ( uint8_t * ) pkcs11testLABEL_DEVICE_CERTIFICATE_FOR_TLS,
+                                         ( uint8_t * ) PKCS11_TEST_LABEL_DEVICE_CERTIFICATE_FOR_TLS,
                                          pxCertificateHandle );
         TEST_ASSERT_EQUAL_MESSAGE( CKR_OK, xResult, "Failed to create EC certificate." );
         TEST_ASSERT_NOT_EQUAL_MESSAGE( 0, *pxCertificateHandle, "Invalid object handle returned for EC certificate." );
@@ -1554,24 +1537,24 @@ void prvProvisionCredentialsWithKeyImport( CK_OBJECT_HANDLE_PTR pxPrivateKeyHand
     else
     {
         xResult = xFindObjectWithLabelAndClass( xGlobalSession,
-                                                pkcs11testLABEL_DEVICE_PRIVATE_KEY_FOR_TLS,
-                                                sizeof( pkcs11testLABEL_DEVICE_PRIVATE_KEY_FOR_TLS ) - 1,
+                                                PKCS11_TEST_LABEL_DEVICE_PRIVATE_KEY_FOR_TLS,
+                                                sizeof( PKCS11_TEST_LABEL_DEVICE_PRIVATE_KEY_FOR_TLS ) - 1,
                                                 CKO_PRIVATE_KEY,
                                                 pxPrivateKeyHandle );
         TEST_ASSERT_EQUAL_MESSAGE( CKR_OK, xResult, "Failed to find EC private key." );
         TEST_ASSERT_NOT_EQUAL_MESSAGE( CK_INVALID_HANDLE, *pxPrivateKeyHandle, "Invalid object handle found for EC private key." );
 
         xResult = xFindObjectWithLabelAndClass( xGlobalSession,
-                                                pkcs11testLABEL_DEVICE_CERTIFICATE_FOR_TLS,
-                                                sizeof( pkcs11testLABEL_DEVICE_CERTIFICATE_FOR_TLS ) - 1,
+                                                PKCS11_TEST_LABEL_DEVICE_CERTIFICATE_FOR_TLS,
+                                                sizeof( PKCS11_TEST_LABEL_DEVICE_CERTIFICATE_FOR_TLS ) - 1,
                                                 CKO_CERTIFICATE,
                                                 pxCertificateHandle );
         TEST_ASSERT_EQUAL_MESSAGE( CKR_OK, xResult, "Failed to find EC certificate." );
         TEST_ASSERT_NOT_EQUAL_MESSAGE( CK_INVALID_HANDLE, *pxCertificateHandle, "Invalid object handle found for EC certificate." );
 
         xResult = xFindObjectWithLabelAndClass( xGlobalSession,
-                                                pkcs11testLABEL_DEVICE_PUBLIC_KEY_FOR_TLS,
-                                                sizeof( pkcs11testLABEL_DEVICE_PUBLIC_KEY_FOR_TLS ) - 1,
+                                                PKCS11_TEST_LABEL_DEVICE_PUBLIC_KEY_FOR_TLS,
+                                                sizeof( PKCS11_TEST_LABEL_DEVICE_PUBLIC_KEY_FOR_TLS ) - 1,
                                                 CKO_PUBLIC_KEY,
                                                 pxPublicKeyHandle );
         TEST_ASSERT_EQUAL_MESSAGE( CKR_OK, xResult, "Failed to find EC public key." );
@@ -1590,14 +1573,14 @@ void prvProvisionCredentialsWithGenerateKeyPair( CK_OBJECT_HANDLE_PTR pxPrivateK
 
     /* Check if there is an EC private key in there already. */
     xResult = xFindObjectWithLabelAndClass( xGlobalSession,
-                                            pkcs11testLABEL_DEVICE_PRIVATE_KEY_FOR_TLS,
-                                            sizeof( pkcs11testLABEL_DEVICE_PRIVATE_KEY_FOR_TLS ) - 1,
+                                            PKCS11_TEST_LABEL_DEVICE_PRIVATE_KEY_FOR_TLS,
+                                            sizeof( PKCS11_TEST_LABEL_DEVICE_PRIVATE_KEY_FOR_TLS ) - 1,
                                             CKO_PRIVATE_KEY,
                                             pxPrivateKeyHandle );
     TEST_ASSERT_EQUAL_MESSAGE( CKR_OK, xResult, "Failed to find private key." );
     xResult = xFindObjectWithLabelAndClass( xGlobalSession,
-                                            pkcs11testLABEL_DEVICE_PUBLIC_KEY_FOR_TLS,
-                                            sizeof( pkcs11testLABEL_DEVICE_PUBLIC_KEY_FOR_TLS ) - 1,
+                                            PKCS11_TEST_LABEL_DEVICE_PUBLIC_KEY_FOR_TLS,
+                                            sizeof( PKCS11_TEST_LABEL_DEVICE_PUBLIC_KEY_FOR_TLS ) - 1,
                                             CKO_PUBLIC_KEY,
                                             pxPublicKeyHandle );
     TEST_ASSERT_EQUAL_MESSAGE( CKR_OK, xResult, "Failed to find public key." );
@@ -1623,15 +1606,15 @@ void prvProvisionCredentialsWithGenerateKeyPair( CK_OBJECT_HANDLE_PTR pxPrivateK
 
     if( xProvisionKeyNeeded == CK_TRUE )
     {
-        xResult = xProvisionGenerateKeyPairEC( xGlobalSession, ( uint8_t * ) pkcs11testLABEL_DEVICE_PRIVATE_KEY_FOR_TLS, ( uint8_t * ) pkcs11testLABEL_DEVICE_PUBLIC_KEY_FOR_TLS, pxPrivateKeyHandle, pxPublicKeyHandle );
+        xResult = xProvisionGenerateKeyPairEC( xGlobalSession, ( uint8_t * ) PKCS11_TEST_LABEL_DEVICE_PRIVATE_KEY_FOR_TLS, ( uint8_t * ) PKCS11_TEST_LABEL_DEVICE_PUBLIC_KEY_FOR_TLS, pxPrivateKeyHandle, pxPublicKeyHandle );
         TEST_ASSERT_EQUAL_MESSAGE( CKR_OK, xResult, "Failed to generate key pair." );
         TEST_ASSERT_NOT_EQUAL_MESSAGE( CK_INVALID_HANDLE, *pxPrivateKeyHandle, "Invalid object handle returned for EC private key." );
         TEST_ASSERT_NOT_EQUAL_MESSAGE( CK_INVALID_HANDLE, *pxPublicKeyHandle, "Invalid object handle returned for EC public key." );
     }
 
     xResult = xFindObjectWithLabelAndClass( xGlobalSession,
-                                            pkcs11testLABEL_DEVICE_CERTIFICATE_FOR_TLS,
-                                            sizeof( pkcs11testLABEL_DEVICE_CERTIFICATE_FOR_TLS ) - 1,
+                                            PKCS11_TEST_LABEL_DEVICE_CERTIFICATE_FOR_TLS,
+                                            sizeof( PKCS11_TEST_LABEL_DEVICE_CERTIFICATE_FOR_TLS ) - 1,
                                             CKO_CERTIFICATE,
                                             pxCertificateHandle );
 
@@ -1641,7 +1624,7 @@ void prvProvisionCredentialsWithGenerateKeyPair( CK_OBJECT_HANDLE_PTR pxPrivateK
         xResult = xProvisionCertificate( xGlobalSession,
                                          ( uint8_t * ) cValidECDSACertificate,
                                          sizeof( cValidECDSACertificate ),
-                                         ( uint8_t * ) pkcs11testLABEL_DEVICE_CERTIFICATE_FOR_TLS,
+                                         ( uint8_t * ) PKCS11_TEST_LABEL_DEVICE_CERTIFICATE_FOR_TLS,
                                          pxCertificateHandle );
         TEST_ASSERT_EQUAL_MESSAGE( CKR_OK, xResult, "Failed to create EC certificate." );
         TEST_ASSERT_NOT_EQUAL_MESSAGE( 0, *pxPrivateKeyHandle, "Invalid object handle returned for EC certificate." );
@@ -1653,7 +1636,7 @@ void prvProvisionEcTestCredentials( CK_OBJECT_HANDLE_PTR pxPrivateKeyHandle,
                                     CK_OBJECT_HANDLE_PTR pxCertificateHandle,
                                     CK_OBJECT_HANDLE_PTR pxPublicKeyHandle )
 {
-    #if ( pkcs11testIMPORT_PRIVATE_KEY_SUPPORT != 0 )
+    #if ( PKCS11_TEST_IMPORT_PRIVATE_KEY_SUPPORT != 0 )
         prvProvisionCredentialsWithKeyImport( pxPrivateKeyHandle, pxCertificateHandle, pxPublicKeyHandle );
     #else
         prvProvisionCredentialsWithGenerateKeyPair( pxPrivateKeyHandle, pxCertificateHandle, pxPublicKeyHandle );
@@ -1855,8 +1838,8 @@ TEST( Full_PKCS11_EC, AFQP_GenerateKeyPair )
     CK_BYTE xEcParams[ sizeof( ucSecp256r1Oid ) ] = { 0 };
 
     xResult = xProvisionGenerateKeyPairEC( xGlobalSession,
-                                           ( uint8_t * ) pkcs11testLABEL_DEVICE_PRIVATE_KEY_FOR_TLS,
-                                           ( uint8_t * ) pkcs11testLABEL_DEVICE_PUBLIC_KEY_FOR_TLS,
+                                           ( uint8_t * ) PKCS11_TEST_LABEL_DEVICE_PRIVATE_KEY_FOR_TLS,
+                                           ( uint8_t * ) PKCS11_TEST_LABEL_DEVICE_PUBLIC_KEY_FOR_TLS,
                                            &xPrivateKeyHandle,
                                            &xPublicKeyHandle );
 
@@ -1868,7 +1851,7 @@ TEST( Full_PKCS11_EC, AFQP_GenerateKeyPair )
     xResult = xProvisionCertificate( xGlobalSession,
                                      ( uint8_t * ) cValidECDSACertificate,
                                      sizeof( cValidECDSACertificate ),
-                                     ( uint8_t * ) pkcs11testLABEL_DEVICE_CERTIFICATE_FOR_TLS,
+                                     ( uint8_t * ) PKCS11_TEST_LABEL_DEVICE_CERTIFICATE_FOR_TLS,
                                      &xCertificateHandle );
 
     TEST_ASSERT_EQUAL_MESSAGE( CKR_OK, xResult, "Failed to create EC certificate." );
@@ -1966,7 +1949,7 @@ TEST( Full_PKCS11_EC, AFQP_Verify )
     xResult = pxGlobalFunctionList->C_Verify( xGlobalSession, xHashedMessage, pkcs11SHA256_DIGEST_LENGTH, xSignature, sizeof( xSignaturePKCS ) );
     TEST_ASSERT_EQUAL_MESSAGE( CKR_OK, xResult, "Verify failed." );
 
-    #if ( pkcs11testIMPORT_PRIVATE_KEY_SUPPORT == 1 )
+    #if ( PKCS11_TEST_IMPORT_PRIVATE_KEY_SUPPORT == 1 )
         mbedtls_pk_context xPkContext;
         mbedtls_entropy_context xEntropyContext;
         mbedtls_ctr_drbg_context xDrbgContext;
@@ -2007,7 +1990,7 @@ TEST( Full_PKCS11_EC, AFQP_Verify )
 
         xResult = pxGlobalFunctionList->C_Verify( xGlobalSession, xHashedMessage, pkcs11SHA256_DIGEST_LENGTH, xSignaturePKCS, sizeof( xSignaturePKCS ) );
         TEST_ASSERT_EQUAL_MESSAGE( CKR_OK, xResult, "Verify failed." );
-    #endif /* if ( pkcs11testIMPORT_PRIVATE_KEY_SUPPORT == 1 ) */
+    #endif /* if ( PKCS11_TEST_IMPORT_PRIVATE_KEY_SUPPORT == 1 ) */
     /* Modify signature value and make sure verification fails. */
 }
 
@@ -2149,7 +2132,7 @@ TEST( Full_PKCS11_EC, AFQP_GetAttributeValue )
     xTemplate.pValue = xEcPoint;
     xResult = pxGlobalFunctionList->C_GetAttributeValue( xGlobalSession, xPublicKey, &xTemplate, 1 );
     TEST_ASSERT_EQUAL_MESSAGE( CKR_OK, xResult, "GetAttributeValue for EC point failed." );
-    #if pkcs11testIMPORT_PRIVATE_KEY_SUPPORT == 1
+    #if PKCS11_TEST_IMPORT_PRIVATE_KEY_SUPPORT == 1
 
         /* The EC point can only be known for a public key that was previously created
          * therefore this check is only done for implementations that support importing
@@ -2165,7 +2148,7 @@ TEST( Full_PKCS11_EC, AFQP_GetAttributeValue )
     xTemplate.ulValueLen = 0;
     xResult = pxGlobalFunctionList->C_GetAttributeValue( xGlobalSession, xCertificate, &xTemplate, 1 );
     TEST_ASSERT_EQUAL_MESSAGE( CKR_OK, xResult, "GetAttributeValue for length of EC certificate class failed." );
-    #if ( pkcs11testPREPROVISIONED_SUPPORT != 1 )
+    #if ( PKCS11_TEST_PREPROVISIONED_SUPPORT != 1 )
         TEST_ASSERT_EQUAL_MESSAGE( sizeof( CK_OBJECT_CLASS ), xTemplate.ulValueLen, "Incorrect object class length returned from GetAttributeValue." );
     #endif
 
@@ -2180,14 +2163,14 @@ TEST( Full_PKCS11_EC, AFQP_GetAttributeValue )
     xTemplate.ulValueLen = 0;
     xResult = pxGlobalFunctionList->C_GetAttributeValue( xGlobalSession, xCertificate, &xTemplate, 1 );
     TEST_ASSERT_EQUAL_MESSAGE( CKR_OK, xResult, "GetAttributeValue for length of certificate value failed." );
-    #if ( pkcs11testPREPROVISIONED_SUPPORT != 1 )
+    #if ( PKCS11_TEST_PREPROVISIONED_SUPPORT != 1 )
         TEST_ASSERT_EQUAL_MESSAGE( sizeof( xCertificateValueExpected ), xTemplate.ulValueLen, "Incorrect certificate value length" );
     #endif
 
     xTemplate.pValue = xCertificateValue;
     xResult = pxGlobalFunctionList->C_GetAttributeValue( xGlobalSession, xCertificate, &xTemplate, 1 );
     TEST_ASSERT_EQUAL_MESSAGE( CKR_OK, xResult, "GetAttributeValue for certificate value failed." );
-    #if ( pkcs11testPREPROVISIONED_SUPPORT != 1 )
+    #if ( PKCS11_TEST_PREPROVISIONED_SUPPORT != 1 )
         TEST_ASSERT_EQUAL_INT8_ARRAY_MESSAGE( xCertificateValueExpected, xCertificateValue, sizeof( xCertificateValueExpected ), "Incorrect certificate value returned." );
     #endif
 }
@@ -2197,7 +2180,7 @@ TEST( Full_PKCS11_EC, AFQP_GetAttributeValue )
 
 
 /* Repeatedly tries to find previously provisioned private key and certificate. */
-#if pkcs11testMULTI_THREADED
+#if ( PKCS11_TEST_MULTI_THREADED == 1 )
 static void prvFindObjectMultiThreadTask( void * pvParameters )
 {
     MultithreadTaskParams_t * pxMultiTaskParam = pvParameters;
@@ -2208,11 +2191,11 @@ static void prvFindObjectMultiThreadTask( void * pvParameters )
 
     memcpy( &xSession, pxMultiTaskParam->pvTaskData, sizeof( CK_SESSION_HANDLE ) );
 
-    for( xCount = 0; xCount < pkcs11testMULTI_THREAD_LOOP_COUNT; xCount++ )
+    for( xCount = 0; xCount < PKCS11_TEST_MULTI_THREAD_LOOP_COUNT; xCount++ )
     {
         xResult = xFindObjectWithLabelAndClass( xSession,
-                                                pkcs11testLABEL_DEVICE_PRIVATE_KEY_FOR_TLS,
-                                                sizeof( pkcs11testLABEL_DEVICE_PRIVATE_KEY_FOR_TLS ) - 1,
+                                                PKCS11_TEST_LABEL_DEVICE_PRIVATE_KEY_FOR_TLS,
+                                                sizeof( PKCS11_TEST_LABEL_DEVICE_PRIVATE_KEY_FOR_TLS ) - 1,
                                                 CKO_PRIVATE_KEY,
                                                 &xHandle );
 
@@ -2230,8 +2213,8 @@ static void prvFindObjectMultiThreadTask( void * pvParameters )
         }
 
         xResult = xFindObjectWithLabelAndClass( xSession,
-                                                pkcs11testLABEL_DEVICE_CERTIFICATE_FOR_TLS,
-                                                sizeof( pkcs11testLABEL_DEVICE_CERTIFICATE_FOR_TLS ) - 1,
+                                                PKCS11_TEST_LABEL_DEVICE_CERTIFICATE_FOR_TLS,
+                                                sizeof( PKCS11_TEST_LABEL_DEVICE_CERTIFICATE_FOR_TLS ) - 1,
                                                 CKO_CERTIFICATE,
                                                 &xHandle );
 
@@ -2254,19 +2237,19 @@ static void prvFindObjectMultiThreadTask( void * pvParameters )
 }
 #endif
 
-#if pkcs11testMULTI_THREADED
+#if ( PKCS11_TEST_MULTI_THREADED == 1 )
 
 /* Different session trying to find token objects. */
 TEST( Full_PKCS11_RSA, AFQP_FindObjectMultiThread )
 {
     CK_RV xResult;
     uint32_t xTaskNumber;
-    CK_SESSION_HANDLE xSessionHandle[ pkcs11testMULTI_THREAD_TASK_COUNT ];
+    CK_SESSION_HANDLE xSessionHandle[ PKCS11_TEST_MULTI_THREAD_TASK_COUNT ];
     CK_OBJECT_HANDLE xPrivateKey;
     CK_OBJECT_HANDLE xPublicKey;
     CK_OBJECT_HANDLE xCertificate;
 
-    for( xTaskNumber = 0; xTaskNumber < pkcs11testMULTI_THREAD_TASK_COUNT; xTaskNumber++ )
+    for( xTaskNumber = 0; xTaskNumber < PKCS11_TEST_MULTI_THREAD_TASK_COUNT; xTaskNumber++ )
     {
         xResult = xInitializePkcs11Session( &xSessionHandle[ xTaskNumber ] );
 
@@ -2282,7 +2265,7 @@ TEST( Full_PKCS11_RSA, AFQP_FindObjectMultiThread )
 
     prvMultiThreadHelper( ( void * ) prvFindObjectMultiThreadTask );
 
-    for( xTaskNumber = 0; xTaskNumber < pkcs11testMULTI_THREAD_TASK_COUNT; xTaskNumber++ )
+    for( xTaskNumber = 0; xTaskNumber < PKCS11_TEST_MULTI_THREAD_TASK_COUNT; xTaskNumber++ )
     {
         xResult = pxGlobalFunctionList->C_CloseSession( xSessionHandle[ xTaskNumber ] );
         TEST_ASSERT_EQUAL_MESSAGE( CKR_OK, xResult, "Failed to close session." );
@@ -2291,18 +2274,18 @@ TEST( Full_PKCS11_RSA, AFQP_FindObjectMultiThread )
 
 #endif
 
-#if pkcs11testMULTI_THREADED
+#if ( PKCS11_TEST_MULTI_THREADED == 1 )
 /* Different session trying to find token objects. */
 TEST( Full_PKCS11_EC, AFQP_FindObjectMultiThread )
 {
     CK_RV xResult;
     uint32_t xTaskNumber;
-    CK_SESSION_HANDLE xSessionHandle[ pkcs11testMULTI_THREAD_TASK_COUNT ];
+    CK_SESSION_HANDLE xSessionHandle[ PKCS11_TEST_MULTI_THREAD_TASK_COUNT ];
     CK_OBJECT_HANDLE xPrivateKey;
     CK_OBJECT_HANDLE xCertificate;
     CK_OBJECT_HANDLE xPublicKey;
 
-    for( xTaskNumber = 0; xTaskNumber < pkcs11testMULTI_THREAD_TASK_COUNT; xTaskNumber++ )
+    for( xTaskNumber = 0; xTaskNumber < PKCS11_TEST_MULTI_THREAD_TASK_COUNT; xTaskNumber++ )
     {
         xResult = xInitializePkcs11Session( &xSessionHandle[ xTaskNumber ] );
 
@@ -2318,7 +2301,7 @@ TEST( Full_PKCS11_EC, AFQP_FindObjectMultiThread )
 
     prvMultiThreadHelper( ( void * ) prvFindObjectMultiThreadTask );
 
-    for( xTaskNumber = 0; xTaskNumber < pkcs11testMULTI_THREAD_TASK_COUNT; xTaskNumber++ )
+    for( xTaskNumber = 0; xTaskNumber < PKCS11_TEST_MULTI_THREAD_TASK_COUNT; xTaskNumber++ )
     {
         xResult = pxGlobalFunctionList->C_CloseSession( xSessionHandle[ xTaskNumber ] );
         TEST_ASSERT_EQUAL_MESSAGE( CKR_OK, xResult, "Failed to close session." );
@@ -2326,7 +2309,7 @@ TEST( Full_PKCS11_EC, AFQP_FindObjectMultiThread )
 }
 #endif
 
-#if pkcs11testMULTI_THREADED
+#if ( PKCS11_TEST_MULTI_THREADED == 1 )
 static void prvECGetAttributeValueMultiThreadTask( void * pvParameters )
 {
     MultithreadTaskParams_t * pxMultiTaskParam = pvParameters;
@@ -2345,8 +2328,8 @@ static void prvECGetAttributeValueMultiThreadTask( void * pvParameters )
     memcpy( &xSession, pxMultiTaskParam->pvTaskData, sizeof( CK_SESSION_HANDLE ) );
 
     xResult = xFindObjectWithLabelAndClass( xSession,
-                                            pkcs11testLABEL_DEVICE_PRIVATE_KEY_FOR_TLS,
-                                            sizeof( pkcs11testLABEL_DEVICE_PRIVATE_KEY_FOR_TLS ) - 1,
+                                            PKCS11_TEST_LABEL_DEVICE_PRIVATE_KEY_FOR_TLS,
+                                            sizeof( PKCS11_TEST_LABEL_DEVICE_PRIVATE_KEY_FOR_TLS ) - 1,
                                             CKO_PRIVATE_KEY,
                                             &xPrivateKey );
 
@@ -2357,8 +2340,8 @@ static void prvECGetAttributeValueMultiThreadTask( void * pvParameters )
     }
 
     xResult = xFindObjectWithLabelAndClass( xSession,
-                                            pkcs11testLABEL_DEVICE_CERTIFICATE_FOR_TLS,
-                                            sizeof( pkcs11testLABEL_DEVICE_CERTIFICATE_FOR_TLS ) - 1,
+                                            PKCS11_TEST_LABEL_DEVICE_CERTIFICATE_FOR_TLS,
+                                            sizeof( PKCS11_TEST_LABEL_DEVICE_CERTIFICATE_FOR_TLS ) - 1,
                                             CKO_CERTIFICATE,
                                             &xCertificate );
 
@@ -2370,7 +2353,7 @@ static void prvECGetAttributeValueMultiThreadTask( void * pvParameters )
 
     if( xResult == CKR_OK )
     {
-        for( xCount = 0; xCount < pkcs11testMULTI_THREAD_LOOP_COUNT; xCount++ )
+        for( xCount = 0; xCount < PKCS11_TEST_MULTI_THREAD_LOOP_COUNT; xCount++ )
         {
             xTemplate.type = CKA_EC_PARAMS;
             xTemplate.pValue = xEcParams;
@@ -2425,18 +2408,18 @@ static void prvECGetAttributeValueMultiThreadTask( void * pvParameters )
 }
 #endif
 
-#if pkcs11testMULTI_THREADED
+#if ( PKCS11_TEST_MULTI_THREADED == 1 )
 /* Same & different PKCS #11 sessions asking for attribute values of the same 2 objects. */
 TEST( Full_PKCS11_EC, AFQP_GetAttributeValueMultiThread )
 {
     CK_RV xResult;
     uint32_t xTaskNumber;
-    CK_SESSION_HANDLE xSessionHandle[ pkcs11testMULTI_THREAD_TASK_COUNT ];
+    CK_SESSION_HANDLE xSessionHandle[ PKCS11_TEST_MULTI_THREAD_TASK_COUNT ];
     CK_OBJECT_HANDLE xPrivateKey;
     CK_OBJECT_HANDLE xCertificate;
     CK_OBJECT_HANDLE xPublicKey;
 
-    for( xTaskNumber = 0; xTaskNumber < pkcs11testMULTI_THREAD_TASK_COUNT; xTaskNumber++ )
+    for( xTaskNumber = 0; xTaskNumber < PKCS11_TEST_MULTI_THREAD_TASK_COUNT; xTaskNumber++ )
     {
         xResult = xInitializePkcs11Session( &xSessionHandle[ xTaskNumber ] );
 
@@ -2452,7 +2435,7 @@ TEST( Full_PKCS11_EC, AFQP_GetAttributeValueMultiThread )
 
     prvMultiThreadHelper( ( void * ) prvECGetAttributeValueMultiThreadTask );
 
-    for( xTaskNumber = 0; xTaskNumber < pkcs11testMULTI_THREAD_TASK_COUNT; xTaskNumber++ )
+    for( xTaskNumber = 0; xTaskNumber < PKCS11_TEST_MULTI_THREAD_TASK_COUNT; xTaskNumber++ )
     {
         xResult = pxGlobalFunctionList->C_CloseSession( xSessionHandle[ xTaskNumber ] );
         TEST_ASSERT_EQUAL_MESSAGE( CKR_OK, xResult, "Failed to close session." );
@@ -2470,7 +2453,7 @@ typedef struct SignVerifyMultiThread_t
     mbedtls_ecp_keypair * pxEcdsaContext; /* Pointer to the pre-parsed ECDSA key. */
 } SignVerifyMultiThread_t;
 
-#if pkcs11testMULTI_THREADED
+#if ( PKCS11_TEST_MULTI_THREADED == 1 )
 static void prvECSignVerifyMultiThreadTask( void * pvParameters )
 {
     MultithreadTaskParams_t * pxMultiTaskParam = pvParameters;
@@ -2486,7 +2469,7 @@ static void prvECSignVerifyMultiThreadTask( void * pvParameters )
     CK_BYTE xSignature[ 64 ] = { 0 };
     CK_ULONG xSignatureLength;
 
-    for( xCount = 0; xCount < pkcs11testMULTI_THREAD_LOOP_COUNT; xCount++ )
+    for( xCount = 0; xCount < PKCS11_TEST_MULTI_THREAD_LOOP_COUNT; xCount++ )
     {
         xMechanism.mechanism = CKM_ECDSA;
         xMechanism.pParameter = NULL;
@@ -2530,19 +2513,19 @@ static void prvECSignVerifyMultiThreadTask( void * pvParameters )
 }
 #endif
 
-#if pkcs11testMULTI_THREADED
+#if ( PKCS11_TEST_MULTI_THREADED == 1 )
 TEST( Full_PKCS11_EC, AFQP_SignVerifyMultiThread )
 {
     CK_RV xResult;
     uint32_t xTaskNumber;
-    SignVerifyMultiThread_t xSignStructs[ pkcs11testMULTI_THREAD_TASK_COUNT ];
+    SignVerifyMultiThread_t xSignStructs[ PKCS11_TEST_MULTI_THREAD_TASK_COUNT ];
     CK_OBJECT_HANDLE xPrivateKey;
     CK_OBJECT_HANDLE xCertificate;
     CK_OBJECT_HANDLE xPublicKey;
 
     prvFindObjectTest( &xPrivateKey, &xCertificate, &xPublicKey );
 
-    for( xTaskNumber = 0; xTaskNumber < pkcs11testMULTI_THREAD_TASK_COUNT; xTaskNumber++ )
+    for( xTaskNumber = 0; xTaskNumber < PKCS11_TEST_MULTI_THREAD_TASK_COUNT; xTaskNumber++ )
     {
         xResult = xInitializePkcs11Session( &xSignStructs[ xTaskNumber ].xSession );
 
@@ -2558,7 +2541,7 @@ TEST( Full_PKCS11_EC, AFQP_SignVerifyMultiThread )
 
     prvMultiThreadHelper( ( void * ) prvECSignVerifyMultiThreadTask );
 
-    for( xTaskNumber = 0; xTaskNumber < pkcs11testMULTI_THREAD_TASK_COUNT; xTaskNumber++ )
+    for( xTaskNumber = 0; xTaskNumber < PKCS11_TEST_MULTI_THREAD_TASK_COUNT; xTaskNumber++ )
     {
         xResult = pxGlobalFunctionList->C_CloseSession( xSignStructs[ xTaskNumber ].xSession );
         TEST_ASSERT_EQUAL_MESSAGE( CKR_OK, xResult, "Failed to close session." );
