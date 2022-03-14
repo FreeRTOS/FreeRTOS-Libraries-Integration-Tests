@@ -17,6 +17,14 @@ typedef void * ( * PkcsMalloc_t )( size_t size );
 typedef void ( * PkcsFree_t )( void *ptr );
 
 
+typedef void * ( * ThreadFunction_t )( void * pParam );
+
+typedef void * ThreadHandle_t;
+
+typedef ThreadHandle_t ( * ThreadCreate_t )( ThreadFunction_t threadFunc, void * pParam );
+
+typedef int ( * ThreadTimedJoin_t )( ThreadHandle_t threadHandle, uint32_t timeoutMs );
+
 
 /**
  * @brief A struct representing core pkcs11 test parameters.
@@ -25,6 +33,8 @@ typedef struct Pkcs11TestParam
 {
     PkcsMalloc_t pPkcsMalloc;
     PkcsFree_t pPkcsFree;
+    ThreadCreate_t pThreadCreate;
+    ThreadTimedJoin_t pThreadTimedJoin;
 } Pkcs11TestParam_t;
 
 /**

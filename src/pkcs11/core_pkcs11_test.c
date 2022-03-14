@@ -118,8 +118,8 @@ TEST_GROUP( Full_PKCS11_EC );
 
 /* #define PKCS11_TEST_MEMORY_LEAK */
 #ifdef PKCS11_TEST_MEMORY_LEAK
-    BaseType_t xHeapBefore;
-    BaseType_t xHeapAfter;
+    uint32_t xHeapBefore;
+    uint32_t xHeapAfter;
 #endif
 
 CK_RV prvBeforeRunningTests();
@@ -239,7 +239,7 @@ TEST_GROUP_RUNNER( Full_PKCS11_NoObject )
     RUN_TEST_CASE( Full_PKCS11_NoObject, AFQP_Digest );
     RUN_TEST_CASE( Full_PKCS11_NoObject, AFQP_Digest_ErrorConditions );
     RUN_TEST_CASE( Full_PKCS11_NoObject, AFQP_GenerateRandom );
-    // RUN_TEST_CASE( Full_PKCS11_NoObject, AFQP_GenerateRandomMultiThread );
+    RUN_TEST_CASE( Full_PKCS11_NoObject, AFQP_GenerateRandomMultiThread );
 
     prvAfterRunningTests_NoObject();
 }
@@ -372,9 +372,9 @@ TEST_GROUP_RUNNER( Full_PKCS11_EC )
         RUN_TEST_CASE( Full_PKCS11_EC, AFQP_Sign );
         RUN_TEST_CASE( Full_PKCS11_EC, AFQP_Verify );
 
-        //RUN_TEST_CASE( Full_PKCS11_EC, AFQP_FindObjectMultiThread );
-        //RUN_TEST_CASE( Full_PKCS11_EC, AFQP_GetAttributeValueMultiThread );
-        //RUN_TEST_CASE( Full_PKCS11_EC, AFQP_SignVerifyMultiThread );
+        RUN_TEST_CASE( Full_PKCS11_EC, AFQP_FindObjectMultiThread );
+        RUN_TEST_CASE( Full_PKCS11_EC, AFQP_GetAttributeValueMultiThread );
+        RUN_TEST_CASE( Full_PKCS11_EC, AFQP_SignVerifyMultiThread );
 
         #if ( pkcs11testPREPROVISIONED_SUPPORT != 1 )
             RUN_TEST_CASE( Full_PKCS11_EC, AFQP_DestroyObject );
@@ -394,10 +394,10 @@ TEST_GROUP_RUNNER( Full_PKCS11_EC )
 }
 
 /* Data structure to store results of multi-thread tests. */
-#if 0
+#if pkcs11testMULTI_THREADED
 typedef struct MultithreadTaskParams
 {
-    BaseType_t xTaskNumber;
+    uint32_t xTaskNumber;
     CK_RV xTestResult;
     void * pvTaskData;
 } MultithreadTaskParams_t;
@@ -535,42 +535,26 @@ void prvAfterRunningTests_Object( void )
     #endif /* if ( pkcs11testIMPORT_PRIVATE_KEY_SUPPORT == 1 ) */
 }
 
-#if 0
+
+
+
+#if pkcs11testMULTI_THREADED
 
 static void prvMultiThreadHelper( void * pvTaskFxnPtr )
 {
-    BaseType_t xTaskNumber;
+    uint32_t xTaskNumber;
+    ThreadHandle_t threadHandles[ pkcs11testMULTI_THREAD_TASK_COUNT ];
 
-    /* Create the event group used to synchronize tasks. */
-    xSyncEventGroup = xEventGroupCreate();
-
-    if( xSyncEventGroup != NULL )
+    /* Create all the tasks. */
+    for( xTaskNumber = 0; xTaskNumber < pkcs11testMULTI_THREAD_TASK_COUNT; xTaskNumber++ )
     {
-        /* Create the sign verify loop tasks. */
-        for( xTaskNumber = 0; xTaskNumber < pkcs11testMULTI_THREAD_TASK_COUNT; xTaskNumber++ )
-        {
-            xGlobalTaskParams[ xTaskNumber ].xTaskNumber = xTaskNumber;
-            xGlobalTaskParams[ xTaskNumber ].xTestResult = 0xFFFFFFFF; /* Initialize to a non-zero value. */
+        threadHandles[ xTaskNumber ] = testParam.pThreadCreate( pvTaskFxnPtr, &( xGlobalTaskParams[ xTaskNumber ] ) );
+    }
 
-            xTaskCreate( ( TaskFunction_t ) pvTaskFxnPtr,              /* Task code. */
-                         "Multithread",                                /* All tasks have same name, but are distinguished by task number. */
-                         pkcs11testMULTI_TASK_STACK_SIZE,              /* Task stack size. */
-                         &( xGlobalTaskParams[ xTaskNumber ] ),        /* Where the task writes its result. */
-                         pkcs11testMULTI_TASK_PRIORITY,                /* Task priority. */
-                         NULL );                                       /* Task handle (not used). */
-        }
-
-        /* Wait for all tasks to finish. */
-        if( xEventGroupWaitBits( xSyncEventGroup,
-                                 pkcs11testALL_BITS,
-                                 pdFALSE,
-                                 pdTRUE,
-                                 pkcs11testEVENT_GROUP_TIMEOUT_MS ) != pkcs11testALL_BITS )
-        {
-            TEST_PRINTF( "Timed out waiting for tasks to finish in multi thread test.\r\n" );
-        }
-
-        vEventGroupDelete( xSyncEventGroup );
+    /* Wait for all the tasks. */
+    for( xTaskNumber = 0; xTaskNumber < pkcs11testMULTI_THREAD_TASK_COUNT; xTaskNumber++ )
+    {
+         testParam.pThreadTimedJoin( threadHandles[ xTaskNumber ], 1000 );
     }
 
     /* Check the tasks' results. */
@@ -587,7 +571,6 @@ static void prvMultiThreadHelper( void * pvTaskFxnPtr )
         }
     }
 }
-
 #endif
 
 /* Assumes that device is already provisioned at time of calling. */
@@ -1106,12 +1089,12 @@ TEST( Full_PKCS11_NoObject, AFQP_GenerateRandom )
     TEST_ASSERT_LESS_THAN( 2, xDifferentSessions );
 }
 
-#if 0
+#if pkcs11testMULTI_THREADED
 #define pkcs11testRANDOM_DATA_LENGTH    10
 static void prvGenerateRandomMultiThreadTask( void * pvParameters )
 {
     MultithreadTaskParams_t * pxMultiTaskParam = pvParameters;
-    BaseType_t xCount;
+    uint32_t xCount;
     CK_RV xResult;
     CK_BYTE xRandomData[ pkcs11testRANDOM_DATA_LENGTH ];
     CK_SESSION_HANDLE xSession;
@@ -1133,18 +1116,13 @@ static void prvGenerateRandomMultiThreadTask( void * pvParameters )
 
     /* Report the result of the loop. */
     pxMultiTaskParam->xTestResult = xResult;
-
-    /* Report that task is finished, then delete task. */
-    ( void ) xEventGroupSetBits( xSyncEventGroup,
-                                 ( 1 << pxMultiTaskParam->xTaskNumber ) );
-    vTaskDelete( NULL );
 }
 #endif
 
-#if 0
+#if pkcs11testMULTI_THREADED
 TEST( Full_PKCS11_NoObject, AFQP_GenerateRandomMultiThread )
 {
-    BaseType_t xTaskNumber;
+    uint32_t xTaskNumber;
     CK_SESSION_HANDLE xSessionHandle[ pkcs11testMULTI_THREAD_TASK_COUNT ];
 
     for( xTaskNumber = 0; xTaskNumber < pkcs11testMULTI_THREAD_TASK_COUNT; xTaskNumber++ )
@@ -2254,11 +2232,11 @@ TEST( Full_PKCS11_EC, AFQP_GetAttributeValue )
 
 
 /* Repeatedly tries to find previously provisioned private key and certificate. */
-#if 0
+#if pkcs11testMULTI_THREADED
 static void prvFindObjectMultiThreadTask( void * pvParameters )
 {
     MultithreadTaskParams_t * pxMultiTaskParam = pvParameters;
-    BaseType_t xCount;
+    uint32_t xCount;
     CK_RV xResult;
     CK_OBJECT_HANDLE xHandle;
     CK_SESSION_HANDLE xSession;
@@ -2308,21 +2286,16 @@ static void prvFindObjectMultiThreadTask( void * pvParameters )
 
     /* Report the result of the loop. */
     pxMultiTaskParam->xTestResult = xResult;
-
-    /* Report that task is finished, then delete task. */
-    ( void ) xEventGroupSetBits( xSyncEventGroup,
-                                 ( 1 << pxMultiTaskParam->xTaskNumber ) );
-    vTaskDelete( NULL );
 }
 #endif
 
-#if 0
+#if pkcs11testMULTI_THREADED
 
 /* Different session trying to find token objects. */
 TEST( Full_PKCS11_RSA, AFQP_FindObjectMultiThread )
 {
     CK_RV xResult;
-    BaseType_t xTaskNumber;
+    uint32_t xTaskNumber;
     CK_SESSION_HANDLE xSessionHandle[ pkcs11testMULTI_THREAD_TASK_COUNT ];
     CK_OBJECT_HANDLE xPrivateKey;
     CK_OBJECT_HANDLE xPublicKey;
@@ -2353,12 +2326,12 @@ TEST( Full_PKCS11_RSA, AFQP_FindObjectMultiThread )
 
 #endif
 
-#if 0
+#if pkcs11testMULTI_THREADED
 /* Different session trying to find token objects. */
 TEST( Full_PKCS11_EC, AFQP_FindObjectMultiThread )
 {
     CK_RV xResult;
-    BaseType_t xTaskNumber;
+    uint32_t xTaskNumber;
     CK_SESSION_HANDLE xSessionHandle[ pkcs11testMULTI_THREAD_TASK_COUNT ];
     CK_OBJECT_HANDLE xPrivateKey;
     CK_OBJECT_HANDLE xCertificate;
@@ -2388,11 +2361,11 @@ TEST( Full_PKCS11_EC, AFQP_FindObjectMultiThread )
 }
 #endif
 
-#if 0
+#if pkcs11testMULTI_THREADED
 static void prvECGetAttributeValueMultiThreadTask( void * pvParameters )
 {
     MultithreadTaskParams_t * pxMultiTaskParam = pvParameters;
-    BaseType_t xCount;
+    uint32_t xCount;
     CK_RV xResult;
     CK_OBJECT_HANDLE xPrivateKey;
     CK_OBJECT_HANDLE xCertificate;
@@ -2484,20 +2457,15 @@ static void prvECGetAttributeValueMultiThreadTask( void * pvParameters )
 
     /* Report the result of the loop. */
     pxMultiTaskParam->xTestResult = xResult;
-
-    /* Report that task is finished, then delete task. */
-    ( void ) xEventGroupSetBits( xSyncEventGroup,
-                                 ( 1 << pxMultiTaskParam->xTaskNumber ) );
-    vTaskDelete( NULL );
 }
 #endif
 
-#if 0
+#if pkcs11testMULTI_THREADED
 /* Same & different PKCS #11 sessions asking for attribute values of the same 2 objects. */
 TEST( Full_PKCS11_EC, AFQP_GetAttributeValueMultiThread )
 {
     CK_RV xResult;
-    BaseType_t xTaskNumber;
+    uint32_t xTaskNumber;
     CK_SESSION_HANDLE xSessionHandle[ pkcs11testMULTI_THREAD_TASK_COUNT ];
     CK_OBJECT_HANDLE xPrivateKey;
     CK_OBJECT_HANDLE xCertificate;
@@ -2537,7 +2505,7 @@ typedef struct SignVerifyMultiThread_t
     mbedtls_ecp_keypair * pxEcdsaContext; /* Pointer to the pre-parsed ECDSA key. */
 } SignVerifyMultiThread_t;
 
-#if 0
+#if pkcs11testMULTI_THREADED
 static void prvECSignVerifyMultiThreadTask( void * pvParameters )
 {
     MultithreadTaskParams_t * pxMultiTaskParam = pvParameters;
@@ -2545,7 +2513,7 @@ static void prvECSignVerifyMultiThreadTask( void * pvParameters )
     CK_SESSION_HANDLE xSession = pxSignStruct->xSession;
     CK_OBJECT_HANDLE xPrivateKey = pxSignStruct->xPrivateKey;
     CK_OBJECT_HANDLE xPublicKey = pxSignStruct->xPublicKey;
-    BaseType_t xCount;
+    uint32_t xCount;
     CK_RV xResult;
     /* Note that ECDSA operations on a signature of all 0's is not permitted. */
     CK_BYTE xHashedMessage[ pkcs11SHA256_DIGEST_LENGTH ] = { 0xab };
@@ -2579,7 +2547,7 @@ static void prvECSignVerifyMultiThreadTask( void * pvParameters )
 
         if( xResult != CKR_OK )
         {
-            TEST_PRINTF( "Multithread VerifyInit failed.  Error: %d, Count: %d \r\n", xResult, xCount );
+            TEST_PRINTF( "Multithread VerifyInit failed.  Error:     %d, Count: %d \r\n", xResult, xCount );
             break;
         }
 
@@ -2594,19 +2562,14 @@ static void prvECSignVerifyMultiThreadTask( void * pvParameters )
 
     /* Report the result of the loop. */
     pxMultiTaskParam->xTestResult = xResult;
-
-    /* Report that task is finished, then delete task. */
-    ( void ) xEventGroupSetBits( xSyncEventGroup,
-                                 ( 1 << pxMultiTaskParam->xTaskNumber ) );
-    vTaskDelete( NULL );
 }
 #endif
 
-#if 0
+#if pkcs11testMULTI_THREADED
 TEST( Full_PKCS11_EC, AFQP_SignVerifyMultiThread )
 {
     CK_RV xResult;
-    BaseType_t xTaskNumber;
+    uint32_t xTaskNumber;
     SignVerifyMultiThread_t xSignStructs[ pkcs11testMULTI_THREAD_TASK_COUNT ];
     CK_OBJECT_HANDLE xPrivateKey;
     CK_OBJECT_HANDLE xCertificate;
