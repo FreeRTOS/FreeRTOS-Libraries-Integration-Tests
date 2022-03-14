@@ -30,7 +30,7 @@
 /* corePKCS11 includes. */
 #include "core_pki_utils.h"
 #include "core_pkcs11.h"
-#include "core_test_pkcs11_config.h"
+#include "core_pkcs11_test_config.h"
 
 /* Device provisioning. */
 #include "aws_dev_mode_key_provisioning.h"
@@ -51,6 +51,37 @@
 
 /* corePKCS11 test includes. */
 #include "core_pkcs11_test.h"
+
+/**
+ * @brief Number of simultaneous tasks for multithreaded tests.
+ *
+ * Each task consumes both stack and heap space, which may cause memory allocation
+ * failures if too many tasks are created.
+ */
+#define pkcs11testMULTI_THREAD_TASK_COUNT     ( 2 )   /* FIXME. */
+
+/**
+ * @brief The number of iterations of the test that will run in multithread tests.
+ *
+ * A single iteration of Signing and Verifying may take up to a minute on some
+ * boards. Ensure that pkcs11testEVENT_GROUP_TIMEOUT is long enough to accommodate
+ * all iterations of the loop.
+ */
+#define pkcs11testMULTI_THREAD_LOOP_COUNT     ( 10 )  /* FIXME. */
+
+/**
+ * @brief
+ *
+ * All tasks of the SignVerifyRoundTrip_MultitaskLoop test must finish within
+ * this timeout, or the test will fail.
+ */
+#define pkcs11testEVENT_GROUP_TIMEOUT_MS      ( pdMS_TO_TICKS( 1000000UL ) )  /* FIXME. */
+
+#define pkcs11testMULTI_THREADED            ( 1 )
+
+#ifndef TEST_PRINTF
+    #define TEST_PRINTF( ... )
+#endif
 
 #if ( pkcs11testRSA_KEY_SUPPORT == 0 ) && ( pkcs11testEC_KEY_SUPPORT == 0 )
     #error "RSA or Elliptic curve keys (or both) must be supported."
@@ -346,12 +377,12 @@ static MultithreadTaskParams_t xGlobalTaskParams[ pkcs11testMULTI_THREAD_TASK_CO
 /*-----------------------------------------------------------*/
 /*           Multitask loop configuration.                   */
 /*-----------------------------------------------------------*/
-/* Stack size of each task. This can be configured in core_test_pkcs11_config.h. */
+/* Stack size of each task. This can be configured in core_pkcs11_test_config.h. */
 #ifndef pkcs11testMULTI_TASK_STACK_SIZE
     #define pkcs11testMULTI_TASK_STACK_SIZE    ( configMINIMAL_STACK_SIZE * 6 )
 #endif
 
-/* Priority of each task. This can be configured in core_test_pkcs11_config.h. */
+/* Priority of each task. This can be configured in core_pkcs11_test_config.h. */
 #ifndef pkcs11testMULTI_TASK_PRIORITY
     #define pkcs11testMULTI_TASK_PRIORITY    ( tskIDLE_PRIORITY )
 #endif

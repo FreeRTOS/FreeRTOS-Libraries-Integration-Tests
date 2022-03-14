@@ -41,7 +41,7 @@
 #include "core_pkcs11_config.h"
 #include "core_pkcs11.h"
 
-#include "core_test_pkcs11_config.h"
+#include "core_pkcs11_test_config.h"
 #include "core_pkcs11_test.h"
 
 /* Client credential includes. */
@@ -68,6 +68,10 @@
  * new image on device. */
 #ifndef keyprovisioningDELAY_BEFORE_KEY_PAIR_GENERATION_SECS
     #define keyprovisioningDELAY_BEFORE_KEY_PAIR_GENERATION_SECS    180
+#endif
+
+#ifndef DEV_MODE_KEY_PROVISIONING_PRINT
+    #define DEV_MODE_KEY_PROVISIONING_PRINT( ... )
 #endif
 
 /* Internal structure for parsing RSA keys. */
@@ -641,7 +645,7 @@ CK_RV xProvisionCertificate( CK_SESSION_HANDLE xSession,
     /* Initialize the client certificate template. */
     xCertificateTemplate.xObjectClass.type = CKA_CLASS;
     xCertificateTemplate.xObjectClass.pValue = &xCertificateClass;
-    xCertificateTemplate.xObjectClass.ulValueLen = sizeof( xCertificfteClass );
+    xCertificateTemplate.xObjectClass.ulValueLen = sizeof( xCertificateClass );
     xCertificateTemplate.xSubject.type = CKA_SUBJECT;
     xCertificateTemplate.xSubject.pValue = xSubject;
     xCertificateTemplate.xSubject.ulValueLen = strlen( ( const char * ) xSubject );
