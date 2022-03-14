@@ -41,6 +41,9 @@
 #include "core_pkcs11_config.h"
 #include "core_pkcs11.h"
 
+#include "core_test_pkcs11_config.h"
+#include "core_pkcs11_test.h"
+
 /* Client credential includes. */
 #include "aws_clientcredential_keys.h"
 #include "iot_default_root_certificates.h"
@@ -54,14 +57,6 @@
 /* mbedTLS includes. */
 #include "mbedtls/pk.h"
 #include "mbedtls/oid.h"
-
-/* Default FreeRTOS API for console logging. */
-#define DEV_MODE_KEY_PROVISIONING_PRINT( X )    printf X
-#define configPRINTF( X )   printf X
-
-/* For writing log lines without a prefix. */
-// extern void vLoggingPrint( const char * pcFormat );
-#define vLoggingPrint   printf
 
 /* Developer convenience override, for lab testing purposes, for generating
  * a new default key pair, regardless of whether an existing key pair is present. */
@@ -120,6 +115,8 @@ extern int convert_pem_to_der( const unsigned char * pucInput,
                                unsigned char * pucOutput,
                                size_t * pxOlen );
 
+extern Pkcs11TestParam_t testParam;
+
 /*-----------------------------------------------------------*/
 
 /* Import the specified ECDSA private key into storage. */
@@ -143,7 +140,7 @@ static CK_RV prvProvisionPrivateECKey( CK_SESSION_HANDLE xSession,
 #define EC_PARAMS_LENGTH    10
 #define EC_D_LENGTH         32
 
-    pxD = malloc( EC_D_LENGTH );
+    pxD = testParam.pPkcsMalloc( EC_D_LENGTH );
 
     if( ( pxD == NULL ) )
     {
@@ -156,7 +153,7 @@ static CK_RV prvProvisionPrivateECKey( CK_SESSION_HANDLE xSession,
 
         if( lMbedResult != 0 )
         {
-            DEV_MODE_KEY_PROVISIONING_PRINT( ( "Failed to parse EC private key components. \r\n" ) );
+            DEV_MODE_KEY_PROVISIONING_PRINT( "Failed to parse EC private key components. \r\n" );
             xResult = CKR_ATTRIBUTE_VALUE_INVALID;
         }
     }
@@ -203,7 +200,7 @@ static CK_RV prvProvisionPrivateECKey( CK_SESSION_HANDLE xSession,
 
     if( pxD != NULL )
     {
-        free( pxD );
+        testParam.pPkcsFree( pxD );
     }
 
     return xResult;
@@ -228,7 +225,7 @@ static CK_RV prvProvisionPrivateRSAKey( CK_SESSION_HANDLE xSession,
 
     xResult = C_GetFunctionList( &pxFunctionList );
 
-    pxRsaParams = malloc( sizeof( RsaParams_t ) );
+    pxRsaParams = testParam.pPkcsMalloc( sizeof( RsaParams_t ) );
 
     if( pxRsaParams == NULL )
     {
@@ -248,7 +245,7 @@ static CK_RV prvProvisionPrivateRSAKey( CK_SESSION_HANDLE xSession,
 
         if( lMbedResult != 0 )
         {
-            DEV_MODE_KEY_PROVISIONING_PRINT( ( "Failed to parse RSA private key components. \r\n" ) );
+            DEV_MODE_KEY_PROVISIONING_PRINT( "Failed to parse RSA private key components. \r\n" );
             xResult = CKR_ATTRIBUTE_VALUE_INVALID;
         }
 
@@ -259,7 +256,7 @@ static CK_RV prvProvisionPrivateRSAKey( CK_SESSION_HANDLE xSession,
 
         if( lMbedResult != 0 )
         {
-            DEV_MODE_KEY_PROVISIONING_PRINT( ( "Failed to parse RSA private key Chinese Remainder Theorem variables. \r\n" ) );
+            DEV_MODE_KEY_PROVISIONING_PRINT( "Failed to parse RSA private key Chinese Remainder Theorem variables. \r\n" );
             xResult = CKR_ATTRIBUTE_VALUE_INVALID;
         }
     }
@@ -302,7 +299,7 @@ static CK_RV prvProvisionPrivateRSAKey( CK_SESSION_HANDLE xSession,
 
     if( NULL != pxRsaParams )
     {
-        free( pxRsaParams );
+        testParam.pPkcsFree( pxRsaParams );
     }
 
     return xResult;
@@ -327,7 +324,7 @@ CK_RV xProvisionPrivateKey( CK_SESSION_HANDLE xSession,
 
     if( lMbedResult != 0 )
     {
-        DEV_MODE_KEY_PROVISIONING_PRINT( ( "Unable to parse private key.\r\n" ) );
+        DEV_MODE_KEY_PROVISIONING_PRINT( "Unable to parse private key.\r\n" );
         xResult = CKR_ARGUMENTS_BAD;
     }
 
@@ -352,7 +349,7 @@ CK_RV xProvisionPrivateKey( CK_SESSION_HANDLE xSession,
         }
         else
         {
-            DEV_MODE_KEY_PROVISIONING_PRINT( ( "Invalid private key type provided.  RSA-2048 and EC P-256 keys are supported.\r\n" ) );
+            DEV_MODE_KEY_PROVISIONING_PRINT( "Invalid private key type provided.  RSA-2048 and EC P-256 keys are supported.\r\n" );
             xResult = CKR_ARGUMENTS_BAD;
         }
     }
@@ -395,7 +392,7 @@ CK_RV xProvisionPublicKey( CK_SESSION_HANDLE xSession,
 
     if( lMbedResult != 0 )
     {
-        DEV_MODE_KEY_PROVISIONING_PRINT( ( "Failed to parse the public key. \r\n" ) );
+        DEV_MODE_KEY_PROVISIONING_PRINT( "Failed to parse the public key. \r\n" );
         xResult = CKR_ARGUMENTS_BAD;
     }
 
@@ -481,7 +478,7 @@ CK_RV xProvisionPublicKey( CK_SESSION_HANDLE xSession,
     else
     {
         xResult = CKR_ATTRIBUTE_VALUE_INVALID;
-        configPRINTF( ( "Invalid key type. Supported options are CKK_RSA and CKK_EC" ) );
+        DEV_MODE_KEY_PROVISIONING_PRINT( "Invalid key type. Supported options are CKK_RSA and CKK_EC" );
     }
 
     mbedtls_pk_free( &xMbedPkContext );
@@ -644,7 +641,7 @@ CK_RV xProvisionCertificate( CK_SESSION_HANDLE xSession,
     /* Initialize the client certificate template. */
     xCertificateTemplate.xObjectClass.type = CKA_CLASS;
     xCertificateTemplate.xObjectClass.pValue = &xCertificateClass;
-    xCertificateTemplate.xObjectClass.ulValueLen = sizeof( xCertificateClass );
+    xCertificateTemplate.xObjectClass.ulValueLen = sizeof( xCertificfteClass );
     xCertificateTemplate.xSubject.type = CKA_SUBJECT;
     xCertificateTemplate.xSubject.pValue = xSubject;
     xCertificateTemplate.xSubject.ulValueLen = strlen( ( const char * ) xSubject );
@@ -674,7 +671,7 @@ CK_RV xProvisionCertificate( CK_SESSION_HANDLE xSession,
         /* Convert the certificate to DER format if it was in PEM. The DER key
          * should be about 3/4 the size of the PEM key, so mallocing the PEM key
          * size is sufficient. */
-        pucDerObject = malloc( xCertificateTemplate.xValue.ulValueLen );
+        pucDerObject = testParam.pPkcsMalloc( xCertificateTemplate.xValue.ulValueLen );
         xDerLen = xCertificateTemplate.xValue.ulValueLen;
 
         if( pucDerObject != NULL )
@@ -714,7 +711,7 @@ CK_RV xProvisionCertificate( CK_SESSION_HANDLE xSession,
     /* Create an object using the encoded client certificate. */
     if( xResult == CKR_OK )
     {
-        configPRINTF( ( "Write certificate...\r\n" ) );
+        DEV_MODE_KEY_PROVISIONING_PRINT( "Write certificate...\r\n" );
 
         xResult = pxFunctionList->C_CreateObject( xSession,
                                                   ( CK_ATTRIBUTE_PTR ) &xCertificateTemplate,
@@ -724,7 +721,7 @@ CK_RV xProvisionCertificate( CK_SESSION_HANDLE xSession,
 
     if( pucDerObject != NULL )
     {
-        free( pucDerObject );
+        testParam.pPkcsFree( pucDerObject );
     }
 
     return xResult;
@@ -874,7 +871,7 @@ static CK_RV prvExportPublicKey( CK_SESSION_HANDLE xSession,
             *pulDerPublicKeyLength = xTemplate.ulValueLen;
 
             /* Get a heap buffer. */
-            *ppucDerPublicKey = malloc( xTemplate.ulValueLen );
+            *ppucDerPublicKey = testParam.pPkcsMalloc( xTemplate.ulValueLen );
 
             /* Check for resource exhaustion. */
             if( NULL == *ppucDerPublicKey )
@@ -904,7 +901,7 @@ static CK_RV prvExportPublicKey( CK_SESSION_HANDLE xSession,
     /* Free memory if there was an error after allocation. */
     if( ( NULL != *ppucDerPublicKey ) && ( CKR_OK != xResult ) )
     {
-        free( *ppucDerPublicKey );
+        testParam.pPkcsFree( *ppucDerPublicKey );
         *ppucDerPublicKey = NULL;
     }
 
@@ -973,7 +970,7 @@ static CK_RV prvGetProvisionedState( CK_SESSION_HANDLE xSession,
     if( CKR_OK == xResult )
     {
         xResult = pxFunctionList->C_GetTokenInfo( pxSlotId[ 0 ], &xTokenInfo );
-        free( pxSlotId );
+        testParam.pPkcsFree( pxSlotId );
     }
 
     if( ( CKR_OK == xResult ) && ( '\0' != xTokenInfo.label[ 0 ] ) && ( ' ' != xTokenInfo.label[ 0 ] ) )
@@ -991,7 +988,7 @@ static CK_RV prvGetProvisionedState( CK_SESSION_HANDLE xSession,
 
         if( 0 != i )
         {
-            pxProvisionedState->pcIdentifier = ( char * ) malloc( 1 + i * sizeof( xTokenInfo.label[ 0 ] ) );
+            pxProvisionedState->pcIdentifier = ( char * ) testParam.pPkcsMalloc( 1 + i * sizeof( xTokenInfo.label[ 0 ] ) );
 
             if( NULL != pxProvisionedState->pcIdentifier )
             {
@@ -1026,7 +1023,7 @@ static void prvWriteHexBytesToConsole( char * pcDescription,
     uint8_t ucByteValue = 0;
 
     /* Write help text to the console. */
-    configPRINTF( ( "%s, %d bytes:\r\n", pcDescription, ulDataLength ) );
+    DEV_MODE_KEY_PROVISIONING_PRINT( "%s, %d bytes:\r\n", pcDescription, ulDataLength );
 
     /* Iterate over the bytes of the encoded public key. */
     for( ; ulIndex < ulDataLength; ulIndex++ )
@@ -1050,8 +1047,8 @@ static void prvWriteHexBytesToConsole( char * pcDescription,
         if( 0 == ( ( ulIndex + 1 ) % BYTES_TO_DISPLAY_PER_ROW ) )
         {
             *pcNextChar = '\0';
-            vLoggingPrint( pcByteRow );
-            vLoggingPrint( "\r\n" );
+            DEV_MODE_KEY_PROVISIONING_PRINT( pcByteRow );
+            DEV_MODE_KEY_PROVISIONING_PRINT( "\r\n" );
             pcNextChar = pcByteRow;
         }
     }
@@ -1060,8 +1057,8 @@ static void prvWriteHexBytesToConsole( char * pcDescription,
     if( pcNextChar > pcByteRow )
     {
         *pcNextChar = '\0';
-        vLoggingPrint( pcByteRow );
-        vLoggingPrint( "\r\n" );
+        DEV_MODE_KEY_PROVISIONING_PRINT( pcByteRow );
+        DEV_MODE_KEY_PROVISIONING_PRINT( "\r\n" );
     }
 }
 
@@ -1096,7 +1093,7 @@ CK_RV xProvisionDevice( CK_SESSION_HANDLE xSession,
 
             if( xResult != CKR_OK )
             {
-                configPRINTF( ( "Warning: could not clean-up old crypto objects. %d \r\n", xResult ) );
+                DEV_MODE_KEY_PROVISIONING_PRINT( "Warning: could not clean-up old crypto objects. %ld \r\n", xResult );
             }
         }
     #endif /* if ( pkcs11configIMPORT_PRIVATE_KEYS_SUPPORTED == 1 ) */
@@ -1113,7 +1110,7 @@ CK_RV xProvisionDevice( CK_SESSION_HANDLE xSession,
 
         if( ( xResult != CKR_OK ) || ( xObject == CK_INVALID_HANDLE ) )
         {
-            configPRINTF( ( "ERROR: Failed to provision device certificate. %d \r\n", xResult ) );
+            DEV_MODE_KEY_PROVISIONING_PRINT( "ERROR: Failed to provision device certificate. %ld \r\n", xResult );
         }
     }
 
@@ -1131,7 +1128,7 @@ CK_RV xProvisionDevice( CK_SESSION_HANDLE xSession,
 
             if( ( xResult != CKR_OK ) || ( xObject == CK_INVALID_HANDLE ) )
             {
-                configPRINTF( ( "ERROR: Failed to provision device private key with status %d.\r\n", xResult ) );
+                DEV_MODE_KEY_PROVISIONING_PRINT( "ERROR: Failed to provision device private key with status %ld.\r\n", xResult );
             }
             else
             {
@@ -1156,7 +1153,7 @@ CK_RV xProvisionDevice( CK_SESSION_HANDLE xSession,
         if( xResult == CKR_DEVICE_MEMORY )
         {
             xResult = CKR_OK;
-            configPRINTF( ( "Warning: no persistent storage is available for the JITP certificate. The certificate in aws_clientcredential_keys.h will be used instead.\r\n" ) );
+            DEV_MODE_KEY_PROVISIONING_PRINT( "Warning: no persistent storage is available for the JITP certificate. The certificate in aws_clientcredential_keys.h will be used instead.\r\n" );
         }
     }
 
@@ -1202,7 +1199,7 @@ CK_RV xProvisionDevice( CK_SESSION_HANDLE xSession,
          * image that generates new key-pair is avoided because the logic of generating new key-pair is not executed
          * before the flashing process starts loading the new image onto the board.
          * Note: The delay of 150 seconds is used based on testing with an ESP32+ECC608A board. */
-        configPRINTF( ( "Waiting for %d seconds before generating key-pair", keyprovisioningDELAY_BEFORE_KEY_PAIR_GENERATION_SECS ) );
+        DEV_MODE_KEY_PROVISIONING_PRINT( "Waiting for %d seconds before generating key-pair", keyprovisioningDELAY_BEFORE_KEY_PAIR_GENERATION_SECS );
         // vTaskDelay( pdMS_TO_TICKS( keyprovisioningDELAY_BEFORE_KEY_PAIR_GENERATION_SECS * 1000 ) );
 
         /* Generate a new default key pair. */
@@ -1217,7 +1214,7 @@ CK_RV xProvisionDevice( CK_SESSION_HANDLE xSession,
             /* Clean-up the previous buffer, if any. */
             if( NULL != xProvisionedState.pucDerPublicKey )
             {
-                free( xProvisionedState.pucDerPublicKey );
+                testParam.pPkcsFree( xProvisionedState.pucDerPublicKey );
                 xProvisionedState.pucDerPublicKey = NULL;
             }
 
@@ -1243,7 +1240,7 @@ CK_RV xProvisionDevice( CK_SESSION_HANDLE xSession,
      * matches the public key on the device. */
     if( CK_INVALID_HANDLE != xProvisionedState.xPublicKey )
     {
-        configPRINTF( ( "Printing device public key.\nMake sure that provisioned device certificate matches public key on device." ) );
+        DEV_MODE_KEY_PROVISIONING_PRINT( "Printing device public key.\nMake sure that provisioned device certificate matches public key on device." );
         prvWriteHexBytesToConsole( "Device public key",
                                    xProvisionedState.pucDerPublicKey,
                                    xProvisionedState.ulDerPublicKeyLength );
@@ -1256,23 +1253,23 @@ CK_RV xProvisionDevice( CK_SESSION_HANDLE xSession,
           ( CK_TRUE == xKeyPairGenerationMode ) ) &&
         ( CK_FALSE == xImportedPrivateKey ) )
     {
-        configPRINTF( ( "Warning: the client certificate should be updated. Please see https://aws.amazon.com/freertos/getting-started/.\r\n" ) );
+        DEV_MODE_KEY_PROVISIONING_PRINT( "Warning: the client certificate should be updated. Please see https://aws.amazon.com/freertos/getting-started/.\r\n" );
 
         if( NULL != xProvisionedState.pcIdentifier )
         {
-            configPRINTF( ( "Recommended certificate subject name: CN=%s\r\n", xProvisionedState.pcIdentifier ) );
+            DEV_MODE_KEY_PROVISIONING_PRINT( "Recommended certificate subject name: CN=%s\r\n", xProvisionedState.pcIdentifier );
         }
     }
 
     /* Free memory. */
     if( NULL != xProvisionedState.pucDerPublicKey )
     {
-        free( xProvisionedState.pucDerPublicKey );
+        testParam.pPkcsFree( xProvisionedState.pucDerPublicKey );
     }
 
     if( NULL != xProvisionedState.pcIdentifier )
     {
-        free( xProvisionedState.pcIdentifier );
+        testParam.pPkcsFree( xProvisionedState.pcIdentifier );
     }
 
     return xResult;

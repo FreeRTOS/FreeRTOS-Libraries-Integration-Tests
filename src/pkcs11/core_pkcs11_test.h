@@ -17,7 +17,7 @@ typedef void * ( * PkcsMalloc_t )( size_t size );
 typedef void ( * PkcsFree_t )( void *ptr );
 
 
-typedef void * ( * ThreadFunction_t )( void * pParam );
+typedef void ( * ThreadFunction_t )( void * pParam );
 
 typedef void * ThreadHandle_t;
 

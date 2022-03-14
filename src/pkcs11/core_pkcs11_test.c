@@ -75,7 +75,7 @@ typedef enum
 /**
  * @brief Struct of test parameters filled in by user.
  */
-static Pkcs11TestParam_t testParam = { 0 };
+Pkcs11TestParam_t testParam = { 0 };
 
 /* PKCS #11 Globals.
  * These are used to reduce setup and tear down calls, and to
@@ -196,7 +196,9 @@ TEST_GROUP_RUNNER( Full_PKCS11_NoObject )
     RUN_TEST_CASE( Full_PKCS11_NoObject, AFQP_Digest );
     RUN_TEST_CASE( Full_PKCS11_NoObject, AFQP_Digest_ErrorConditions );
     RUN_TEST_CASE( Full_PKCS11_NoObject, AFQP_GenerateRandom );
+#if ( pkcs11testMULTI_THREADED == 1 )
     RUN_TEST_CASE( Full_PKCS11_NoObject, AFQP_GenerateRandomMultiThread );
+#endif
 
     prvAfterRunningTests_NoObject();
 }
@@ -237,7 +239,9 @@ TEST_GROUP_RUNNER( Full_PKCS11_RSA )
          */
 
         RUN_TEST_CASE( Full_PKCS11_RSA, AFQP_FindObject );
-        //RUN_TEST_CASE( Full_PKCS11_RSA, AFQP_FindObjectMultiThread );
+        #if ( pkcs11testMULTI_THREADED == 1 )
+            RUN_TEST_CASE( Full_PKCS11_RSA, AFQP_FindObjectMultiThread );
+        #endif
         RUN_TEST_CASE( Full_PKCS11_RSA, AFQP_GetAttributeValue );
         RUN_TEST_CASE( Full_PKCS11_RSA, AFQP_Sign );
 
@@ -303,9 +307,11 @@ TEST_GROUP_RUNNER( Full_PKCS11_EC )
         RUN_TEST_CASE( Full_PKCS11_EC, AFQP_Sign );
         RUN_TEST_CASE( Full_PKCS11_EC, AFQP_Verify );
 
-        RUN_TEST_CASE( Full_PKCS11_EC, AFQP_FindObjectMultiThread );
-        RUN_TEST_CASE( Full_PKCS11_EC, AFQP_GetAttributeValueMultiThread );
-        RUN_TEST_CASE( Full_PKCS11_EC, AFQP_SignVerifyMultiThread );
+        #if ( pkcs11testMULTI_THREADED == 1 )
+            RUN_TEST_CASE( Full_PKCS11_EC, AFQP_FindObjectMultiThread );
+            RUN_TEST_CASE( Full_PKCS11_EC, AFQP_GetAttributeValueMultiThread );
+            RUN_TEST_CASE( Full_PKCS11_EC, AFQP_SignVerifyMultiThread );
+        #endif
 
         #if ( pkcs11testPREPROVISIONED_SUPPORT != 1 )
             RUN_TEST_CASE( Full_PKCS11_EC, AFQP_DestroyObject );
@@ -334,7 +340,6 @@ typedef struct MultithreadTaskParams
 } MultithreadTaskParams_t;
 
 /* Event group used to synchronize tasks. */
-// static EventGroupHandle_t xSyncEventGroup;
 static MultithreadTaskParams_t xGlobalTaskParams[ pkcs11testMULTI_THREAD_TASK_COUNT ];
 #endif
 
@@ -467,9 +472,7 @@ void prvAfterRunningTests_Object( void )
 }
 
 
-
-
-#if pkcs11testMULTI_THREADED
+#if ( pkcs11testMULTI_THREADED == 1 )
 
 static void prvMultiThreadHelper( void * pvTaskFxnPtr )
 {
@@ -485,7 +488,7 @@ static void prvMultiThreadHelper( void * pvTaskFxnPtr )
     /* Wait for all the tasks. */
     for( xTaskNumber = 0; xTaskNumber < pkcs11testMULTI_THREAD_TASK_COUNT; xTaskNumber++ )
     {
-         testParam.pThreadTimedJoin( threadHandles[ xTaskNumber ], 1000 );
+         testParam.pThreadTimedJoin( threadHandles[ xTaskNumber ], pkcs11testEVENT_GROUP_TIMEOUT_MS );
     }
 
     /* Check the tasks' results. */
@@ -773,7 +776,7 @@ TEST( Full_PKCS11_Capabilities, AFQP_Capabilities )
             TEST_FAIL_MESSAGE( "Static and runtime configuration for key generation support are inconsistent." );
         #endif
 
-        TEST_MESSAGE( "The PKCS #11 module supports RSA signing.\r\n" );
+        TEST_PRINTF( "The PKCS #11 module supports RSA signing.\r\n" );
     }
 
     /* Check for ECDSA support, if applicable. */
@@ -792,7 +795,7 @@ TEST( Full_PKCS11_Capabilities, AFQP_Capabilities )
             TEST_FAIL_MESSAGE( "Static and runtime configuration for key generation support are inconsistent." );
         #endif
 
-        TEST_MESSAGE( "The PKCS #11 module supports ECDSA.\r\n" );
+        TEST_PRINTF( "The PKCS #11 module supports ECDSA.\r\n" );
     }
 
     #if ( pkcs11testPREPROVISIONED_SUPPORT != 1 )
@@ -808,7 +811,7 @@ TEST( Full_PKCS11_Capabilities, AFQP_Capabilities )
                               MechanismInfo.ulMinKeySize <= pkcs11ECDSA_P256_KEY_BITS );
 
             xSupportsKeyGen = CK_TRUE;
-            TEST_MESSAGE( "The PKCS #11 module supports elliptic-curve key generation.\r\n" );
+            TEST_PRINTF( "The PKCS #11 module supports elliptic-curve key generation.\r\n" );
         }
 
         /* Check for consistency between static configuration and runtime key
@@ -836,7 +839,7 @@ TEST( Full_PKCS11_Capabilities, AFQP_Capabilities )
 
     /* Report on static configuration for key import support. */
     #if ( 1 == pkcs11testIMPORT_PRIVATE_KEY_SUPPORT )
-        TEST_MESSAGE( "The PKCS #11 module supports private key import.\r\n" );
+        TEST_PRINTF( "The PKCS #11 module supports private key import.\r\n" );
     #endif
 }
 
@@ -1040,7 +1043,7 @@ static void prvGenerateRandomMultiThreadTask( void * pvParameters )
 
         if( xResult != CKR_OK )
         {
-            TEST_PRINTF( "GenerateRandom multi-thread task failed.  Error: %d \r\n", xResult );
+            TEST_PRINTF( "GenerateRandom multi-thread task failed.  Error: %ld \r\n", xResult );
             break;
         }
     }
@@ -2184,7 +2187,7 @@ static void prvFindObjectMultiThreadTask( void * pvParameters )
 
         if( xResult != CKR_OK )
         {
-            TEST_PRINTF( "FindObject multithreaded task failed to find private key.  Error: %d  Count: %d \r\n", xResult, xCount );
+            TEST_PRINTF( "FindObject multithreaded task failed to find private key.  Error: %ld  Count: %d \r\n", xResult, xCount );
             break;
         }
 
@@ -2203,7 +2206,7 @@ static void prvFindObjectMultiThreadTask( void * pvParameters )
 
         if( xResult != CKR_OK )
         {
-            TEST_PRINTF( "FindObject multithreaded task failed to find certificate.  Error: %d  Count: %d \r\n", xResult, xCount );
+            TEST_PRINTF( "FindObject multithreaded task failed to find certificate.  Error: %ld  Count: %d \r\n", xResult, xCount );
             break;
         }
 
@@ -2319,7 +2322,7 @@ static void prvECGetAttributeValueMultiThreadTask( void * pvParameters )
     if( ( xResult != CKR_OK ) || ( xPrivateKey == CK_INVALID_HANDLE ) )
     {
         xResult = 1;
-        TEST_PRINTF( "Failed to find private key.  Return Value: %d  Handle: %d \r\n", xResult, xPrivateKey );
+        TEST_PRINTF( "Failed to find private key.  Return Value: %ld  Handle: %ld \r\n", xResult, xPrivateKey );
     }
 
     xResult = xFindObjectWithLabelAndClass( xSession,
@@ -2331,7 +2334,7 @@ static void prvECGetAttributeValueMultiThreadTask( void * pvParameters )
     if( ( xResult != CKR_OK ) || ( xCertificate == CK_INVALID_HANDLE ) )
     {
         xResult = 1;
-        TEST_PRINTF( "Failed to find certificate key.  Return Value: %d  Handle: %d \r\n", xResult, xCertificate );
+        TEST_PRINTF( "Failed to find certificate key.  Return Value: %ld  Handle: %ld \r\n", xResult, xCertificate );
     }
 
     if( xResult == CKR_OK )
@@ -2346,13 +2349,13 @@ static void prvECGetAttributeValueMultiThreadTask( void * pvParameters )
 
             if( xResult != CKR_OK )
             {
-                TEST_PRINTF( "GetAttributeValue multithread test failed to get private key's EC Params.  Error: %d  Count: %d \r\n", xResult, xCount );
+                TEST_PRINTF( "GetAttributeValue multithread test failed to get private key's EC Params.  Error: %ld  Count: %d \r\n", xResult, xCount );
                 break;
             }
 
             if( memcmp( xEcParams, xEcParamsExpected, sizeof( xEcParams ) ) )
             {
-                TEST_PRINTF( "GetAttributeValue multithread test returned an incorrect value for EC Params.  Error: %d  Count: %d \r\n", xResult, xCount );
+                TEST_PRINTF( "GetAttributeValue multithread test returned an incorrect value for EC Params.  Error: %ld  Count: %d \r\n", xResult, xCount );
                 xResult = 1;
                 break;
             }
@@ -2364,7 +2367,7 @@ static void prvECGetAttributeValueMultiThreadTask( void * pvParameters )
 
             if( xResult != CKR_OK )
             {
-                TEST_PRINTF( "GetAttributeValue multi-thread task failed to get certificate.  Error: %d  Count: %d \r\n", xResult, xCount );
+                TEST_PRINTF( "GetAttributeValue multi-thread task failed to get certificate.  Error: %ld  Count: %d \r\n", xResult, xCount );
                 xResult = 1;
                 break;
             }
@@ -2461,7 +2464,7 @@ static void prvECSignVerifyMultiThreadTask( void * pvParameters )
 
         if( xResult != CKR_OK )
         {
-            TEST_PRINTF( "Sign multi-threaded test failed to SignInit. Error: %d  Count: %d \r\n", xResult, xCount );
+            TEST_PRINTF( "Sign multi-threaded test failed to SignInit. Error: %ld  Count: %d \r\n", xResult, xCount );
             break;
         }
 
@@ -2470,7 +2473,7 @@ static void prvECSignVerifyMultiThreadTask( void * pvParameters )
 
         if( xResult != CKR_OK )
         {
-            TEST_PRINTF( "Sign multi-threaded test failed to Sign. Error: %d  Count: %d \r\n", xResult, xCount );
+            TEST_PRINTF( "Sign multi-threaded test failed to Sign. Error: %ld  Count: %d \r\n", xResult, xCount );
             break;
         }
 
@@ -2478,7 +2481,7 @@ static void prvECSignVerifyMultiThreadTask( void * pvParameters )
 
         if( xResult != CKR_OK )
         {
-            TEST_PRINTF( "Multithread VerifyInit failed.  Error:     %d, Count: %d \r\n", xResult, xCount );
+            TEST_PRINTF( "Multithread VerifyInit failed.  Error:     %ld, Count: %d \r\n", xResult, xCount );
             break;
         }
 
@@ -2486,7 +2489,7 @@ static void prvECSignVerifyMultiThreadTask( void * pvParameters )
 
         if( xResult != CKR_OK )
         {
-            TEST_PRINTF( "Multithread Verify failed.  Error: %d, Count: %d \r\n", xResult, xCount );
+            TEST_PRINTF( "Multithread Verify failed.  Error: %ld, Count: %d \r\n", xResult, xCount );
             break;
         }
     }
