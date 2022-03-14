@@ -790,7 +790,7 @@ TEST( Full_PKCS11_Capabilities, AFQP_Capabilities )
             TEST_FAIL_MESSAGE( "Static and runtime configuration for key generation support are inconsistent." );
         #endif
 
-        TEST_PRINTF( "The PKCS #11 module supports RSA signing.\r\n" );
+        TEST_PRINTF( "%s", "The PKCS #11 module supports RSA signing.\r\n" );
     }
 
     /* Check for ECDSA support, if applicable. */
@@ -809,7 +809,7 @@ TEST( Full_PKCS11_Capabilities, AFQP_Capabilities )
             TEST_FAIL_MESSAGE( "Static and runtime configuration for key generation support are inconsistent." );
         #endif
 
-        TEST_PRINTF( "The PKCS #11 module supports ECDSA.\r\n" );
+        TEST_PRINTF( "%s", "The PKCS #11 module supports ECDSA.\r\n" );
     }
 
     #if ( PKCS11_TEST_PREPROVISIONED_SUPPORT != 1 )
@@ -825,7 +825,7 @@ TEST( Full_PKCS11_Capabilities, AFQP_Capabilities )
                               MechanismInfo.ulMinKeySize <= pkcs11ECDSA_P256_KEY_BITS );
 
             xSupportsKeyGen = CK_TRUE;
-            TEST_PRINTF( "The PKCS #11 module supports elliptic-curve key generation.\r\n" );
+            TEST_PRINTF( "%s", "The PKCS #11 module supports elliptic-curve key generation.\r\n" );
         }
 
         /* Check for consistency between static configuration and runtime key
@@ -853,7 +853,7 @@ TEST( Full_PKCS11_Capabilities, AFQP_Capabilities )
 
     /* Report on static configuration for key import support. */
     #if ( 1 == PKCS11_TEST_IMPORT_PRIVATE_KEY_SUPPORT )
-        TEST_PRINTF( "The PKCS #11 module supports private key import.\r\n" );
+        TEST_PRINTF( "%s", "The PKCS #11 module supports private key import.\r\n" );
     #endif
 }
 

@@ -47,14 +47,14 @@
 /*
  * @brief Set to 1 if importing device private key via C_CreateObject is supported.  0 if not.
  */
-#define PKCS11_TEST_IMPORT_PRIVATE_KEY_SUPPORT       ( 0 )  /* FIXME. */
+#define PKCS11_TEST_IMPORT_PRIVATE_KEY_SUPPORT       ( 1 )  /* FIXME. */
 
 /*
  * @brief Set to 1 if generating a device private-public key pair via C_GenerateKeyPair. 0 if not.
  */
-#define PKCS11_TEST_GENERATE_KEYPAIR_SUPPORT    ( 0 )  /* FIXME. */
+#define PKCS11_TEST_GENERATE_KEYPAIR_SUPPORT    ( 1 )  /* FIXME. */
 
-#define PKCS11_TEST_PREPROVISIONED_SUPPORT      ( 1 )
+#define PKCS11_TEST_PREPROVISIONED_SUPPORT      ( 0 )
 
 /**
  * @brief The PKCS #11 label for device private key for test.
