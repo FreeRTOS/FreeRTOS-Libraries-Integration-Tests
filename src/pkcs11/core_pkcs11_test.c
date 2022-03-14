@@ -116,33 +116,16 @@ TEST_GROUP( Full_PKCS11_RSA );
 /* The EC test group is for tests that require elliptic curve keys. */
 TEST_GROUP( Full_PKCS11_EC );
 
-/* #define PKCS11_TEST_MEMORY_LEAK */
-#ifdef PKCS11_TEST_MEMORY_LEAK
-    uint32_t xHeapBefore;
-    uint32_t xHeapAfter;
-#endif
-
 CK_RV prvBeforeRunningTests();
 void prvAfterRunningTests_NoObject();
 void prvAfterRunningTests_Object();
 
 TEST_SETUP( Full_PKCS11_StartFinish )
 {
-    #ifdef PKCS11_TEST_MEMORY_LEAK
-        /* Give the print buffer time to empty */
-        vTaskDelay( 500 );
-        xHeapBefore = xPortGetFreeHeapSize();
-    #endif
 }
 
 TEST_TEAR_DOWN( Full_PKCS11_StartFinish )
 {
-    #ifdef PKCS11_TEST_MEMORY_LEAK
-        /* Give the print buffer time to empty */
-        vTaskDelay( 500 );
-        xHeapAfter = xPortGetFreeHeapSize();
-        TEST_PRINTF( "Heap before %d, Heap After %d, Difference %d \r\n", xHeapBefore, xHeapAfter, ( xHeapAfter - xHeapBefore ) );
-    #endif
 }
 
 TEST_GROUP_RUNNER( Full_PKCS11_StartFinish )
@@ -164,12 +147,6 @@ TEST_SETUP( Full_PKCS11_Capabilities )
     TEST_ASSERT_EQUAL_MESSAGE( CKR_OK, xResult, "Failed to initialize PKCS #11 module." );
     xResult = xInitializePkcs11Session( &xGlobalSession );
     TEST_ASSERT_EQUAL_MESSAGE( CKR_OK, xResult, "Failed to open PKCS #11 session." );
-
-    #ifdef PKCS11_TEST_MEMORY_LEAK
-        /* Give the print buffer time to empty */
-        vTaskDelay( 500 );
-        xHeapBefore = xPortGetFreeHeapSize();
-    #endif
 }
 
 TEST_TEAR_DOWN( Full_PKCS11_Capabilities )
@@ -180,13 +157,6 @@ TEST_TEAR_DOWN( Full_PKCS11_Capabilities )
     TEST_ASSERT_EQUAL_MESSAGE( CKR_OK, xResult, "Failed to close session." );
     xResult = pxGlobalFunctionList->C_Finalize( NULL );
     TEST_ASSERT_EQUAL_MESSAGE( CKR_OK, xResult, "Failed to finalize session." );
-
-    #ifdef PKCS11_TEST_MEMORY_LEAK
-        /* Give the print buffer time to empty */
-        vTaskDelay( 500 );
-        xHeapAfter = xPortGetFreeHeapSize();
-        TEST_PRINTF( "Heap before %d, Heap After %d, Difference %d \r\n", xHeapBefore, xHeapAfter, ( xHeapAfter - xHeapBefore ) );
-    #endif
 }
 
 TEST_GROUP_RUNNER( Full_PKCS11_Capabilities )
@@ -200,12 +170,6 @@ TEST_GROUP_RUNNER( Full_PKCS11_Capabilities )
 
 TEST_SETUP( Full_PKCS11_NoObject )
 {
-    #ifdef PKCS11_TEST_MEMORY_LEAK
-        /* Give the print buffer time to empty */
-        vTaskDelay( 500 );
-        xHeapBefore = xPortGetFreeHeapSize();
-    #endif
-
     CK_RV xResult;
 
     xResult = xInitializePKCS11();
@@ -222,13 +186,6 @@ TEST_TEAR_DOWN( Full_PKCS11_NoObject )
     TEST_ASSERT_EQUAL_MESSAGE( CKR_OK, xResult, "Failed to close session." );
     xResult = pxGlobalFunctionList->C_Finalize( NULL );
     TEST_ASSERT_EQUAL_MESSAGE( CKR_OK, xResult, "Failed to finalize session." );
-
-    #ifdef PKCS11_TEST_MEMORY_LEAK
-        /* Give the print buffer time to empty */
-        vTaskDelay( 500 );
-        xHeapAfter = xPortGetFreeHeapSize();
-        TEST_PRINTF( "Heap before %d, Heap After %d, Difference %d \r\n", xHeapBefore, xHeapAfter, ( xHeapAfter - xHeapBefore ) );
-    #endif
 }
 
 
@@ -246,12 +203,6 @@ TEST_GROUP_RUNNER( Full_PKCS11_NoObject )
 
 TEST_SETUP( Full_PKCS11_RSA )
 {
-    #ifdef PKCS11_TEST_MEMORY_LEAK
-        /* Give the print buffer time to empty */
-        vTaskDelay( 500 );
-        xHeapBefore = xPortGetFreeHeapSize();
-    #endif
-
     CK_RV xResult;
     xResult = xInitializePKCS11();
     TEST_ASSERT_EQUAL_MESSAGE( CKR_OK, xResult, "Failed to initialize PKCS #11 module." );
@@ -269,13 +220,6 @@ TEST_TEAR_DOWN( Full_PKCS11_RSA )
 
     xResult = pxGlobalFunctionList->C_Finalize( NULL );
     TEST_ASSERT_EQUAL_MESSAGE( CKR_OK, xResult, "Failed to finalize session." );
-
-    #ifdef PKCS11_TEST_MEMORY_LEAK
-        /* Give the print buffer time to empty */
-        vTaskDelay( 500 );
-        xHeapAfter = xPortGetFreeHeapSize();
-        TEST_PRINTF( "Heap before %d, Heap After %d, Difference %d \r\n", xHeapBefore, xHeapAfter, ( xHeapAfter - xHeapBefore ) );
-    #endif
 }
 
 TEST_GROUP_RUNNER( Full_PKCS11_RSA )
@@ -319,12 +263,6 @@ TEST_GROUP_RUNNER( Full_PKCS11_RSA )
 
 TEST_SETUP( Full_PKCS11_EC )
 {
-    #ifdef PKCS11_TEST_MEMORY_LEAK
-        /* Give the print buffer time to empty */
-        vTaskDelay( 500 );
-        xHeapBefore = xPortGetFreeHeapSize();
-    #endif
-
     CK_RV xResult;
     xResult = xInitializePKCS11();
     TEST_ASSERT_EQUAL_MESSAGE( CKR_OK, xResult, "Failed to initialize PKCS #11 module." );
@@ -341,13 +279,6 @@ TEST_TEAR_DOWN( Full_PKCS11_EC )
 
     xResult = pxGlobalFunctionList->C_Finalize( NULL );
     TEST_ASSERT_EQUAL_MESSAGE( CKR_OK, xResult, "Failed to finalize session." );
-
-    #ifdef PKCS11_TEST_MEMORY_LEAK
-        /* Give the print buffer time to empty */
-        vTaskDelay( 500 );
-        xHeapAfter = xPortGetFreeHeapSize();
-        TEST_PRINTF( "Heap before %d, Heap After %d, Difference %d \r\n", xHeapBefore, xHeapAfter, ( xHeapAfter - xHeapBefore ) );
-    #endif
 }
 
 TEST_GROUP_RUNNER( Full_PKCS11_EC )
