@@ -40,4 +40,10 @@
  * #define TRANSPORT_INTERFACE_TEST_ENABLED  (0)
  */
 
+/**
+ * @brief Configuration to enable the corePKCS11 test.
+ *
+ * #define CORE_PKCS11_TEST_ENABLED  (0)
+ */
+
 #endif /* TEST_EXECUTION_CONFIG_H */

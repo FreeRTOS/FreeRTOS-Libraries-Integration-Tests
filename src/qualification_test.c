@@ -34,6 +34,10 @@
     #include "transport_interface_test.h"
 #endif
 
+#if ( CORE_PKCS11_TEST_ENABLED == 1 )
+    #include "core_pkcs11_test.h"
+#endif
+
 /*-----------------------------------------------------------*/
 
 void RunQualificationTest( void )
@@ -44,6 +48,10 @@ void RunQualificationTest( void )
 
     #if ( MQTT_TEST_ENABLED == 1 )
         RunMqttTest();
+    #endif
+
+    #if ( CORE_PKCS11_TEST_ENABLED == 1 )
+        RunPkcs11Test();
     #endif
 }
 

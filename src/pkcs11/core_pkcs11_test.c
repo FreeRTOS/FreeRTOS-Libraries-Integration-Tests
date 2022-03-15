@@ -50,6 +50,7 @@
 
 /* corePKCS11 test includes. */
 #include "core_pkcs11_test.h"
+#include "test_execution_config.h"
 #include "test_param_config.h"
 
 /**
@@ -491,7 +492,7 @@ void prvAfterRunningTests_Object( void )
 static void prvMultiThreadHelper( void * pvTaskFxnPtr )
 {
     uint32_t xTaskNumber;
-    ThreadHandle_t threadHandles[ PKCS11_TEST_MULTI_THREAD_TASK_COUNT ];
+    PkcsTestThreadHandle_t threadHandles[ PKCS11_TEST_MULTI_THREAD_TASK_COUNT ];
 
     /* Create all the tasks. */
     for( xTaskNumber = 0; xTaskNumber < PKCS11_TEST_MULTI_THREAD_TASK_COUNT; xTaskNumber++ )
@@ -502,7 +503,7 @@ static void prvMultiThreadHelper( void * pvTaskFxnPtr )
     /* Wait for all the tasks. */
     for( xTaskNumber = 0; xTaskNumber < PKCS11_TEST_MULTI_THREAD_TASK_COUNT; xTaskNumber++ )
     {
-         testParam.pThreadTimedJoin( threadHandles[ xTaskNumber ], PKCS11_TEST_WAIT_THREAD_TIMEOUT_MS );
+         testParam.pThreadTimedWait( threadHandles[ xTaskNumber ], PKCS11_TEST_WAIT_THREAD_TIMEOUT_MS );
     }
 
     /* Check the tasks' results. */
@@ -2553,7 +2554,8 @@ TEST( Full_PKCS11_EC, AFQP_SignVerifyMultiThread )
 int RunPkcs11Test( void )
 {
     int status = -1;
-    
+
+    #if ( CORE_PKCS11_TEST_ENABLED == 1 )
         SetupPkcs11TestParam( &testParam );
 
         /* Initialize unity. */
@@ -2571,6 +2573,7 @@ int RunPkcs11Test( void )
         RUN_TEST_GROUP( Full_PKCS11_EC );
 
         status = UNITY_END();
+    #endif
 
     return status;
 }

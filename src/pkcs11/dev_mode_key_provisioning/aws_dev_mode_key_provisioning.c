@@ -1204,7 +1204,7 @@ CK_RV xProvisionDevice( CK_SESSION_HANDLE xSession,
          * before the flashing process starts loading the new image onto the board.
          * Note: The delay of 150 seconds is used based on testing with an ESP32+ECC608A board. */
         DEV_MODE_KEY_PROVISIONING_PRINT( "Waiting for %d seconds before generating key-pair", keyprovisioningDELAY_BEFORE_KEY_PAIR_GENERATION_SECS );
-        // vTaskDelay( pdMS_TO_TICKS( keyprovisioningDELAY_BEFORE_KEY_PAIR_GENERATION_SECS * 1000 ) );
+        testParam.pDelay( keyprovisioningDELAY_BEFORE_KEY_PAIR_GENERATION_SECS * 1000 );
 
         /* Generate a new default key pair. */
         xResult = xProvisionGenerateKeyPairEC( xSession,
