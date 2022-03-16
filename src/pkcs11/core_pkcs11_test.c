@@ -56,26 +56,22 @@
  * Each task consumes both stack and heap space, which may cause memory allocation
  * failures if too many tasks are created.
  */
-#define PKCS11_TEST_MULTI_THREAD_TASK_COUNT     ( 2 )   /* FIXME. */
+#define PKCS11_TEST_MULTI_THREAD_TASK_COUNT    ( 2 )
 
 /**
  * @brief The number of iterations of the test that will run in multithread tests.
  *
  * A single iteration of Signing and Verifying may take up to a minute on some
- * boards. Ensure that PKCS11_TEST_EVENT_GROUP_TIMEOUT is long enough to accommodate
+ * boards. Ensure that PKCS11_TEST_WAIT_THREAD_TIMEOUT_MS is long enough to accommodate
  * all iterations of the loop.
  */
-#define PKCS11_TEST_MULTI_THREAD_LOOP_COUNT     ( 10 )  /* FIXME. */
+#define PKCS11_TEST_MULTI_THREAD_LOOP_COUNT    ( 10 )
 
 /**
- * @brief
- *
- * All tasks of the SignVerifyRoundTrip_MultitaskLoop test must finish within
+ * @brief All tasks of the SignVerifyRoundTrip_MultitaskLoop test must finish within
  * this timeout, or the test will fail.
  */
-#define PKCS11_TEST_WAIT_THREAD_TIMEOUT_MS      ( 1000000UL )
-
-#define PKCS11_TEST_MULTI_THREADED            ( 1 )
+#define PKCS11_TEST_WAIT_THREAD_TIMEOUT_MS     ( 1000000UL )
 
 #ifndef TEST_PRINTF
     #define TEST_PRINTF( ... )
@@ -225,9 +221,7 @@ TEST_GROUP_RUNNER( Full_PKCS11_NoObject )
     RUN_TEST_CASE( Full_PKCS11_NoObject, AFQP_Digest );
     RUN_TEST_CASE( Full_PKCS11_NoObject, AFQP_Digest_ErrorConditions );
     RUN_TEST_CASE( Full_PKCS11_NoObject, AFQP_GenerateRandom );
-#if ( PKCS11_TEST_MULTI_THREADED == 1 )
     RUN_TEST_CASE( Full_PKCS11_NoObject, AFQP_GenerateRandomMultiThread );
-#endif
 
     prvAfterRunningTests_NoObject();
 }
@@ -235,6 +229,7 @@ TEST_GROUP_RUNNER( Full_PKCS11_NoObject )
 TEST_SETUP( Full_PKCS11_RSA )
 {
     CK_RV xResult;
+
     xResult = xInitializePKCS11();
     TEST_ASSERT_EQUAL_MESSAGE( CKR_OK, xResult, "Failed to initialize PKCS #11 module." );
     xResult = xInitializePkcs11Session( &xGlobalSession );
@@ -268,9 +263,7 @@ TEST_GROUP_RUNNER( Full_PKCS11_RSA )
          */
 
         RUN_TEST_CASE( Full_PKCS11_RSA, AFQP_FindObject );
-        #if ( PKCS11_TEST_MULTI_THREADED == 1 )
-            RUN_TEST_CASE( Full_PKCS11_RSA, AFQP_FindObjectMultiThread );
-        #endif
+        RUN_TEST_CASE( Full_PKCS11_RSA, AFQP_FindObjectMultiThread );
         RUN_TEST_CASE( Full_PKCS11_RSA, AFQP_GetAttributeValue );
         RUN_TEST_CASE( Full_PKCS11_RSA, AFQP_Sign );
 
@@ -280,7 +273,6 @@ TEST_GROUP_RUNNER( Full_PKCS11_RSA )
         #endif
 
         #if ( PKCS11_TEST_IMPORT_PRIVATE_KEY_SUPPORT == 1 )
-
             /* This will re-import credentials if supported, it is expected that
              * secure elements do not destroy the "real" credentials and the test
              * suite will not try to re-provision a secure element if they are
@@ -292,11 +284,10 @@ TEST_GROUP_RUNNER( Full_PKCS11_RSA )
     #endif /* if ( PKCS11_TEST_RSA_KEY_SUPPORT == 1 ) */
 }
 
-
-
 TEST_SETUP( Full_PKCS11_EC )
 {
     CK_RV xResult;
+
     xResult = xInitializePKCS11();
     TEST_ASSERT_EQUAL_MESSAGE( CKR_OK, xResult, "Failed to initialize PKCS #11 module." );
     xResult = xInitializePkcs11Session( &xGlobalSession );
@@ -336,18 +327,15 @@ TEST_GROUP_RUNNER( Full_PKCS11_EC )
         RUN_TEST_CASE( Full_PKCS11_EC, AFQP_Sign );
         RUN_TEST_CASE( Full_PKCS11_EC, AFQP_Verify );
 
-        #if ( PKCS11_TEST_MULTI_THREADED == 1 )
-            RUN_TEST_CASE( Full_PKCS11_EC, AFQP_FindObjectMultiThread );
-            RUN_TEST_CASE( Full_PKCS11_EC, AFQP_GetAttributeValueMultiThread );
-            RUN_TEST_CASE( Full_PKCS11_EC, AFQP_SignVerifyMultiThread );
-        #endif
+        RUN_TEST_CASE( Full_PKCS11_EC, AFQP_FindObjectMultiThread );
+        RUN_TEST_CASE( Full_PKCS11_EC, AFQP_GetAttributeValueMultiThread );
+        RUN_TEST_CASE( Full_PKCS11_EC, AFQP_SignVerifyMultiThread );
 
         #if ( PKCS11_TEST_PREPROVISIONED_SUPPORT != 1 )
             RUN_TEST_CASE( Full_PKCS11_EC, AFQP_DestroyObject );
         #endif
 
         #if ( PKCS11_TEST_IMPORT_PRIVATE_KEY_SUPPORT == 1 )
-
             /* This will re-import credentials if supported, it is expected that
              * secure elements do not destroy the "real" credentials and the test
              * suite will not try to re-provision a secure element if they are
@@ -360,7 +348,6 @@ TEST_GROUP_RUNNER( Full_PKCS11_EC )
 }
 
 /* Data structure to store results of multi-thread tests. */
-#if ( PKCS11_TEST_MULTI_THREADED == 1 )
 typedef struct MultithreadTaskParams
 {
     uint32_t xTaskNumber;
@@ -370,7 +357,6 @@ typedef struct MultithreadTaskParams
 
 /* Event group used to synchronize tasks. */
 static MultithreadTaskParams_t xGlobalTaskParams[ PKCS11_TEST_MULTI_THREAD_TASK_COUNT ];
-#endif
 
 static CK_RV prvDestroyTestCredentials( void )
 {
@@ -457,7 +443,6 @@ void prvAfterRunningTests_Object( void )
 
     /* Only reprovision a device that supports importing private keys. */
     #if ( PKCS11_TEST_IMPORT_PRIVATE_KEY_SUPPORT == 1 )
-
         /* If labels are the same, then we are assuming that this device does not
          * have a secure element. */
         if( ( 0 == strcmp( pkcs11configLABEL_DEVICE_PRIVATE_KEY_FOR_TLS, PKCS11_TEST_LABEL_DEVICE_PRIVATE_KEY_FOR_TLS ) ) &&
@@ -483,9 +468,6 @@ void prvAfterRunningTests_Object( void )
     #endif /* if ( PKCS11_TEST_IMPORT_PRIVATE_KEY_SUPPORT == 1 ) */
 }
 
-
-#if ( PKCS11_TEST_MULTI_THREADED == 1 )
-
 static void prvMultiThreadHelper( void * pvTaskFxnPtr )
 {
     uint32_t xTaskNumber;
@@ -500,7 +482,7 @@ static void prvMultiThreadHelper( void * pvTaskFxnPtr )
     /* Wait for all the tasks. */
     for( xTaskNumber = 0; xTaskNumber < PKCS11_TEST_MULTI_THREAD_TASK_COUNT; xTaskNumber++ )
     {
-         testParam.pThreadTimedWait( threadHandles[ xTaskNumber ], PKCS11_TEST_WAIT_THREAD_TIMEOUT_MS );
+        testParam.pThreadTimedWait( threadHandles[ xTaskNumber ], PKCS11_TEST_WAIT_THREAD_TIMEOUT_MS );
     }
 
     /* Check the tasks' results. */
@@ -511,13 +493,12 @@ static void prvMultiThreadHelper( void * pvTaskFxnPtr )
             if( xGlobalTaskParams[ xTaskNumber ].xTestResult != 0 )
             {
                 TEST_PRINTF( "Multi thread task %d returned failure.\r\n",
-                                xGlobalTaskParams[ xTaskNumber ].xTaskNumber );
+                             xGlobalTaskParams[ xTaskNumber ].xTaskNumber );
                 TEST_FAIL();
             }
         }
     }
 }
-#endif
 
 /* Assumes that device is already provisioned at time of calling. */
 static void prvFindObjectTest( CK_OBJECT_HANDLE_PTR pxPrivateKeyHandle,
@@ -1019,23 +1000,22 @@ TEST( Full_PKCS11_NoObject, AFQP_GenerateRandom )
     if( ( xSameSession > 1 ) || ( xDifferentSessions > 1 ) )
     {
         TEST_PRINTF( "First Random Bytes: %02X:%02X:%02X:%02X:%02X:%02X:%02X:%02X:%02X:%02X\r\n",
-                        xBuf1[ 0 ], xBuf1[ 1 ], xBuf1[ 2 ], xBuf1[ 3 ], xBuf1[ 4 ],
-                        xBuf1[ 5 ], xBuf1[ 6 ], xBuf1[ 7 ], xBuf1[ 8 ], xBuf1[ 9 ] );
+                     xBuf1[ 0 ], xBuf1[ 1 ], xBuf1[ 2 ], xBuf1[ 3 ], xBuf1[ 4 ],
+                     xBuf1[ 5 ], xBuf1[ 6 ], xBuf1[ 7 ], xBuf1[ 8 ], xBuf1[ 9 ] );
 
         TEST_PRINTF( "Second Set of Random Bytes: %02X:%02X:%02X:%02X:%02X:%02X:%02X:%02X:%02X:%02X\r\n",
-                        xBuf2[ 0 ], xBuf2[ 1 ], xBuf2[ 2 ], xBuf2[ 3 ], xBuf2[ 4 ],
-                        xBuf2[ 5 ], xBuf2[ 6 ], xBuf2[ 7 ], xBuf2[ 8 ], xBuf2[ 9 ] );
+                     xBuf2[ 0 ], xBuf2[ 1 ], xBuf2[ 2 ], xBuf2[ 3 ], xBuf2[ 4 ],
+                     xBuf2[ 5 ], xBuf2[ 6 ], xBuf2[ 7 ], xBuf2[ 8 ], xBuf2[ 9 ] );
 
         TEST_PRINTF( "Third Set of Random Bytes:  %02X:%02X:%02X:%02X:%02X:%02X:%02X:%02X:%02X:%02X\r\n",
-                        xBuf3[ 0 ], xBuf3[ 1 ], xBuf3[ 2 ], xBuf3[ 3 ], xBuf3[ 4 ],
-                        xBuf3[ 5 ], xBuf3[ 6 ], xBuf3[ 7 ], xBuf3[ 8 ], xBuf3[ 9 ] );
+                     xBuf3[ 0 ], xBuf3[ 1 ], xBuf3[ 2 ], xBuf3[ 3 ], xBuf3[ 4 ],
+                     xBuf3[ 5 ], xBuf3[ 6 ], xBuf3[ 7 ], xBuf3[ 8 ], xBuf3[ 9 ] );
     }
 
     TEST_ASSERT_LESS_THAN( 2, xSameSession );
     TEST_ASSERT_LESS_THAN( 2, xDifferentSessions );
 }
 
-#if ( PKCS11_TEST_MULTI_THREADED == 1 )
 #define PKCS11_TEST_RANDOM_DATA_LENGTH    10
 static void prvGenerateRandomMultiThreadTask( void * pvParameters )
 {
@@ -1063,9 +1043,7 @@ static void prvGenerateRandomMultiThreadTask( void * pvParameters )
     /* Report the result of the loop. */
     pxMultiTaskParam->xTestResult = xResult;
 }
-#endif
 
-#if ( PKCS11_TEST_MULTI_THREADED == 1 )
 TEST( Full_PKCS11_NoObject, AFQP_GenerateRandomMultiThread )
 {
     uint32_t xTaskNumber;
@@ -1084,8 +1062,6 @@ TEST( Full_PKCS11_NoObject, AFQP_GenerateRandomMultiThread )
         pxGlobalFunctionList->C_CloseSession( xSessionHandle[ xTaskNumber ] );
     }
 }
-#endif
-
 
 static const char cValidRSAPrivateKey[] =
     "-----BEGIN RSA PRIVATE KEY-----\n"
@@ -1395,6 +1371,7 @@ TEST( Full_PKCS11_RSA, AFQP_GenerateKeyPair )
     TEST_ASSERT_NOT_EQUAL_MESSAGE( 0, xPrivateKeyHandle, "Invalid object handle returned for RSA private key." );
 
     CK_ATTRIBUTE xTemplate;
+
     xTemplate.type = CKA_MODULUS;
     xTemplate.pValue = xModulus;
     xTemplate.ulValueLen = sizeof( xModulus );
@@ -1741,10 +1718,12 @@ TEST( Full_PKCS11_EC, AFQP_Sign )
     mbedtls_pk_context * pxEcdsaContext = &xEcdsaContext;
     CK_ATTRIBUTE xPubKeyQuery = { CKA_EC_POINT, NULL, 0 };
     CK_BYTE * pxPublicKey = NULL;
+
     mbedtls_pk_init( pxEcdsaContext );
 
     /* Reconstruct public key from EC Params. */
     mbedtls_ecp_keypair * pxKeyPair;
+
     pxKeyPair = testParam.pPkcsMalloc( sizeof( mbedtls_ecp_keypair ) );
 
     /* Initialize the info. */
@@ -2131,7 +2110,6 @@ TEST( Full_PKCS11_EC, AFQP_GetAttributeValue )
     xResult = pxGlobalFunctionList->C_GetAttributeValue( xGlobalSession, xPublicKey, &xTemplate, 1 );
     TEST_ASSERT_EQUAL_MESSAGE( CKR_OK, xResult, "GetAttributeValue for EC point failed." );
     #if PKCS11_TEST_IMPORT_PRIVATE_KEY_SUPPORT == 1
-
         /* The EC point can only be known for a public key that was previously created
          * therefore this check is only done for implementations that support importing
          * a private key, as the credentials that are on the device are all known.
@@ -2178,7 +2156,6 @@ TEST( Full_PKCS11_EC, AFQP_GetAttributeValue )
 
 
 /* Repeatedly tries to find previously provisioned private key and certificate. */
-#if ( PKCS11_TEST_MULTI_THREADED == 1 )
 static void prvFindObjectMultiThreadTask( void * pvParameters )
 {
     MultithreadTaskParams_t * pxMultiTaskParam = pvParameters;
@@ -2233,9 +2210,6 @@ static void prvFindObjectMultiThreadTask( void * pvParameters )
     /* Report the result of the loop. */
     pxMultiTaskParam->xTestResult = xResult;
 }
-#endif
-
-#if ( PKCS11_TEST_MULTI_THREADED == 1 )
 
 /* Different session trying to find token objects. */
 TEST( Full_PKCS11_RSA, AFQP_FindObjectMultiThread )
@@ -2270,9 +2244,6 @@ TEST( Full_PKCS11_RSA, AFQP_FindObjectMultiThread )
     }
 }
 
-#endif
-
-#if ( PKCS11_TEST_MULTI_THREADED == 1 )
 /* Different session trying to find token objects. */
 TEST( Full_PKCS11_EC, AFQP_FindObjectMultiThread )
 {
@@ -2305,9 +2276,7 @@ TEST( Full_PKCS11_EC, AFQP_FindObjectMultiThread )
         TEST_ASSERT_EQUAL_MESSAGE( CKR_OK, xResult, "Failed to close session." );
     }
 }
-#endif
 
-#if ( PKCS11_TEST_MULTI_THREADED == 1 )
 static void prvECGetAttributeValueMultiThreadTask( void * pvParameters )
 {
     MultithreadTaskParams_t * pxMultiTaskParam = pvParameters;
@@ -2404,9 +2373,7 @@ static void prvECGetAttributeValueMultiThreadTask( void * pvParameters )
     /* Report the result of the loop. */
     pxMultiTaskParam->xTestResult = xResult;
 }
-#endif
 
-#if ( PKCS11_TEST_MULTI_THREADED == 1 )
 /* Same & different PKCS #11 sessions asking for attribute values of the same 2 objects. */
 TEST( Full_PKCS11_EC, AFQP_GetAttributeValueMultiThread )
 {
@@ -2440,9 +2407,6 @@ TEST( Full_PKCS11_EC, AFQP_GetAttributeValueMultiThread )
     }
 }
 
-#endif
-
-
 typedef struct SignVerifyMultiThread_t
 {
     CK_SESSION_HANDLE xSession;
@@ -2451,7 +2415,6 @@ typedef struct SignVerifyMultiThread_t
     mbedtls_ecp_keypair * pxEcdsaContext; /* Pointer to the pre-parsed ECDSA key. */
 } SignVerifyMultiThread_t;
 
-#if ( PKCS11_TEST_MULTI_THREADED == 1 )
 static void prvECSignVerifyMultiThreadTask( void * pvParameters )
 {
     MultithreadTaskParams_t * pxMultiTaskParam = pvParameters;
@@ -2509,9 +2472,7 @@ static void prvECSignVerifyMultiThreadTask( void * pvParameters )
     /* Report the result of the loop. */
     pxMultiTaskParam->xTestResult = xResult;
 }
-#endif
 
-#if ( PKCS11_TEST_MULTI_THREADED == 1 )
 TEST( Full_PKCS11_EC, AFQP_SignVerifyMultiThread )
 {
     CK_RV xResult;
@@ -2546,8 +2507,6 @@ TEST( Full_PKCS11_EC, AFQP_SignVerifyMultiThread )
     }
 }
 
-#endif
-
 int RunPkcs11Test( void )
 {
     int status = -1;
@@ -2570,7 +2529,7 @@ int RunPkcs11Test( void )
         RUN_TEST_GROUP( Full_PKCS11_EC );
 
         status = UNITY_END();
-    #endif
+    #endif /* if ( CORE_PKCS11_TEST_ENABLED == 1 ) */
 
     return status;
 }

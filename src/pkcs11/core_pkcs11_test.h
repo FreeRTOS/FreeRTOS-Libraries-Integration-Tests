@@ -43,7 +43,7 @@ typedef void * ( * PkcsTestMalloc_t )( size_t size );
  *
  * @param[in] size Size in bytes.
  */
-typedef void ( * PkcsTestFree_t )( void *ptr );
+typedef void ( * PkcsTestFree_t )( void * ptr );
 
 /**
  * @brief Thread function to be executed in ThreadCreate_t function.
@@ -60,7 +60,8 @@ typedef void ( * PkcsTestThreadFunction_t )( void * pParam );
  *
  * @return NULL if create thread failed. Otherwise, return the handle of the created thread.
  */
-typedef PkcsTestThreadHandle_t ( * PkcsTestThreadCreate_t )( PkcsTestThreadFunction_t threadFunc, void * pParam );
+typedef PkcsTestThreadHandle_t ( * PkcsTestThreadCreate_t )( PkcsTestThreadFunction_t threadFunc,
+                                                             void * pParam );
 
 /**
  * @brief Timed waiting function to wait for the created thread exit.
@@ -70,7 +71,8 @@ typedef PkcsTestThreadHandle_t ( * PkcsTestThreadCreate_t )( PkcsTestThreadFunct
  *
  * @return 0 if the thread exits within timeoutMs. Other value will be regarded as error.
  */
-typedef int ( * PkcsTestThreadTimedWait_t )( PkcsTestThreadHandle_t threadHandle, uint32_t timeoutMs );
+typedef int ( * PkcsTestThreadTimedWait_t )( PkcsTestThreadHandle_t threadHandle,
+                                             uint32_t timeoutMs );
 
 /**
  * @brief Delay function to wait for the key generation.
@@ -108,4 +110,4 @@ void SetupPkcs11TestParam( Pkcs11TestParam_t * pTestParam );
  */
 int RunPkcs11Test( void );
 
-#endif
+#endif /* ifndef CORE_PKCS11_TEST_H */
