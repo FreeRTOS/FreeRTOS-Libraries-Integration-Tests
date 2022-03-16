@@ -482,7 +482,10 @@ static void prvMultiThreadHelper( void * pvTaskFxnPtr )
     /* Wait for all the tasks. */
     for( xTaskNumber = 0; xTaskNumber < PKCS11_TEST_MULTI_THREAD_TASK_COUNT; xTaskNumber++ )
     {
-        testParam.pThreadTimedWait( threadHandles[ xTaskNumber ], PKCS11_TEST_WAIT_THREAD_TIMEOUT_MS );
+        if( testParam.pThreadTimedWait( threadHandles[ xTaskNumber ], PKCS11_TEST_WAIT_THREAD_TIMEOUT_MS ) != 0 )
+        {
+            TEST_PRINTF( "Timed out waiting for %u task to finish in multi thread test.\r\n", xTaskNumber );
+        }
     }
 
     /* Check the tasks' results. */
@@ -634,7 +637,7 @@ TEST( Full_PKCS11_StartFinish, AFQP_GetSlotList )
 
         /* Allocate memory to receive the list of slots, plus one extra. */
         pxSlotId = testParam.pPkcsMalloc( sizeof( CK_SLOT_ID ) * ( xSlotCount + 1 ) );
-        TEST_ASSERT_NOT_EQUAL_MESSAGE( NULL, pxSlotId, "Failed testParam.pPkcsMalloc memory for slot list" );
+        TEST_ASSERT_NOT_EQUAL_MESSAGE( NULL, pxSlotId, "Failed malloc memory for slot list" );
 
         /* Call C_GetSlotList again to receive all slots with tokens present. */
         xResult = pxGlobalFunctionList->C_GetSlotList( CK_TRUE, pxSlotId, &xSlotCount );
