@@ -1,6 +1,6 @@
 /*
- * FreeRTOS V202012.00
- * Copyright (C) 2020 Amazon.com, Inc. or its affiliates.  All Rights Reserved.
+ * FreeRTOS FreeRTOS LTS Qualification Tests preview
+ * Copyright (C) 2022 Amazon.com, Inc. or its affiliates.  All Rights Reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the "Software"), to deal in
@@ -18,11 +18,7 @@
  * COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
  * IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- *
- * http://aws.amazon.com/freertos
- * http://www.FreeRTOS.org
  */
-
 
 /**
  * @file aws_dev_mode_key_provisioning.c
@@ -63,11 +59,11 @@
 #define keyprovisioningFORCE_GENERATE_NEW_KEY_PAIR    0
 
 /* Delay before generating new key-pair, if keyprovisioningFORCE_GENERATE_NEW_KEY_PAIR
- * is enabled. This is to avoid possible race-condition (due to devce reset) between
+ * is enabled. This is to avoid possible race-condition (due to device reset) between
  * execution of an existing image on device generates key-pair on device and flashing of
  * new image on device. */
 #ifndef keyprovisioningDELAY_BEFORE_KEY_PAIR_GENERATION_SECS
-    #define keyprovisioningDELAY_BEFORE_KEY_PAIR_GENERATION_SECS    180
+    #define keyprovisioningDELAY_BEFORE_KEY_PAIR_GENERATION_SECS    10
 #endif
 
 #ifndef DEV_MODE_KEY_PROVISIONING_PRINT
