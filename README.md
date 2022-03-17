@@ -25,7 +25,7 @@ The folder inside the repository is organized as follows:
 ```
 The root of the repository contains following top level folders:
 1. `config_template` contains configuration header templates. The templates should be copied into the parent project.
-The templates should be copied into the parent project. If running the tests with IDT, there is no need to edit the
+If running the tests with IDT, there is no need to edit the
 copied templates. If running the tests without IDT, users need to fill in configuration values in the copied templates.
 2. `src` contains source code for the tests. Each test set is contained in a subfolder inside `src`.
 Refer to ReadMe in each subfolder for details of the test group, test cases and how to run these tests.
