@@ -79,6 +79,9 @@
  */
 #define PKCS11_TEST_WAIT_THREAD_TIMEOUT_MS     ( 1000000UL )
 
+/**
+ * @brief Make use of the unity TEST_PRINTF function to print log if supported.
+ */
 #ifndef TEST_PRINTF
     #define TEST_PRINTF( ... )
 #endif
@@ -494,20 +497,25 @@ static void prvAfterRunningTests_Object( void )
 static void prvMultiThreadHelper( void * pvTaskFxnPtr )
 {
     uint32_t xTaskNumber;
+    int retThreadTimedWait;
     PkcsTestThreadHandle_t threadHandles[ PKCS11_TEST_MULTI_THREAD_TASK_COUNT ];
 
     /* Create all the tasks. */
     for( xTaskNumber = 0; xTaskNumber < PKCS11_TEST_MULTI_THREAD_TASK_COUNT; xTaskNumber++ )
     {
         threadHandles[ xTaskNumber ] = testParam.pThreadCreate( pvTaskFxnPtr, &( xGlobalTaskParams[ xTaskNumber ] ) );
+        TEST_ASSERT_MESSAGE( threadHandles[ xTaskNumber ] != NULL, "Create thread failed." );
     }
 
-    /* Wait for all the tasks. */
+    /* Wait for all tasks to finish. */
     for( xTaskNumber = 0; xTaskNumber < PKCS11_TEST_MULTI_THREAD_TASK_COUNT; xTaskNumber++ )
     {
-        if( testParam.pThreadTimedWait( threadHandles[ xTaskNumber ], PKCS11_TEST_WAIT_THREAD_TIMEOUT_MS ) != 0 )
+        retThreadTimedWait = testParam.pThreadTimedWait( threadHandles[ xTaskNumber ], PKCS11_TEST_WAIT_THREAD_TIMEOUT_MS );
+
+        if( retThreadTimedWait != 0 )
         {
-            TEST_PRINTF( "Timed out waiting for %u task to finish in multi thread test.\r\n", xTaskNumber );
+            TEST_PRINTF( "Waiting for task %u to finish in multi-threaded test failed %d.\r\n",
+                         xTaskNumber, retThreadTimedWait );
         }
     }
 
@@ -712,9 +720,9 @@ TEST( Full_PKCS11_StartFinish, AFQP_OpenSessionCloseSession )
                                 &xSlotCount );
         TEST_ASSERT_EQUAL_MESSAGE( CKR_OK, xResult, "Failed to get slot list" );
         xSlotId = pxSlotId[ PKCS11_TEST_SLOT_NUMBER ];
-
         testParam.pPkcsFree( pxSlotId ); /* xGetSlotList allocates memory. */
         TEST_ASSERT_GREATER_THAN( 0, xSlotCount );
+
 
         xResult = pxGlobalFunctionList->C_OpenSession( xSlotId,
                                                        CKF_SERIAL_SESSION, /* This flag is mandatory for PKCS #11 legacy reasons. */
@@ -1069,6 +1077,7 @@ static void prvGenerateRandomMultiThreadTask( void * pvParameters )
     /* Report the result of the loop. */
     pxMultiTaskParam->xTestResult = xResult;
 }
+
 
 TEST( Full_PKCS11_NoObject, AFQP_GenerateRandomMultiThread )
 {

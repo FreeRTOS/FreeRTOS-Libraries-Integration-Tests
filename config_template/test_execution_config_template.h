@@ -28,13 +28,13 @@
 #ifndef TEST_EXECUTION_CONFIG_H
 #define TEST_EXECUTION_CONFIG_H
 
-/** 
+/**
  * @brief Configuration to enable the MQTT test.
  *
  * #define MQTT_TEST_ENABLED                 (0)
  */
 
-/** 
+/**
  * @brief Configuration to enable the transport interface test.
  *
  * #define TRANSPORT_INTERFACE_TEST_ENABLED  (0)
