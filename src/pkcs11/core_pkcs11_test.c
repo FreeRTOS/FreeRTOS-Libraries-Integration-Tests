@@ -20,6 +20,10 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+/**
+ * @file core_pkcs11_test.c
+ * @brief Integration tests for the corePKCS11 implementation.
+ */
 /* Standard includes. */
 #include <stdlib.h>
 #include <string.h>
@@ -49,6 +53,8 @@
 #include "core_pkcs11_test.h"
 #include "test_execution_config.h"
 #include "test_param_config.h"
+
+/*-----------------------------------------------------------*/
 
 /**
  * @brief Number of simultaneous tasks for multithreaded tests.
@@ -85,6 +91,8 @@
     #error "The device must have some mechanism configured to provision the PKCS #11 stack."
 #endif
 
+/*-----------------------------------------------------------*/
+
 typedef enum
 {
     eNone,                /* Device is not provisioned.  All credentials have been destroyed. */
@@ -96,6 +104,8 @@ typedef enum
     eDeliberatelyInvalid, /* Provisioned using credentials that are meant to trigger an error condition. */
     eStateUnknown         /* State of the credentials is unknown. */
 } CredentialsProvisioned_t;
+
+/*-----------------------------------------------------------*/
 
 /**
  * @brief Struct of test parameters filled in by user.
@@ -141,9 +151,22 @@ TEST_GROUP( Full_PKCS11_RSA );
 /* The EC test group is for tests that require elliptic curve keys. */
 TEST_GROUP( Full_PKCS11_EC );
 
-CK_RV prvBeforeRunningTests();
-void prvAfterRunningTests_NoObject();
-void prvAfterRunningTests_Object();
+/*-----------------------------------------------------------*/
+
+/* Setup the global function list and close the previous sessin. */
+static CK_RV prvBeforeRunningTests( void );
+
+/* If no changes to PKCS #11 objects have been made during the test,
+ * just make sure that the PKCS #11 module is initialized and in a good state.
+ */
+static void prvAfterRunningTests_NoObject( void );
+
+/* If these tests may have manipulated the PKCS #11 objects
+ * (private key, public keys and/or certificates), run this routine afterwards
+ * to make sure that credentials are in a good state for the other test groups. */
+static void prvAfterRunningTests_Object( void );
+
+/*-----------------------------------------------------------*/
 
 TEST_SETUP( Full_PKCS11_StartFinish )
 {
@@ -410,7 +433,7 @@ static CK_RV prvDestroyTestCredentials( void )
     return xDestroyResult;
 }
 
-CK_RV prvBeforeRunningTests( void )
+static CK_RV prvBeforeRunningTests( void )
 {
     CK_RV xResult;
 
@@ -429,7 +452,7 @@ CK_RV prvBeforeRunningTests( void )
 /* If no changes to PKCS #11 objects have been made during the test,
  *  just make sure that the PKCS #11 module is initialized and in a good state.
  */
-void prvAfterRunningTests_NoObject( void )
+static void prvAfterRunningTests_NoObject( void )
 {
     xInitializePKCS11();
 }
@@ -437,7 +460,7 @@ void prvAfterRunningTests_NoObject( void )
 /* If these tests may have manipulated the PKCS #11 objects
  * (private key, public keys and/or certificates), run this routine afterwards
  * to make sure that credentials are in a good state for the other test groups. */
-void prvAfterRunningTests_Object( void )
+static void prvAfterRunningTests_Object( void )
 {
     /* Check if the test label is the same as the run-time label. */
 

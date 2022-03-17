@@ -20,9 +20,14 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+/**
+ * @file transport_interface_test.h
+ * @brief Test function for corePKCS11 test.
+ */
 #ifndef CORE_PKCS11_TEST_H
 #define CORE_PKCS11_TEST_H
 
+/* Standard includes. */
 #include <stdint.h>
 #include <stdlib.h>
 

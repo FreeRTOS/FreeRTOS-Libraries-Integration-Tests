@@ -22,7 +22,7 @@
 
 /**
  * @file test_param_config_pkcs11_template.h
- * @brief Port-specific variables for PKCS11 tests.
+ * @brief A template to setup port-specific variables for PKCS11 tests.
  */
 #ifndef TEST_PARAM_CONFIG_H
 #define TEST_PARAM_CONFIG_H

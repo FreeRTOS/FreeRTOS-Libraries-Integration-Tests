@@ -21,7 +21,7 @@
  */
 
 /**
- * @file  aws_dev_mode_key_provsioning.h
+ * @file aws_dev_mode_key_provsioning.h
  * @brief Provisioning example code for developers.
  *
  * Helpers for importing device private key and device

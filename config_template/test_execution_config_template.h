@@ -21,8 +21,8 @@
  */
 
 /**
- * @file test_execution_config.h
- * @brief This setup the execution configurations for LTS qualification test.
+ * @file test_execution_config_template.h
+ * @brief This is a template to setup the execution configurations for LTS qualification test.
  */
 
 #ifndef TEST_EXECUTION_CONFIG_H
