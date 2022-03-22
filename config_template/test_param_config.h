@@ -108,40 +108,35 @@
  *
  * #define OTA_PAL_TEST_CERT_TYPE OTA_ECDSA_SHA256
  */
-#define OTA_PAL_TEST_CERT_TYPE OTA_ECDSA_SHA256
 
 /**
  * @brief Path to cert for OTA test PAL. Used to verify signature.
- * If applicable, the device must be pre-provisioned with this certificate. Please see
- * test/common/ota/test_files for the set of certificates.
+ * If applicable, the device should pre-provisioned with this certificate. Please see
+ * src/ota/test_files for the set of certificates.
+ *
+ * #define OTA_PAL_CERTIFICATE_FILE                         "ecdsa-sha256-signer.crt.pem"
  */
-#define OTA_PAL_CERTIFICATE_FILE                         "ecdsa-sha256-signer.crt.pem"
 
 /**
- * @brief Some devices have a hard-coded name for the firmware image to boot.
+ * @brief File name of the OTA file.
+ *
+ * Some devices have a hard-coded name for the firmware image to boot.
+ *
+ * #define OTA_PAL_FIRMWARE_FILE                            "dummy.bin"
  */
-#define OTA_PAL_FIRMWARE_FILE                            "dummy.bin"
 
 /**
  * @brief Some boards OTA PAL layers will use the file names passed into it for the
  * image and the certificates because their non-volatile memory is abstracted by a
  * file system. Set this to 1 if that is the case for your device.
+ *
+ * #define OTA_PAL_USE_FILE_SYSTEM                          0
  */
-#define OTA_PAL_USE_FILE_SYSTEM                          0
-
-/**
- * @brief 1 if otaPal_CheckFileSignature() is implemented in aws_ota_pal.c.
- */
-#define OTA_PAL_CHECK_FILE_SIGNATURE_SUPPORTED           1
-
-/**
- * @brief 1 if otaPal_ReadAndAssumeCertificate() is implemented in aws_ota_pal.c.
- */
-#define OTA_PAL_READ_AND_ASSUME_CERTIFICATE_SUPPORTED    1
 
 /**
  * @brief 1 if using PKCS #11 to access the code sign certificate from NVM.
+ *
+ * #define OTA_PAL_READ_CERTIFICATE_FROM_NVM_WITH_PKCS11    0
  */
-#define OTA_PAL_READ_CERTIFICATE_FROM_NVM_WITH_PKCS11    0
 
 #endif /* TEST_PARAM_CONFIG_H */
