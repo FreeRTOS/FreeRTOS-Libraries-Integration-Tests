@@ -30,20 +30,24 @@ The transport interface tests verify the implementation by running various test 
 
 |Test Case	|Test Case Detail	|Expected result	|
 |---	|---	|---	|
+|Transport_SendOneByteRecvCompare 	|Test send receive beharivor in the following order<br>Send : 1 byte<br>Send : ( TRANSPORT_TEST_BUFFER_WRITABLE_LENGTH - 1 ) bytes<br>Receive : TRANSPORT_TEST_BUFFER_WRITABLE_LENGTH bytes | Send/receive/compare should has no error |
+|Transport_SendRecvOneByteCompare 	|Test send receive beharivor in the following order<br>Send : TRANSPORT_TEST_BUFFER_WRITABLE_LENGTH bytes<br>Receive : 1 byte<br>Receive : ( TRANSPORT_TEST_BUFFER_WRITABLE_LENGTH - 1 ) bytes |Send/receive/compare should has no error|
+|Transport_SendRecvCompare 	|Test transport interface with send, receive and compare on bulk of data.<br>The data size ranges from 1 byte to TRANSPORT_TEST_BUFFER_WRITABLE_LENGTH bytes |Send/receive/compare should has no error within timeout |
+|Transport_SendRecvCompareMultithreaded 	|Test transport interface with send, receive and compare on bulk of data in multiple threads.<br>Each thread will create a network connection.<br>The data size ranges from 1 byte to TRANSPORT_TEST_BUFFER_WRITABLE_LENGTH bytes |Send/receive/compare should has no error within timeout |
+|TransportSend_RemoteDisconnect	|Test transport interface send function return value when disconnected by remote server	|Negative value should be returned	|
+|TransportRecv_RemoteDisconnect	|Test transport interface receive function return value when disconnected by remote server	|Negative value should be returned	|
+|TransportRecv_NoDataToReceive	|Test transport interface receive function return value when no data to receive	|0 should be returned	|
+|TransportRecv_ReturnZeroRetry	|Test transport interface receive function return zero due to no data to receive.<br> Send some data to echo server then retry the receive function.	|Postive value should be returned after retry	|
+
+The following test cases are optional. Assertion may be required to be disabled to pass the test cases.
+|Test Case	|Test Case Detail	|Expected result	|
+|---	|---	|---	|
 |TransportSend_NetworkContextNullPtr	|Test transport interface send with NULL network context pointer handling	|Negative value should be returned	|
 |TransportSend_BufferNullPtr	|Test transport interface send with NULL buffer pointer handling	|Negative value should be returned	|
 |TransportSend_ZeroByteToSend	|Test transport interface send with zero byte to send handling	|Negative value should be returned	|
 |TransportRecv_NetworkContextNullPtr	|Test transport interface recv with NULL network context pointer handling	|Negative value should be returned	|
 |TransportRecv_BufferNullPtr	|Test transport interface recv with NULL buffer pointer handling	|Negative value should be returned	|
 |TransportRecv_ZeroByteToRecv	|Test transport interface recv with zero byte to receive handling	|Negative value should be returned	|
-|Transport_SendOneByteRecvCompare 	|Test transport interface with send, receive and compare on one byte |Send/Receive/Verify 1 byte of data should has no error	|
-|Transport_SendRecvOneByteCompare 	|Test transport interface with send bulk of data, receive one byte and compare |Send bulk of data. Receive/verify 1 byte then the rest of the data should has no error	|
-|Transport_SendRecvCompare 	|Test transport interface with send, receive and compare on bulk of data. |Send/Receive/Verify bulk of data should has no error	|
-|TransportSend_RemoteDisconnect	|Test transport interface send function return value when disconnected by remote server	|Negative value should be returned	|
-|TransportRecv_RemoteDisconnect	|Test transport interface receive function return value when disconnected by remote server	|Negative value should be returned	|
-|TransportRecv_NoDataToReceive	|Test transport interface receive function return value when no data to receive	|0 should be returned	|
-|TransportRecv_ReturnZeroRetry	|Test transport interface receive function return zero then retry the receive function	|Postive value should be returned after retry	|
-
 
 ## 3. Prerequisites For Transport Interface Test
 
@@ -79,55 +83,30 @@ Folder structure of the transport interface tests. The tree only lists the requi
 
 ## 5. Implement Transport Interface Test Application
 
-Developer implements the transport interface test application with the following steps.
+Developer implements the transport interface test application with the following steps:
 
-1. Add the following source files to your compilation source
-* ./src/qualification_test.c
-* ./src/transport_interface/transport_interface_tests.c
+1. Add [Labs-FreeRTOS-Libraries-Integration-Tests](https://github.com/FreeRTOS/Labs-FreeRTOS-Libraries-Integration-Tests) as a submodule into your project. It doesn’t matter where the submodule is placed in the project, as long as it can be built.
 
-2. Add the folloing paths to your compilation include path.
-* ./include
-* ./src
-* ./src/common
-* ./src/transport_interface
+2. Copy config_template/test_execution_config_template.h and config_template/test_param_config_template.h to a project location in the build path, and rename them to test_execution_config.h and test_param_config.h.
 
-3. Implement the setup function, **SetupTransportTestParam**, for transport interface tests to provide test parameters. The following are required test parameters:
+3. Include relevant files into the build system. If using CMake, qualification_test.cmake and src/transport_interface_tests.cmake can be used to include relevant files.
+
+4. Implement the setup function, **SetupTransportTestParam**, for transport interface test to provide test parameters. The following are required test parameters:
 ```C
 /**
- * NetworkConnectFunc is a function pointer type for functions that
- * establish a network connection with a server. It takes three arguments:
- * a void * network context,
- * a TestHostInfo_t * host info about which server to connect to,
- * a void * network credentials.
- *
- * Network context and crendentials are defined by application implementations.
+ * @brief A struct representing transport interface test parameters.
  */
-typedef int (*NetworkConnectFunc)( void *, TestHostInfo_t *, void * );
-
-/**
- * @brief Delay function to wait for the data transfer over transport network.
- *
- * @param[in] delayMs Delay in milliseconds.
- */
-typedef void (* TransportTestDelayFunc)( uint32_t delayMs );
-
-/**
- * NetworkDisconnectFunc is a function pointer type for functions that
- * disconnect a previously established network connection. It takes one argument:
- * a void * network context.
- *
- * Network context is defined by application implementations.
- */
-typedef void (*NetworkDisconnectFunc)( void * );
-
 typedef struct TransportTestParam
 {
-    TransportInterface_t * pTransport;          /**< @brief Transport interface structure to test. */
-    NetworkConnectFunc pNetworkConnect;         /**< @brief Network connect function pointer. */
-    NetworkDisconnectFunc pNetworkDisconnect;   /**< @brief Network disconnect function pointer. */
-    TransportTestDelayFunc pTransportTestDelay; /**< @brief Transport test delay function pointer. */
-    void * pNetworkCredentials;                 /**< @brief Network credentials for network connection. */
-    void * pNetworkContext;                     /**< @brief Primary network context. */
+    TransportInterface_t * pTransport;            /**< @brief Transport interface structure to test. */
+    NetworkConnectFunc_t pNetworkConnect;         /**< @brief Network connect function pointer. */
+    NetworkDisconnectFunc_t pNetworkDisconnect;   /**< @brief Network disconnect function pointer. */
+    TransportTestDelayFunc_t pTransportTestDelay; /**< @brief Transport test delay function pointer. */
+    TestThreadCreate_t pTestThreadCreate;         /**< @brief Test thread create function. */
+    TestThreadTimedWait_t pTestThreadTimedWait;   /**< @brief Test thread timed wait function. */
+    void * pNetworkCredentials;                   /**< @brief Network credentials for network connection. */
+    void * pNetworkContext;                       /**< @brief Primary network context. */
+    void * pSecondNetworkContext;                 /**< @brief Secondary network context. */
 } TransportTestParam_t;
 
 /**
@@ -140,12 +119,12 @@ typedef struct TransportTestParam
 void SetupTransportTestParam( TransportTestParam_t * pTestParam );
 ```
 
-4. Enable the transport interface config, **TRANSPORT_INTERFACE_TEST_ENABLED**, in **./include/test_execution_config.h**.
+4. Enable the transport interface config, **TRANSPORT_INTERFACE_TEST_ENABLED**, in **test_execution_config.h**.
 ```C
 #define TRANSPORT_INTERFACE_TEST_ENABLED  ( 1 )     /* Set 1 to enable the transport interface test. */
 ```
 
-5. Implement the main function and call the **runQualificationTest**.
+5. Implement the main function and call the **RunQualificationTest**.
 
 The following is an example test application.
 
@@ -155,21 +134,32 @@ The following is an example test application.
 #include "qualification_test.h"
 
 static NetworkContext_t xNetworkContext = { 0 };
+static NetworkContext_t xSecondNetworkContext = { 0 };
 static TransportInterface_t xTransport = { 0 };
 
-int TransportNetworkConnect( void * pNetworkContext, TestHostInfo_t * pHostInfo, void * pNetworkCredentials )
+static NetworkConnectStatus_t prvTransportNetworkConnect( void * pNetworkContext, TestHostInfo_t * pHostInfo, void * pNetworkCredentials )
 {
     /* Connect the transport network. */
 }
 
-void TransportNetworkDisconnect( void * pNetworkContext )
+static void prvTransportNetworkDisconnect( void * pNetworkContext )
 {
     /* Disconnect the transport network. */
 }
 
-void TransportTestDelay( uint32_t delayMs )
+static void prvTransportTestDelay( uint32_t delayMs )
 {
     /* Delay function to wait for the response from network. */
+}
+
+static TestThreadHandle_t prvThreadCreate( TestThreadFunction_t threadFunc, void * pParam )
+{
+    /* Thread create function for multithreaded test. */
+}
+
+static int prvThreadTimedWait( TestThreadHandle_t threadHandle, uint32_t timeoutMs )
+{
+    /* Thread timed wait function for multithreaded test. */
 }
 
 void SetupTransportTestParam( TransportTestParam_t * pTestParam )
@@ -182,16 +172,20 @@ void SetupTransportTestParam( TransportTestParam_t * pTestParam )
 
         pTestParam->pTransport = &xTransport;
         pTestParam->pNetworkContext = &xNetworkContext;
-        pTestParam->pNetworkConnect = TransportNetworkConnect;
-        pTestParam->pNetworkDisconnect = TransportNetworkDisconnect;
-        pTestParam->pTransportTestDelay = TransportTestDelay;
+        pTestParam->pSecondNetworkContext = &xSecondNetworkContext;
+
+        pTestParam->pNetworkConnect = prvTransportNetworkConnect;
+        pTestParam->pNetworkDisconnect = prvTransportNetworkDisconnect;
+        pTestParam->pTransportTestDelay = prvTransportTestDelay;
         pTestParam->pNetworkCredentials = /* YourNetworkCredentials. */;
+        pTestParam->pTestThreadCreate = prvThreadCreate;
+        pTestParam->pTestThreadTimedWait = prvThreadTimedWait;
     }
 }
 
 void yourMainFunction( void )
 {
-    runQualificationTest();
+    RunQualificationTest();
 }
 ```
 
@@ -244,7 +238,7 @@ go run echo_server.go -config=example_config.json
 ### 6.2. Start the echo server with TLS
 Developer’s can also setup the transport interface test over mutual authenticated TLS with this echo server tool. Echo server must setup with the **secure-connection** configuration and provide server certificate and key in the configuration file. TLS connection capability and client certificate will be verified by the echo server.
 
-This document describes how to create self-signed credentials for the echo server. The self-signed credentials is only for test transport interface test.
+This [document](https://github.com/FreeRTOS/Labs-FreeRTOS-Libraries-Integration-Tests/blob/main/tools/echo_server/README.md) describes how to create self-signed credentials for the echo server. The self-signed credentials is only for test transport interface test.
 
 To run the echo serve with TLS, the following configuraition file, "example_tls_config.json", can be referenced as an example to run the echo server. 
 ```
@@ -265,7 +259,7 @@ go run echo_server.go -config=example_tls_config.json
 ```
 
 ### 6.3. Setup the host info and network credentials
-Provide the **server-address** and **server-port** in **./include/test_param_config.h**.
+Provide the **server-address** and **server-port** in **test_param_config.h**.
 ```C
 #define ECHO_SERVER_ENDPOINT   "server-address"
 #define ECHO_SERVER_PORT       ( server-port )
@@ -289,21 +283,16 @@ The pNetworkCredentials will be passed to the pNetworkConnect assigned in the sa
 ### 6.4. Compile and run the transport interface test application
 Compile and run the test application in your development environment. The following is a sample test result log:
 ```
-TEST(Full_TransportInterfaceTest, TransportSend_NetworkContextNullPtr) PASS
-TEST(Full_TransportInterfaceTest, TransportSend_BufferNullPtr) PASS
-TEST(Full_TransportInterfaceTest, TransportSend_ZeroByteToSend) PASS
-TEST(Full_TransportInterfaceTest, TransportRecv_NetworkContextNullPtr) PASS
-TEST(Full_TransportInterfaceTest, TransportRecv_BufferNullPtr) PASS
-TEST(Full_TransportInterfaceTest, TransportRecv_ZeroByteToRecv) PASS
 TEST(Full_TransportInterfaceTest, Transport_SendOneByteRecvCompare) PASS
 TEST(Full_TransportInterfaceTest, Transport_SendRecvOneByteCompare) PASS
 TEST(Full_TransportInterfaceTest, Transport_SendRecvCompare) PASS
+TEST(Full_TransportInterfaceTest, Transport_SendRecvCompareMultithreaded) PASS
 TEST(Full_TransportInterfaceTest, TransportSend_RemoteDisconnect) PASS
 TEST(Full_TransportInterfaceTest, TransportRecv_RemoteDisconnect) PASS
 TEST(Full_TransportInterfaceTest, TransportRecv_NoDataToReceive) PASS
 TEST(Full_TransportInterfaceTest, TransportRecv_ReturnZeroRetry) PASS
 
 -----------------------
-13 Tests 0 Failures 0 Ignored
+8 Tests 0 Failures 0 Ignored
 OK
 ```
