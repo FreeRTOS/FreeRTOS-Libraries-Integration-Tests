@@ -367,7 +367,7 @@ static void prvSendRecvCompareFunc( void * pParam )
 
 /*-----------------------------------------------------------*/
 
-static void prvRetunZeroRetryFunc( void *pParam )
+static void prvRetunZeroRetryFunc( void * pParam )
 {
     threadParameter_t * pThreadParameter = pParam;
     int32_t transportResult = 0;
@@ -388,8 +388,8 @@ static void prvRetunZeroRetryFunc( void *pParam )
                                          TRANSPORT_TEST_BUFFER_WRITABLE_LENGTH,
                                          "transportTestBuffer should not be altered." );
 
-    /* Send some data to echo server then retry the receive operation.
-     * The receive operation should be able to receive all the data. */
+    /* Send some data to echo server then retry the receive operation. The receive
+     * operation should be able to receive all the data. */
     /* Initialize the test data. */
     prvInitializeTestData( pTrasnportTestBufferStart, TRANSPORT_TEST_BUFFER_WRITABLE_LENGTH );
 
@@ -405,7 +405,7 @@ static void prvRetunZeroRetryFunc( void *pParam )
 
 /*-----------------------------------------------------------*/
 
-static void prvNoDataToReceiveFunc( void *pParam )
+static void prvNoDataToReceiveFunc( void * pParam )
 {
     threadParameter_t * pThreadParameter = pParam;
     int32_t transportResult = 0;
@@ -827,10 +827,12 @@ TEST( Full_TransportInterfaceTest, TransportRecv_NoDataToReceive )
     /* Waiting for the test thread complete. */
     timedWaitResult = testParam.pTestThreadTimedWait( threadHandle,
                                                       TRANSPORT_TEST_WAIT_THREAD_RECEIVE_TIMEOUT_MS );
+
     if( timedWaitResult != 0 )
     {
         threadParameter[ TRANSPORT_TEST_INDEX ].stopFlag = true;
     }
+
     TEST_ASSERT_MESSAGE( timedWaitResult == 0, "Waiting for test thread receive data failed." );
 }
 
@@ -858,10 +860,12 @@ TEST( Full_TransportInterfaceTest, TransportRecv_ReturnZeroRetry )
     /* Waiting for the test thread complete. */
     timedWaitResult = testParam.pTestThreadTimedWait( threadHandle,
                                                       TRANSPORT_TEST_WAIT_THREAD_RECEIVE_TIMEOUT_MS );
+
     if( timedWaitResult != 0 )
     {
         threadParameter[ TRANSPORT_TEST_INDEX ].stopFlag = true;
     }
+
     TEST_ASSERT_MESSAGE( timedWaitResult == 0, "Waiting for test thread receive data failed." );
 }
 
