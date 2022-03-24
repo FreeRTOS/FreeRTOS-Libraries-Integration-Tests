@@ -692,7 +692,7 @@ TEST( Full_TransportInterfaceTest, Transport_SendRecvCompareMultithreaded )
     /* The primary thread parameter already setup in the test setup function. */
     for( threadIndex = 1; threadIndex < TRANSPORT_TEST_MULTI_THREAD_TASK_COUNT; threadIndex++ )
     {
-        memset( threadParameter[ 1 ].transportTestBuffer,
+        memset( threadParameter[ threadIndex ].transportTestBuffer,
                 TRANSPORT_TEST_BUFFER_GUARD_PATTERN, TRANSPORT_TEST_BUFFER_TOTAL_LENGTH );
     }
 
