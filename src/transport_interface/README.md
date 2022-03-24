@@ -30,16 +30,20 @@ The transport interface tests verify the implementation by running various test 
 
 |Test Case	|Test Case Detail	|Expected result	|
 |---	|---	|---	|
-|Transport_SendOneByteRecvCompare 	|Test send receive beharivor in the following order<br>Send : 1 byte<br>Send : ( TRANSPORT_TEST_BUFFER_WRITABLE_LENGTH - 1 ) bytes<br>Receive : TRANSPORT_TEST_BUFFER_WRITABLE_LENGTH bytes | Send/receive/compare should has no error |
-|Transport_SendRecvOneByteCompare 	|Test send receive beharivor in the following order<br>Send : TRANSPORT_TEST_BUFFER_WRITABLE_LENGTH bytes<br>Receive : 1 byte<br>Receive : ( TRANSPORT_TEST_BUFFER_WRITABLE_LENGTH - 1 ) bytes |Send/receive/compare should has no error|
+|Transport_SendOneByteRecvCompare 	|Test send receive behavior in the following order<br>Send : 1 byte<br>Send : ( TRANSPORT_TEST_BUFFER_WRITABLE_LENGTH - 1 ) bytes<br>Receive : TRANSPORT_TEST_BUFFER_WRITABLE_LENGTH bytes | Send/receive/compare should has no error |
+|Transport_SendRecvOneByteCompare 	|Test send receive behavior in the following order<br>Send : TRANSPORT_TEST_BUFFER_WRITABLE_LENGTH bytes<br>Receive : 1 byte<br>Receive : ( TRANSPORT_TEST_BUFFER_WRITABLE_LENGTH - 1 ) bytes |Send/receive/compare should has no error|
 |Transport_SendRecvCompare 	|Test transport interface with send, receive and compare on bulk of data.<br>The data size ranges from 1 byte to TRANSPORT_TEST_BUFFER_WRITABLE_LENGTH bytes |Send/receive/compare should has no error within timeout |
 |Transport_SendRecvCompareMultithreaded 	|Test transport interface with send, receive and compare on bulk of data in multiple threads.<br>Each thread will create a network connection.<br>The data size ranges from 1 byte to TRANSPORT_TEST_BUFFER_WRITABLE_LENGTH bytes |Send/receive/compare should has no error within timeout |
 |TransportSend_RemoteDisconnect	|Test transport interface send function return value when disconnected by remote server	|Negative value should be returned	|
 |TransportRecv_RemoteDisconnect	|Test transport interface receive function return value when disconnected by remote server	|Negative value should be returned	|
 |TransportRecv_NoDataToReceive	|Test transport interface receive function return value when no data to receive	|0 should be returned	|
-|TransportRecv_ReturnZeroRetry	|Test transport interface receive function return zero due to no data to receive.<br> Send some data to echo server then retry the receive function.	|Postive value should be returned after retry	|
+|TransportRecv_ReturnZeroRetry	|Test transport interface receive function return zero due to no data to receive. Send data to echo server then retry the receive function. Transport receive function should be able to receive data from echo server and return positive value.	|Postive value should be returned after retry transport receive	|
 
-The following test cases are optional. Assertion may be required to be disabled to pass the test cases.
+Invalid parameter tests are not suitable to verify transport interface implementation which make use
+of assert to check invalid parameter. Therefore, they are optional and are provided for developers who want to verify their invalid parameters handling.
+
+Define **TRANSPORT_TEST_INVALID_PARAMETERS** to 1 in **test_param_config.h** if you want to run the invalid parameter tests.
+
 |Test Case	|Test Case Detail	|Expected result	|
 |---	|---	|---	|
 |TransportSend_NetworkContextNullPtr	|Test transport interface send with NULL network context pointer handling	|Negative value should be returned	|
@@ -92,6 +96,7 @@ Developer implements the transport interface test application with the following
 3. Include relevant files into the build system. If using CMake, qualification_test.cmake and src/transport_interface_tests.cmake can be used to include relevant files.
 
 4. Implement the setup function, **SetupTransportTestParam**, for transport interface test to provide test parameters. The following are required test parameters:
+
 ```C
 /**
  * @brief A struct representing transport interface test parameters.
@@ -119,12 +124,13 @@ typedef struct TransportTestParam
 void SetupTransportTestParam( TransportTestParam_t * pTestParam );
 ```
 
-4. Enable the transport interface config, **TRANSPORT_INTERFACE_TEST_ENABLED**, in **test_execution_config.h**.
+5. Enable the transport interface config, **TRANSPORT_INTERFACE_TEST_ENABLED**, in **test_execution_config.h**.
+
 ```C
 #define TRANSPORT_INTERFACE_TEST_ENABLED  ( 1 )     /* Set 1 to enable the transport interface test. */
 ```
 
-5. Implement the main function and call the **RunQualificationTest**.
+6. Implement the main function and call the **RunQualificationTest**.
 
 The following is an example test application.
 
