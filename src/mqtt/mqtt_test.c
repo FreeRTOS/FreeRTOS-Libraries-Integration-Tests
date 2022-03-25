@@ -89,9 +89,9 @@
 #define TEST_MQTT_TOPIC                         CLIENT_IDENTIFIER "/iot/integration/test"
 
 /**
- * @brief Sample topic filter 2 to use in tests.
+ * @brief Sample topic filter to test MQTT retainted message.
  */
-#define TEST_MQTT_TOPIC_2                       CLIENT_IDENTIFIER "/iot/integration/test2"
+#define TEST_MQTT_RETAIN_TOPIC                  CLIENT_IDENTIFIER "/iot/integration/testretain"
 
 /**
  * @brief Length of sample topic filter.
@@ -1143,7 +1143,7 @@ TEST( MqttTest, MQTT_Publish_With_Retain_Flag )
 {
     /* Publish to a topic with the "retain" flag set. */
     TEST_ASSERT_EQUAL( MQTTSuccess, publishToTopic( &context,
-                                                    TEST_MQTT_TOPIC,
+                                                    TEST_MQTT_RETAIN_TOPIC,
                                                     true,  /* setRetainFlag */
                                                     false, /* isDuplicate */
                                                     MQTTQoS1,
@@ -1157,7 +1157,7 @@ TEST( MqttTest, MQTT_Publish_With_Retain_Flag )
     /* Subscribe to the same topic that we published the message to.
      * The broker should send the "retained" message with the "retain" flag set. */
     TEST_ASSERT_EQUAL( MQTTSuccess, subscribeToTopic(
-                           &context, TEST_MQTT_TOPIC, MQTTQoS1 ) );
+                           &context, TEST_MQTT_RETAIN_TOPIC, MQTTQoS1 ) );
     TEST_ASSERT_FALSE( receivedSubAck );
     TEST_ASSERT_EQUAL( MQTTSuccess,
                        MQTT_ProcessLoop( &context, 2 * MQTT_PROCESS_LOOP_TIMEOUT_MS ) );
@@ -1175,7 +1175,7 @@ TEST( MqttTest, MQTT_Publish_With_Retain_Flag )
 
     /* Publish to another topic with the "retain" flag set to 0. */
     TEST_ASSERT_EQUAL( MQTTSuccess, publishToTopic( &context,
-                                                    TEST_MQTT_TOPIC_2,
+                                                    TEST_MQTT_TOPIC,
                                                     false, /* setRetainFlag */
                                                     false, /* isDuplicate */
                                                     MQTTQoS1,
@@ -1191,7 +1191,7 @@ TEST( MqttTest, MQTT_Publish_With_Retain_Flag )
      * We don't expect the broker to send the message to us (as we
      * PUBLISHed without a retain flag set). */
     TEST_ASSERT_EQUAL( MQTTSuccess, subscribeToTopic(
-                           &context, TEST_MQTT_TOPIC_2, MQTTQoS1 ) );
+                           &context, TEST_MQTT_TOPIC, MQTTQoS1 ) );
     TEST_ASSERT_FALSE( receivedSubAck );
     TEST_ASSERT_EQUAL( MQTTSuccess,
                        MQTT_ProcessLoop( &context, 2 * MQTT_PROCESS_LOOP_TIMEOUT_MS ) );
