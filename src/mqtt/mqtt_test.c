@@ -34,6 +34,7 @@
 #include "core_mqtt_state.h"
 #include "clock.h"
 #include "unity.h"
+#include "unity_fixture.h"
 
 #include "mqtt_test.h"
 #include "test_execution_config.h"
@@ -341,6 +342,11 @@ static void startPersistentSession();
  */
 static void resumePersistentSession();
 
+
+/**
+ * @brief Test group for transport interface test.
+ */
+TEST_GROUP( MqttTest );
 /*-----------------------------------------------------------*/
 
 static void establishMqttSession( MQTTContext_t * pContext,
@@ -722,7 +728,10 @@ static MQTTStatus_t publishToTopic( MQTTContext_t * pContext,
 
 /*-----------------------------------------------------------*/
 
-void setUp( void )
+/**
+ * @brief Test setup function for MQTT tests.
+ */
+TEST_SETUP( MqttTest )
 {
     struct timespec tp;
 
@@ -760,7 +769,10 @@ void setUp( void )
 
 /*-----------------------------------------------------------*/
 
-void tearDown( void )
+/**
+ * @brief Test tear down function for MQTT tests.
+ */
+TEST_TEAR_DOWN( MqttTest )
 {
     MQTTStatus_t mqttStatus;
 
@@ -787,7 +799,12 @@ void tearDown( void )
 
 /*-----------------------------------------------------------*/
 
-void test_MQTT_Subscribe_Publish_With_Qos_0( void )
+/**
+ * @brief Tests Subscribe and Publish operations with the MQTT broken using QoS 0.
+ * The test subscribes to a topic, and then publishes to the same topic. The
+ * broker is expected to route the publish message back to the test.
+ */
+TEST( MqttTest, MQTT_Subscribe_Publish_With_Qos_0 )
 {
     /* Subscribe to a topic with Qos 0. */
     TEST_ASSERT_EQUAL( MQTTSuccess, subscribeToTopic(
@@ -845,7 +862,7 @@ void test_MQTT_Subscribe_Publish_With_Qos_0( void )
  * The test subscribes to a topic, and then publishes to the same topic. The
  * broker is expected to route the publish message back to the test.
  */
-void test_MQTT_Subscribe_Publish_With_Qos_1( void )
+TEST( MqttTest, MQTT_Subscribe_Publish_With_Qos_1 )
 {
     /* Subscribe to a topic with Qos 1. */
     TEST_ASSERT_EQUAL( MQTTSuccess, subscribeToTopic(
@@ -908,7 +925,7 @@ void test_MQTT_Subscribe_Publish_With_Qos_1( void )
  * The test subscribes to a topic, and then publishes to the same topic. The
  * broker is expected to route the publish message back to the test.
  */
-void test_MQTT_Connect_LWT( void )
+TEST( MqttTest, MQTT_Connect_LWT )
 {
     bool sessionPresent;
     MQTTContext_t secondMqttContext;
@@ -968,7 +985,7 @@ void test_MQTT_Connect_LWT( void )
  * @brief Verifies that the MQTT library sends a Ping Request packet if the connection is
  * idle for more than the keep-alive period.
  */
-void test_MQTT_ProcessLoop_KeepAlive( void )
+TEST( MqttTest, MQTT_ProcessLoop_KeepAlive )
 {
     uint32_t connectPacketTime = context.lastPacketTime;
     uint32_t elapsedTime = 0;
@@ -993,7 +1010,7 @@ void test_MQTT_ProcessLoop_KeepAlive( void )
  * un-acknowledged in its first attempt.
  * Tests that the library is able to support resending the PUBLISH packet with the DUP flag.
  */
-void test_MQTT_Resend_Unacked_Publish_QoS1( void )
+TEST( MqttTest, MQTT_Resend_Unacked_Publish_QoS1 )
 {
     /* Start a persistent session with the broker. */
     startPersistentSession();
@@ -1066,7 +1083,7 @@ void test_MQTT_Resend_Unacked_Publish_QoS1( void )
  * Tests that the library responds with a PUBACK to the duplicate incoming QoS 1 PUBLISH
  * packet that was un-acknowledged in a previous connection of the same session.
  */
-void test_MQTT_Restore_Session_Duplicate_Incoming_Publish_Qos1( void )
+TEST( MqttTest, MQTT_Restore_Session_Duplicate_Incoming_Publish_Qos1 )
 {
     /* Start a persistent session with the broker. */
     startPersistentSession();
@@ -1122,7 +1139,7 @@ void test_MQTT_Restore_Session_Duplicate_Incoming_Publish_Qos1( void )
  * @brief Verifies that the library supports notifying the broker to retain a PUBLISH message
  * for a topic using the retain flag.
  */
-void test_MQTT_Publish_With_Retain_Flag( void )
+TEST( MqttTest, MQTT_Publish_With_Retain_Flag )
 {
     /* Publish to a topic with the "retain" flag set. */
     TEST_ASSERT_EQUAL( MQTTSuccess, publishToTopic( &context,
@@ -1186,6 +1203,22 @@ void test_MQTT_Publish_With_Retain_Flag( void )
 
 /*-----------------------------------------------------------*/
 
+/**
+ * @brief Test group runner for MQTT test against MQTT broker.
+ */
+TEST_GROUP_RUNNER( MqttTest )
+{
+        RUN_TEST_CASE( MqttTest, MQTT_Subscribe_Publish_With_Qos_0 );
+        RUN_TEST_CASE( MqttTest, MQTT_Subscribe_Publish_With_Qos_1 );
+        RUN_TEST_CASE( MqttTest, MQTT_Connect_LWT );
+        RUN_TEST_CASE( MqttTest, MQTT_ProcessLoop_KeepAlive );
+        RUN_TEST_CASE( MqttTest, MQTT_Resend_Unacked_Publish_QoS1 );
+        RUN_TEST_CASE( MqttTest, MQTT_Restore_Session_Duplicate_Incoming_Publish_Qos1 );
+        RUN_TEST_CASE( MqttTest, MQTT_Publish_With_Retain_Flag );
+}
+
+/*-----------------------------------------------------------*/
+
 int RunMqttTest( void )
 {
     int status = -1;
@@ -1195,17 +1228,18 @@ int RunMqttTest( void )
         SetupMqttTestParam( &testParam );
         testHostInfo.pHostName = MQTT_SERVER_ENDPOINT;
         testHostInfo.port = MQTT_SERVER_PORT;
+
+        /* Initialize unity. */
+        UnityFixture.Verbose = 1;
+        UnityFixture.GroupFilter = 0;
+        UnityFixture.NameFilter = 0;
+        UnityFixture.RepeatCount = 1;
+
         UNITY_BEGIN();
-        RUN_TEST( test_MQTT_Subscribe_Publish_With_Qos_0 );
-        RUN_TEST( test_MQTT_Subscribe_Publish_With_Qos_1 );
-        RUN_TEST( test_MQTT_Connect_LWT );
-        RUN_TEST( test_MQTT_ProcessLoop_KeepAlive );
-        RUN_TEST( test_MQTT_Resend_Unacked_Publish_QoS1 );
-        RUN_TEST( test_MQTT_Restore_Session_Duplicate_Incoming_Publish_Qos1 );
-        RUN_TEST( test_MQTT_Publish_With_Retain_Flag );
+
+        RUN_TEST_GROUP( MqttTest );
+
         status = UNITY_END();
     #endif /* if ( MQTT_TEST_ENABLED == 1 ) */
     return status;
 }
-
-/*-----------------------------------------------------------*/
