@@ -64,15 +64,6 @@
       TRANSPORT_TEST_BUFFER_SUFFIX_GUARD_LENGTH )
 
 /**
- * @brief Test invalid parameters with transport interface.
- *
- * These test cases are optional since they may required user to disable assertion.
- */
-#ifndef TRANSPORT_TEST_INVALID_PARAMETERS
-    #define TRANSPORT_TEST_INVALID_PARAMETERS    ( 0 )
-#endif
-
-/**
  * @brief Transport Interface test buffer guard pattern.
  */
 #define TRANSPORT_TEST_BUFFER_GUARD_PATTERN        ( 0xA5 )
@@ -876,15 +867,13 @@ TEST( Full_TransportInterfaceTest, TransportRecv_ReturnZeroRetry )
  */
 TEST_GROUP_RUNNER( Full_TransportInterfaceTest )
 {
-    /* Optional invalid parameter tests. Disable assertion may be required to run these tests. */
-    #if ( TRANSPORT_TEST_INVALID_PARAMETERS == 1 )
-        RUN_TEST_CASE( Full_TransportInterfaceTest, TransportSend_NetworkContextNullPtr );
-        RUN_TEST_CASE( Full_TransportInterfaceTest, TransportSend_BufferNullPtr );
-        RUN_TEST_CASE( Full_TransportInterfaceTest, TransportSend_ZeroByteToSend );
-        RUN_TEST_CASE( Full_TransportInterfaceTest, TransportRecv_NetworkContextNullPtr );
-        RUN_TEST_CASE( Full_TransportInterfaceTest, TransportRecv_BufferNullPtr );
-        RUN_TEST_CASE( Full_TransportInterfaceTest, TransportRecv_ZeroByteToRecv );
-    #endif
+    /* Invalid parameter test. Disable or replace assert may be required to run these tests. */
+    RUN_TEST_CASE( Full_TransportInterfaceTest, TransportSend_NetworkContextNullPtr );
+    RUN_TEST_CASE( Full_TransportInterfaceTest, TransportSend_BufferNullPtr );
+    RUN_TEST_CASE( Full_TransportInterfaceTest, TransportSend_ZeroByteToSend );
+    RUN_TEST_CASE( Full_TransportInterfaceTest, TransportRecv_NetworkContextNullPtr );
+    RUN_TEST_CASE( Full_TransportInterfaceTest, TransportRecv_BufferNullPtr );
+    RUN_TEST_CASE( Full_TransportInterfaceTest, TransportRecv_ZeroByteToRecv );
 
     /* Send and receive correctness test. */
     RUN_TEST_CASE( Full_TransportInterfaceTest, Transport_SendOneByteRecvCompare );

@@ -30,6 +30,12 @@ The transport interface tests verify the implementation by running various test 
 
 |Test Case	|Test Case Detail	|Expected result	|
 |---	|---	|---	|
+|TransportSend_NetworkContextNullPtr	|Test transport interface send with NULL network context pointer handling	|Negative value should be returned	|
+|TransportSend_BufferNullPtr	|Test transport interface send with NULL buffer pointer handling	|Negative value should be returned	|
+|TransportSend_ZeroByteToSend	|Test transport interface send with zero byte to send handling	|Negative value should be returned	|
+|TransportRecv_NetworkContextNullPtr	|Test transport interface recv with NULL network context pointer handling	|Negative value should be returned	|
+|TransportRecv_BufferNullPtr	|Test transport interface recv with NULL buffer pointer handling	|Negative value should be returned	|
+|TransportRecv_ZeroByteToRecv	|Test transport interface recv with zero byte to receive handling	|Negative value should be returned	|
 |Transport_SendOneByteRecvCompare 	|Test send receive behavior in the following order<br>Send : 1 byte<br>Send : ( TRANSPORT_TEST_BUFFER_WRITABLE_LENGTH - 1 ) bytes<br>Receive : TRANSPORT_TEST_BUFFER_WRITABLE_LENGTH bytes | Send/receive/compare should has no error |
 |Transport_SendRecvOneByteCompare 	|Test send receive behavior in the following order<br>Send : TRANSPORT_TEST_BUFFER_WRITABLE_LENGTH bytes<br>Receive : 1 byte<br>Receive : ( TRANSPORT_TEST_BUFFER_WRITABLE_LENGTH - 1 ) bytes |Send/receive/compare should has no error|
 |Transport_SendRecvCompare 	|Test transport interface with send, receive and compare on bulk of data.<br>The data size ranges from 1 byte to TRANSPORT_TEST_BUFFER_WRITABLE_LENGTH bytes |Send/receive/compare should has no error within timeout |
@@ -39,19 +45,14 @@ The transport interface tests verify the implementation by running various test 
 |TransportRecv_NoDataToReceive	|Test transport interface receive function return value when no data to receive	|0 should be returned	|
 |TransportRecv_ReturnZeroRetry	|Test transport interface receive function return zero due to no data to receive. Send data to echo server then retry the receive function. Transport receive function should be able to receive data from echo server and return positive value.	|Postive value should be returned after retry transport receive	|
 
-Invalid parameter tests are not suitable to verify transport interface implementation which make use
-of assert to check invalid parameter. Therefore, they are optional and are provided for developers who want to verify their invalid parameters handling.
-
-Define **TRANSPORT_TEST_INVALID_PARAMETERS** to 1 in **test_param_config.h** if you want to run the invalid parameter tests.
-
-|Test Case	|Test Case Detail	|Expected result	|
-|---	|---	|---	|
-|TransportSend_NetworkContextNullPtr	|Test transport interface send with NULL network context pointer handling	|Negative value should be returned	|
-|TransportSend_BufferNullPtr	|Test transport interface send with NULL buffer pointer handling	|Negative value should be returned	|
-|TransportSend_ZeroByteToSend	|Test transport interface send with zero byte to send handling	|Negative value should be returned	|
-|TransportRecv_NetworkContextNullPtr	|Test transport interface recv with NULL network context pointer handling	|Negative value should be returned	|
-|TransportRecv_BufferNullPtr	|Test transport interface recv with NULL buffer pointer handling	|Negative value should be returned	|
-|TransportRecv_ZeroByteToRecv	|Test transport interface recv with zero byte to receive handling	|Negative value should be returned	|
+Assert may be used to check invalid parameters. In that case, you may need to replace
+the assert macro to return negative value in your transport interface implementation
+to ensure invalid parameter error can be catched by assert.<br><br>
+For example, if you are using FreeRTOS configASSERT macro to check invalid parameters,
+you can replace the macro with the following code:
+```
+#define configASSERT( x )   if( !( x ) ) { return NEGATIVE_VALUE_TO_INDICATE_ERROR; }
+```
 
 ## 3. Prerequisites For Transport Interface Test
 
@@ -287,18 +288,27 @@ void SetupTransportTestParam( TransportTestParam_t * pTestParam )
 The pNetworkCredentials will be passed to the pNetworkConnect assigned in the same SetupTransportTestParam function.
 
 ### 6.4. Compile and run the transport interface test application
-Compile and run the test application in your development environment. The following is a sample test result log:
+Compile and run the test application in your development environment.<br>
+The following is a sample test result log:
 ```
+TEST(Full_TransportInterfaceTest, TransportSend_NetworkContextNullPtr) PASS
+TEST(Full_TransportInterfaceTest, TransportSend_BufferNullPtr) PASS
+TEST(Full_TransportInterfaceTest, TransportSend_ZeroByteToSend) PASS
+TEST(Full_TransportInterfaceTest, TransportRecv_NetworkContextNullPtr) PASS
+TEST(Full_TransportInterfaceTest, TransportRecv_BufferNullPtr) PASS
+TEST(Full_TransportInterfaceTest, TransportRecv_ZeroByteToRecv) PASS
 TEST(Full_TransportInterfaceTest, Transport_SendOneByteRecvCompare) PASS
 TEST(Full_TransportInterfaceTest, Transport_SendRecvOneByteCompare) PASS
-TEST(Full_TransportInterfaceTest, Transport_SendRecvCompare) PASS
-TEST(Full_TransportInterfaceTest, Transport_SendRecvCompareMultithreaded) PASS
+TEST(Full_TransportInterfaceTest, Transport_SendRecvCompare) .................................
+.......................................................PASS
+TEST(Full_TransportInterfaceTest, Transport_SendRecvCompareMultithreaded) ....................
+....................................................................PASS
 TEST(Full_TransportInterfaceTest, TransportSend_RemoteDisconnect) PASS
 TEST(Full_TransportInterfaceTest, TransportRecv_RemoteDisconnect) PASS
 TEST(Full_TransportInterfaceTest, TransportRecv_NoDataToReceive) PASS
 TEST(Full_TransportInterfaceTest, TransportRecv_ReturnZeroRetry) PASS
 
 -----------------------
-8 Tests 0 Failures 0 Ignored
+16 Tests 0 Failures 0 Ignored
 OK
 ```
