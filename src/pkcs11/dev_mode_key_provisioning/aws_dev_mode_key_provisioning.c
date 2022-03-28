@@ -54,33 +54,44 @@
 #include "mbedtls/pk.h"
 #include "mbedtls/oid.h"
 
-/* Developer convenience override, for lab testing purposes, for generating
- * a new default key pair, regardless of whether an existing key pair is present. */
-#define keyprovisioningFORCE_GENERATE_NEW_KEY_PAIR    0
+/*-----------------------------------------------------------*/
 
-/* Delay before generating new key-pair, if keyprovisioningFORCE_GENERATE_NEW_KEY_PAIR
+/* Delay before generating new key-pair, if FORCE_GENERATE_NEW_KEY_PAIR
  * is enabled. This is to avoid possible race-condition (due to device reset) between
  * execution of an existing image on device generates key-pair on device and flashing of
  * new image on device. */
-#ifndef keyprovisioningDELAY_BEFORE_KEY_PAIR_GENERATION_SECS
-    #define keyprovisioningDELAY_BEFORE_KEY_PAIR_GENERATION_SECS    10
+#ifndef DELAY_BEFORE_KEY_PAIR_GENERATION_SECS
+    #define DELAY_BEFORE_KEY_PAIR_GENERATION_SECS    10
 #endif
 
-#ifndef DEV_MODE_KEY_PROVISIONING_PRINT
-    #define DEV_MODE_KEY_PROVISIONING_PRINT( ... )
+/**
+ * Dev make use of the unity TEST_PRINTF function to print log. Log function
+ * is disabled if not supported.
+ */
+#ifndef TEST_PRINTF
+    #define TEST_PRINTF( ... )
 #endif
 
 /* Internal structure for parsing RSA keys. */
 
 /* Length parameters for importing RSA-2048 private keys. */
-#define MODULUS_LENGTH        pkcs11RSA_2048_MODULUS_BITS / 8
-#define E_LENGTH              3
-#define D_LENGTH              pkcs11RSA_2048_MODULUS_BITS / 8
-#define PRIME_1_LENGTH        128
-#define PRIME_2_LENGTH        128
-#define EXPONENT_1_LENGTH     128
-#define EXPONENT_2_LENGTH     128
-#define COEFFICIENT_LENGTH    128
+#define MODULUS_LENGTH              ( pkcs11RSA_2048_MODULUS_BITS / 8 )
+#define E_LENGTH                    ( 3 )
+#define D_LENGTH                    ( pkcs11RSA_2048_MODULUS_BITS / 8 )
+#define PRIME_1_LENGTH              ( 128 )
+#define PRIME_2_LENGTH              ( 128 )
+#define EXPONENT_1_LENGTH           ( 128 )
+#define EXPONENT_2_LENGTH           ( 128 )
+#define COEFFICIENT_LENGTH          ( 128 )
+
+/* Length parameters for provisinging EC keys. */
+#define EC_PARAMS_LENGTH            ( 10 )
+#define EC_D_LENGTH                 ( 32 )
+
+/* Bytes to display per raw setting to display hex to console. */
+#define BYTES_TO_DISPLAY_PER_ROW    ( 16 )
+
+/*-----------------------------------------------------------*/
 
 /* Adding one to all of the lengths because ASN1 may pad a leading 0 byte
  * to numbers that could be interpreted as negative */
@@ -109,12 +120,16 @@ typedef struct ProvisionedState_t
                           * in the subject of the device certificate. */
 } ProvisionedState_t;
 
-/* This function can be found in libraries/3rdparty/mbedtls_utils/mbedtls_utils.c. */
+/*-----------------------------------------------------------*/
+
+/* This helper function can be found in mbedtls utils pem2der.c.
+ * (https://github.com/ARMmbed/mbedtls/blob/development/programs/util/pem2der.c#L75) */
 extern int convert_pem_to_der( const unsigned char * pucInput,
                                size_t xLen,
                                unsigned char * pucOutput,
                                size_t * pxOlen );
 
+/* PKCS11 test parameter for malloc and free function. */
 extern Pkcs11TestParam_t testParam;
 
 /*-----------------------------------------------------------*/
@@ -137,10 +152,7 @@ static CK_RV prvProvisionPrivateECKey( CK_SESSION_HANDLE xSession,
 
     xResult = C_GetFunctionList( &pxFunctionList );
 
-#define EC_PARAMS_LENGTH    10
-#define EC_D_LENGTH         32
-
-    pxD = testParam.pPkcsMalloc( EC_D_LENGTH );
+    pxD = testParam.pMemoryAlloc( EC_D_LENGTH );
 
     if( ( pxD == NULL ) )
     {
@@ -153,7 +165,7 @@ static CK_RV prvProvisionPrivateECKey( CK_SESSION_HANDLE xSession,
 
         if( lMbedResult != 0 )
         {
-            DEV_MODE_KEY_PROVISIONING_PRINT( "Failed to parse EC private key components. \r\n" );
+            TEST_PRINTF( "Failed to parse EC private key components. \r\n" );
             xResult = CKR_ATTRIBUTE_VALUE_INVALID;
         }
     }
@@ -200,7 +212,7 @@ static CK_RV prvProvisionPrivateECKey( CK_SESSION_HANDLE xSession,
 
     if( pxD != NULL )
     {
-        testParam.pPkcsFree( pxD );
+        testParam.pMemoryFree( pxD );
     }
 
     return xResult;
@@ -225,7 +237,7 @@ static CK_RV prvProvisionPrivateRSAKey( CK_SESSION_HANDLE xSession,
 
     xResult = C_GetFunctionList( &pxFunctionList );
 
-    pxRsaParams = testParam.pPkcsMalloc( sizeof( RsaParams_t ) );
+    pxRsaParams = testParam.pMemoryAlloc( sizeof( RsaParams_t ) );
 
     if( pxRsaParams == NULL )
     {
@@ -245,7 +257,7 @@ static CK_RV prvProvisionPrivateRSAKey( CK_SESSION_HANDLE xSession,
 
         if( lMbedResult != 0 )
         {
-            DEV_MODE_KEY_PROVISIONING_PRINT( "Failed to parse RSA private key components. \r\n" );
+            TEST_PRINTF( "Failed to parse RSA private key components. \r\n" );
             xResult = CKR_ATTRIBUTE_VALUE_INVALID;
         }
 
@@ -256,7 +268,7 @@ static CK_RV prvProvisionPrivateRSAKey( CK_SESSION_HANDLE xSession,
 
         if( lMbedResult != 0 )
         {
-            DEV_MODE_KEY_PROVISIONING_PRINT( "Failed to parse RSA private key Chinese Remainder Theorem variables. \r\n" );
+            TEST_PRINTF( "Failed to parse RSA private key Chinese Remainder Theorem variables. \r\n" );
             xResult = CKR_ATTRIBUTE_VALUE_INVALID;
         }
     }
@@ -299,7 +311,7 @@ static CK_RV prvProvisionPrivateRSAKey( CK_SESSION_HANDLE xSession,
 
     if( NULL != pxRsaParams )
     {
-        testParam.pPkcsFree( pxRsaParams );
+        testParam.pMemoryFree( pxRsaParams );
     }
 
     return xResult;
@@ -324,7 +336,7 @@ CK_RV xProvisionPrivateKey( CK_SESSION_HANDLE xSession,
 
     if( lMbedResult != 0 )
     {
-        DEV_MODE_KEY_PROVISIONING_PRINT( "Unable to parse private key.\r\n" );
+        TEST_PRINTF( "Unable to parse private key.\r\n" );
         xResult = CKR_ARGUMENTS_BAD;
     }
 
@@ -349,7 +361,7 @@ CK_RV xProvisionPrivateKey( CK_SESSION_HANDLE xSession,
         }
         else
         {
-            DEV_MODE_KEY_PROVISIONING_PRINT( "Invalid private key type provided.  RSA-2048 and EC P-256 keys are supported.\r\n" );
+            TEST_PRINTF( "Invalid private key type provided.  RSA-2048 and EC P-256 keys are supported.\r\n" );
             xResult = CKR_ARGUMENTS_BAD;
         }
     }
@@ -392,7 +404,7 @@ CK_RV xProvisionPublicKey( CK_SESSION_HANDLE xSession,
 
     if( lMbedResult != 0 )
     {
-        DEV_MODE_KEY_PROVISIONING_PRINT( "Failed to parse the public key. \r\n" );
+        TEST_PRINTF( "Failed to parse the public key. \r\n" );
         xResult = CKR_ARGUMENTS_BAD;
     }
 
@@ -478,7 +490,7 @@ CK_RV xProvisionPublicKey( CK_SESSION_HANDLE xSession,
     else
     {
         xResult = CKR_ATTRIBUTE_VALUE_INVALID;
-        DEV_MODE_KEY_PROVISIONING_PRINT( "Invalid key type. Supported options are CKK_RSA and CKK_EC" );
+        TEST_PRINTF( "Invalid key type. Supported options are CKK_RSA and CKK_EC" );
     }
 
     mbedtls_pk_free( &xMbedPkContext );
@@ -671,7 +683,7 @@ CK_RV xProvisionCertificate( CK_SESSION_HANDLE xSession,
         /* Convert the certificate to DER format if it was in PEM. The DER key
          * should be about 3/4 the size of the PEM key, so mallocing the PEM key
          * size is sufficient. */
-        pucDerObject = testParam.pPkcsMalloc( xCertificateTemplate.xValue.ulValueLen );
+        pucDerObject = testParam.pMemoryAlloc( xCertificateTemplate.xValue.ulValueLen );
         xDerLen = xCertificateTemplate.xValue.ulValueLen;
 
         if( pucDerObject != NULL )
@@ -711,7 +723,7 @@ CK_RV xProvisionCertificate( CK_SESSION_HANDLE xSession,
     /* Create an object using the encoded client certificate. */
     if( xResult == CKR_OK )
     {
-        DEV_MODE_KEY_PROVISIONING_PRINT( "Write certificate...\r\n" );
+        TEST_PRINTF( "Write certificate...\r\n" );
 
         xResult = pxFunctionList->C_CreateObject( xSession,
                                                   ( CK_ATTRIBUTE_PTR ) &xCertificateTemplate,
@@ -721,7 +733,7 @@ CK_RV xProvisionCertificate( CK_SESSION_HANDLE xSession,
 
     if( pucDerObject != NULL )
     {
-        testParam.pPkcsFree( pucDerObject );
+        testParam.pMemoryFree( pucDerObject );
     }
 
     return xResult;
@@ -871,7 +883,7 @@ static CK_RV prvExportPublicKey( CK_SESSION_HANDLE xSession,
             *pulDerPublicKeyLength = xTemplate.ulValueLen;
 
             /* Get a heap buffer. */
-            *ppucDerPublicKey = testParam.pPkcsMalloc( xTemplate.ulValueLen );
+            *ppucDerPublicKey = testParam.pMemoryAlloc( xTemplate.ulValueLen );
 
             /* Check for resource exhaustion. */
             if( NULL == *ppucDerPublicKey )
@@ -901,12 +913,14 @@ static CK_RV prvExportPublicKey( CK_SESSION_HANDLE xSession,
     /* Free memory if there was an error after allocation. */
     if( ( NULL != *ppucDerPublicKey ) && ( CKR_OK != xResult ) )
     {
-        testParam.pPkcsFree( *ppucDerPublicKey );
+        testParam.pMemoryFree( *ppucDerPublicKey );
         *ppucDerPublicKey = NULL;
     }
 
     return xResult;
 }
+
+/*-----------------------------------------------------------*/
 
 /* Determine which required client crypto objects are already present in
  * storage. */
@@ -970,7 +984,7 @@ static CK_RV prvGetProvisionedState( CK_SESSION_HANDLE xSession,
     if( CKR_OK == xResult )
     {
         xResult = pxFunctionList->C_GetTokenInfo( pxSlotId[ 0 ], &xTokenInfo );
-        testParam.pPkcsFree( pxSlotId );
+        testParam.pMemoryFree( pxSlotId );
     }
 
     if( ( CKR_OK == xResult ) && ( '\0' != xTokenInfo.label[ 0 ] ) && ( ' ' != xTokenInfo.label[ 0 ] ) )
@@ -988,7 +1002,7 @@ static CK_RV prvGetProvisionedState( CK_SESSION_HANDLE xSession,
 
         if( 0 != i )
         {
-            pxProvisionedState->pcIdentifier = ( char * ) testParam.pPkcsMalloc( 1 + i * sizeof( xTokenInfo.label[ 0 ] ) );
+            pxProvisionedState->pcIdentifier = ( char * ) testParam.pMemoryAlloc( 1 + i * sizeof( xTokenInfo.label[ 0 ] ) );
 
             if( NULL != pxProvisionedState->pcIdentifier )
             {
@@ -1016,14 +1030,13 @@ static void prvWriteHexBytesToConsole( char * pcDescription,
                                        uint8_t * pucData,
                                        uint32_t ulDataLength )
 {
-#define BYTES_TO_DISPLAY_PER_ROW    16
     char pcByteRow[ 1 + ( BYTES_TO_DISPLAY_PER_ROW * 2 ) + ( BYTES_TO_DISPLAY_PER_ROW / 2 ) ];
     char * pcNextChar = pcByteRow;
     uint32_t ulIndex = 0;
     uint8_t ucByteValue = 0;
 
     /* Write help text to the console. */
-    DEV_MODE_KEY_PROVISIONING_PRINT( "%s, %d bytes:\r\n", pcDescription, ulDataLength );
+    TEST_PRINTF( "%s, %d bytes:\r\n", pcDescription, ulDataLength );
 
     /* Iterate over the bytes of the encoded public key. */
     for( ; ulIndex < ulDataLength; ulIndex++ )
@@ -1047,8 +1060,8 @@ static void prvWriteHexBytesToConsole( char * pcDescription,
         if( 0 == ( ( ulIndex + 1 ) % BYTES_TO_DISPLAY_PER_ROW ) )
         {
             *pcNextChar = '\0';
-            DEV_MODE_KEY_PROVISIONING_PRINT( pcByteRow );
-            DEV_MODE_KEY_PROVISIONING_PRINT( "\r\n" );
+            TEST_PRINTF( pcByteRow );
+            TEST_PRINTF( "\r\n" );
             pcNextChar = pcByteRow;
         }
     }
@@ -1057,8 +1070,8 @@ static void prvWriteHexBytesToConsole( char * pcDescription,
     if( pcNextChar > pcByteRow )
     {
         *pcNextChar = '\0';
-        DEV_MODE_KEY_PROVISIONING_PRINT( pcByteRow );
-        DEV_MODE_KEY_PROVISIONING_PRINT( "\r\n" );
+        TEST_PRINTF( pcByteRow );
+        TEST_PRINTF( "\r\n" );
     }
 }
 
@@ -1092,7 +1105,7 @@ CK_RV xProvisionDevice( CK_SESSION_HANDLE xSession,
 
             if( xResult != CKR_OK )
             {
-                DEV_MODE_KEY_PROVISIONING_PRINT( "Warning: could not clean-up old crypto objects. %ld \r\n", xResult );
+                TEST_PRINTF( "Warning: could not clean-up old crypto objects. %ld \r\n", xResult );
             }
         }
     #endif /* if ( pkcs11configIMPORT_PRIVATE_KEYS_SUPPORTED == 1 ) */
@@ -1109,7 +1122,7 @@ CK_RV xProvisionDevice( CK_SESSION_HANDLE xSession,
 
         if( ( xResult != CKR_OK ) || ( xObject == CK_INVALID_HANDLE ) )
         {
-            DEV_MODE_KEY_PROVISIONING_PRINT( "ERROR: Failed to provision device certificate. %ld \r\n", xResult );
+            TEST_PRINTF( "ERROR: Failed to provision device certificate. %ld \r\n", xResult );
         }
     }
 
@@ -1126,7 +1139,7 @@ CK_RV xProvisionDevice( CK_SESSION_HANDLE xSession,
 
             if( ( xResult != CKR_OK ) || ( xObject == CK_INVALID_HANDLE ) )
             {
-                DEV_MODE_KEY_PROVISIONING_PRINT( "ERROR: Failed to provision device private key with status %ld.\r\n", xResult );
+                TEST_PRINTF( "ERROR: Failed to provision device private key with status %ld.\r\n", xResult );
             }
             else
             {
@@ -1151,7 +1164,7 @@ CK_RV xProvisionDevice( CK_SESSION_HANDLE xSession,
         if( xResult == CKR_DEVICE_MEMORY )
         {
             xResult = CKR_OK;
-            DEV_MODE_KEY_PROVISIONING_PRINT( "Warning: no persistent storage is available for the JITP certificate. The certificate in aws_clientcredential_keys.h will be used instead.\r\n" );
+            TEST_PRINTF( "Warning: no persistent storage is available for the JITP certificate. The certificate in aws_clientcredential_keys.h will be used instead.\r\n" );
         }
     }
 
@@ -1176,7 +1189,7 @@ CK_RV xProvisionDevice( CK_SESSION_HANDLE xSession,
         xResult = CKR_OK;
     }
 
-    #if ( 1 == keyprovisioningFORCE_GENERATE_NEW_KEY_PAIR )
+    #if ( 1 == FORCE_GENERATE_NEW_KEY_PAIR )
         xKeyPairGenerationMode = CK_TRUE;
     #endif
 
@@ -1189,7 +1202,7 @@ CK_RV xProvisionDevice( CK_SESSION_HANDLE xSession,
          * flashing a new image, then a race condition can occur between the execution of an already
          * existing image on device (that is triggered by the device reset) and the flashing of the new image on the
          * device. When the existing image present on the device is configured to generate new key-pair (through the
-         * keyprovisioningFORCE_GENERATE_NEW_KEY_PAIR config), then a possible scenario of unexpected key-pair
+         * FORCE_GENERATE_NEW_KEY_PAIR config), then a possible scenario of unexpected key-pair
          * generation on device can occur during flashing process, in which case, the certificate provisioned by
          * user becomes stale and device cannot perform TLS connection with servers as the provisioned device certificate
          * does not match the unexpectedly generated new key-pair.
@@ -1197,8 +1210,9 @@ CK_RV xProvisionDevice( CK_SESSION_HANDLE xSession,
          * image that generates new key-pair is avoided because the logic of generating new key-pair is not executed
          * before the flashing process starts loading the new image onto the board.
          * Note: The delay of 150 seconds is used based on testing with an ESP32+ECC608A board. */
-        DEV_MODE_KEY_PROVISIONING_PRINT( "Waiting for %d seconds before generating key-pair", keyprovisioningDELAY_BEFORE_KEY_PAIR_GENERATION_SECS );
-        testParam.pDelay( keyprovisioningDELAY_BEFORE_KEY_PAIR_GENERATION_SECS * 1000 );
+        TEST_PRINTF( "Waiting for %d seconds before generating key-pair",
+                     DELAY_BEFORE_KEY_PAIR_GENERATION_SECS );
+        testParam.pThreadDelay( DELAY_BEFORE_KEY_PAIR_GENERATION_SECS * 1000 );
 
         /* Generate a new default key pair. */
         xResult = xProvisionGenerateKeyPairEC( xSession,
@@ -1212,7 +1226,7 @@ CK_RV xProvisionDevice( CK_SESSION_HANDLE xSession,
             /* Clean-up the previous buffer, if any. */
             if( NULL != xProvisionedState.pucDerPublicKey )
             {
-                testParam.pPkcsFree( xProvisionedState.pucDerPublicKey );
+                testParam.pMemoryFree( xProvisionedState.pucDerPublicKey );
                 xProvisionedState.pucDerPublicKey = NULL;
             }
 
@@ -1238,7 +1252,7 @@ CK_RV xProvisionDevice( CK_SESSION_HANDLE xSession,
      * matches the public key on the device. */
     if( CK_INVALID_HANDLE != xProvisionedState.xPublicKey )
     {
-        DEV_MODE_KEY_PROVISIONING_PRINT( "Printing device public key.\nMake sure that provisioned device certificate matches public key on device." );
+        TEST_PRINTF( "Printing device public key.\nMake sure that provisioned device certificate matches public key on device." );
         prvWriteHexBytesToConsole( "Device public key",
                                    xProvisionedState.pucDerPublicKey,
                                    xProvisionedState.ulDerPublicKeyLength );
@@ -1251,23 +1265,23 @@ CK_RV xProvisionDevice( CK_SESSION_HANDLE xSession,
           ( CK_TRUE == xKeyPairGenerationMode ) ) &&
         ( CK_FALSE == xImportedPrivateKey ) )
     {
-        DEV_MODE_KEY_PROVISIONING_PRINT( "Warning: the client certificate should be updated. Please see https://aws.amazon.com/freertos/getting-started/.\r\n" );
+        TEST_PRINTF( "Warning: the client certificate should be updated. Please see https://aws.amazon.com/freertos/getting-started/.\r\n" );
 
         if( NULL != xProvisionedState.pcIdentifier )
         {
-            DEV_MODE_KEY_PROVISIONING_PRINT( "Recommended certificate subject name: CN=%s\r\n", xProvisionedState.pcIdentifier );
+            TEST_PRINTF( "Recommended certificate subject name: CN=%s\r\n", xProvisionedState.pcIdentifier );
         }
     }
 
     /* Free memory. */
     if( NULL != xProvisionedState.pucDerPublicKey )
     {
-        testParam.pPkcsFree( xProvisionedState.pucDerPublicKey );
+        testParam.pMemoryFree( xProvisionedState.pucDerPublicKey );
     }
 
     if( NULL != xProvisionedState.pcIdentifier )
     {
-        testParam.pPkcsFree( xProvisionedState.pcIdentifier );
+        testParam.pMemoryFree( xProvisionedState.pcIdentifier );
     }
 
     return xResult;

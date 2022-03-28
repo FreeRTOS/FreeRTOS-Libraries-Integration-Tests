@@ -24,8 +24,8 @@
  * @file test_param_config_pkcs11_template.h
  * @brief A template to setup port-specific variables for PKCS11 tests.
  */
-#ifndef TEST_PARAM_CONFIG_H
-#define TEST_PARAM_CONFIG_H
+#ifndef TEST_PARAM_CONFIG_PKCS11_TEMPLAE_H
+#define TEST_PARAM_CONFIG_PKCS11_TEMPLAE_H
 
 /**
  * @brief The index of the slot that should be used to open sessions for PKCS #11 tests.

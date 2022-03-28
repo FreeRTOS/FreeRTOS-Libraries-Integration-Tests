@@ -51,6 +51,8 @@
 
 /* corePKCS11 test includes. */
 #include "core_pkcs11_test.h"
+
+/* Test configuration includes. */
 #include "test_execution_config.h"
 #include "test_param_config.h"
 
@@ -80,16 +82,23 @@
 #define PKCS11_TEST_WAIT_THREAD_TIMEOUT_MS     ( 1000000UL )
 
 /**
- * @brief Make use of the unity TEST_PRINTF function to print log if supported.
+ * @brief The test make use of the unity TEST_PRINTF function to print log. Log function
+ * is disabled if not supported.
  */
 #ifndef TEST_PRINTF
     #define TEST_PRINTF( ... )
 #endif
 
+/**
+ * @brief At least one of RSA KEY and EC KEY mechanism must be supported.
+ */
 #if ( PKCS11_TEST_RSA_KEY_SUPPORT == 0 ) && ( PKCS11_TEST_EC_KEY_SUPPORT == 0 )
     #error "RSA or Elliptic curve keys (or both) must be supported."
 #endif
 
+/**
+ * @brief At least one of the key provisioning functions must be supported.
+ */
 #if ( PKCS11_TEST_IMPORT_PRIVATE_KEY_SUPPORT == 0 ) && ( PKCS11_TEST_GENERATE_KEYPAIR_SUPPORT == 0 ) && ( PKCS11_TEST_PREPROVISIONED_SUPPORT == 0 )
     #error "The device must have some mechanism configured to provision the PKCS #11 stack."
 #endif
@@ -498,7 +507,7 @@ static void prvMultiThreadHelper( void * pvTaskFxnPtr )
 {
     uint32_t xTaskNumber;
     int retThreadTimedWait;
-    PkcsTestThreadHandle_t threadHandles[ PKCS11_TEST_MULTI_THREAD_TASK_COUNT ];
+    ThreadHandle_t threadHandles[ PKCS11_TEST_MULTI_THREAD_TASK_COUNT ];
 
     /* Create all the tasks. */
     for( xTaskNumber = 0; xTaskNumber < PKCS11_TEST_MULTI_THREAD_TASK_COUNT; xTaskNumber++ )
@@ -667,7 +676,7 @@ TEST( Full_PKCS11_StartFinish, AFQP_GetSlotList )
         TEST_ASSERT_GREATER_THAN_MESSAGE( 0, xSlotCount, "Slot count incorrectly updated" );
 
         /* Allocate memory to receive the list of slots, plus one extra. */
-        pxSlotId = testParam.pPkcsMalloc( sizeof( CK_SLOT_ID ) * ( xSlotCount + 1 ) );
+        pxSlotId = testParam.pMemoryAlloc( sizeof( CK_SLOT_ID ) * ( xSlotCount + 1 ) );
         TEST_ASSERT_NOT_EQUAL_MESSAGE( NULL, pxSlotId, "Failed malloc memory for slot list" );
 
         /* Call C_GetSlotList again to receive all slots with tokens present. */
@@ -693,7 +702,7 @@ TEST( Full_PKCS11_StartFinish, AFQP_GetSlotList )
 
     if( pxSlotId != NULL )
     {
-        testParam.pPkcsFree( pxSlotId );
+        testParam.pMemoryFree( pxSlotId );
     }
 
     xResult = pxGlobalFunctionList->C_Finalize( NULL );
@@ -720,7 +729,7 @@ TEST( Full_PKCS11_StartFinish, AFQP_OpenSessionCloseSession )
                                 &xSlotCount );
         TEST_ASSERT_EQUAL_MESSAGE( CKR_OK, xResult, "Failed to get slot list" );
         xSlotId = pxSlotId[ PKCS11_TEST_SLOT_NUMBER ];
-        testParam.pPkcsFree( pxSlotId ); /* xGetSlotList allocates memory. */
+        testParam.pMemoryFree( pxSlotId ); /* xGetSlotList allocates memory. */
         TEST_ASSERT_GREATER_THAN( 0, xSlotCount );
 
 
@@ -770,8 +779,8 @@ TEST( Full_PKCS11_Capabilities, AFQP_Capabilities )
     TEST_ASSERT_EQUAL_MESSAGE( CKR_OK, xResult, "Failed to get slot count" );
 
     /* Allocate memory to receive the list of slots, plus one extra. */
-    pxSlotId = testParam.pPkcsMalloc( sizeof( CK_SLOT_ID ) * xSlotCount );
-    TEST_ASSERT_NOT_EQUAL_MESSAGE( NULL, pxSlotId, "Failed testParam.pPkcsMalloc memory for slot list" );
+    pxSlotId = testParam.pMemoryAlloc( sizeof( CK_SLOT_ID ) * xSlotCount );
+    TEST_ASSERT_NOT_EQUAL_MESSAGE( NULL, pxSlotId, "Failed testParam.pMemoryAlloc memory for slot list" );
 
     /* Call C_GetSlotList again to receive all slots with tokens present. */
     xResult = pxGlobalFunctionList->C_GetSlotList( CK_TRUE, pxSlotId, &xSlotCount );
@@ -862,7 +871,7 @@ TEST( Full_PKCS11_Capabilities, AFQP_Capabilities )
     TEST_ASSERT_TRUE( CKR_OK == xResult );
     TEST_ASSERT_TRUE( 0 != ( CKF_DIGEST & MechanismInfo.flags ) );
 
-    testParam.pPkcsFree( pxSlotId );
+    testParam.pMemoryFree( pxSlotId );
 
     /* Report on static configuration for key import support. */
     #if ( 1 == PKCS11_TEST_IMPORT_PRIVATE_KEY_SUPPORT )
@@ -1255,10 +1264,6 @@ TEST( Full_PKCS11_RSA, AFQP_FindObject )
     CK_OBJECT_HANDLE xPublicKeyHandle = CK_INVALID_HANDLE;
 
     prvFindObjectTest( &xPrivateKeyHandle, &xCertificateHandle, &xPublicKeyHandle );
-}
-
-TEST( Full_PKCS11_RSA, AFQP_FindObjectMultithread )
-{
 }
 
 TEST( Full_PKCS11_RSA, AFQP_GetAttributeValue )
@@ -1759,7 +1764,7 @@ TEST( Full_PKCS11_EC, AFQP_Sign )
     /* Reconstruct public key from EC Params. */
     mbedtls_ecp_keypair * pxKeyPair;
 
-    pxKeyPair = testParam.pPkcsMalloc( sizeof( mbedtls_ecp_keypair ) );
+    pxKeyPair = testParam.pMemoryAlloc( sizeof( mbedtls_ecp_keypair ) );
 
     /* Initialize the info. */
     pxEcdsaContext->pk_info = &mbedtls_eckey_info;
@@ -1779,7 +1784,7 @@ TEST( Full_PKCS11_EC, AFQP_Sign )
     TEST_ASSERT_EQUAL_MESSAGE( CKR_OK, xResult, "Failed to query for public key length" );
     TEST_ASSERT_NOT_EQUAL_MESSAGE( 0, xPubKeyQuery.ulValueLen, "The size of the public key was an unexpected value." );
 
-    pxPublicKey = testParam.pPkcsMalloc( xPubKeyQuery.ulValueLen );
+    pxPublicKey = testParam.pMemoryAlloc( xPubKeyQuery.ulValueLen );
     TEST_ASSERT_NOT_EQUAL_MESSAGE( NULL, pxPublicKey, "Failed to allocate space for public key." );
 
     xPubKeyQuery.pValue = pxPublicKey;
@@ -1817,7 +1822,7 @@ TEST( Full_PKCS11_EC, AFQP_Sign )
         mbedtls_mpi_free( &xS );
     }
 
-    testParam.pPkcsFree( pxPublicKey );
+    testParam.pMemoryFree( pxPublicKey );
     mbedtls_pk_free( &xEcdsaContext );
 }
 

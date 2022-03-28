@@ -21,49 +21,24 @@
  */
 
 /**
- * @file core_pkcs11_test.h
- * @brief Test function for corePKCS11 test.
+ * @file memory_function.h
+ * @brief Memory allocate/free function for test application.
  */
-#ifndef CORE_PKCS11_TEST_H
-#define CORE_PKCS11_TEST_H
-
-/* Standard includes. */
-#include <stdint.h>
-#include <stdlib.h>
-
-/* Thread function includes. */
-#include "thread_function.h"
-
-/* Memory function includes. */
-#include "memory_function.h"
+#ifndef MEMORY_FUNCTION_H
+#define MEMORY_FUNCTION_H
 
 /**
- * @brief A struct representing core pkcs11 test parameters.
- */
-typedef struct Pkcs11TestParam
-{
-    MemoryAlloc_t pMemoryAlloc;
-    MemoryFree_t pMemoryFree;
-    ThreadCreate_t pThreadCreate;
-    ThreadTimedWait_t pThreadTimedWait;
-    ThreadDelayFunc_t pThreadDelay;
-} Pkcs11TestParam_t;
-
-/**
- * @brief Customers need to implement this fuction by filling in parameters
- * in the provided Pkcs11TestParam_t.
+ * @brief Malloc function to allocate memory for pkcs11 test.
  *
- * @param[in] pTestParam a pointer to Pkcs11TestParam_t struct to be filled out by
- * caller.
+ * @param[in] size Size in bytes.
  */
-void SetupPkcs11TestParam( Pkcs11TestParam_t * pTestParam );
+typedef void * ( * MemoryAlloc_t )( size_t size );
 
 /**
- * @brief Run corePKCS11 tests. This function should be called after calling `SetupPkcs11TestParam()`.
+ * @brief Free function to free memory allocated by PkcsMalloc_t function.
  *
- * @return Negative value if the core PKCS11 test execution config is not set. Otherwise,
- * number of failure test cases is returned.
+ * @param[in] size Size in bytes.
  */
-int RunPkcs11Test( void );
+typedef void ( * MemoryFree_t )( void * ptr );
 
-#endif /* ifndef CORE_PKCS11_TEST_H */
+#endif
