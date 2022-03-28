@@ -103,9 +103,14 @@
     #error "The device must have some mechanism configured to provision the PKCS #11 stack."
 #endif
 
+/**
+ * @brief Random buffer size for random number generate test.
+ */
+#define PKCS11_TEST_RAND_BUFFER_SIZE      ( 10 )
+
 /*-----------------------------------------------------------*/
 
-typedef enum
+typedef enum CredentialsProvisioned
 {
     eNone,                /* Device is not provisioned.  All credentials have been destroyed. */
     eRsaTest,             /* Provisioned using the RSA test credentials located in this file. */
@@ -116,6 +121,14 @@ typedef enum
     eDeliberatelyInvalid, /* Provisioned using credentials that are meant to trigger an error condition. */
     eStateUnknown         /* State of the credentials is unknown. */
 } CredentialsProvisioned_t;
+
+/* Data structure to store results of multi-thread tests. */
+typedef struct MultithreadTaskParams
+{
+    uint32_t xTaskNumber;
+    CK_RV xTestResult;
+    void * pvTaskData;
+} MultithreadTaskParams_t;
 
 /*-----------------------------------------------------------*/
 
@@ -143,6 +156,19 @@ CredentialsProvisioned_t xCurrentCredentials = eStateUnknown;
 CK_BYTE rsaHashedMessage[ pkcs11SHA256_DIGEST_LENGTH ] = { 0 };
 CK_BYTE ecdsaSignature[ pkcs11RSA_2048_SIGNATURE_LENGTH ] = { 0x00 };
 CK_BYTE ecdsaHashedMessage[ pkcs11SHA256_DIGEST_LENGTH ] = { 0xab };
+
+/* Digest test input data. */
+static CK_BYTE x896BitInput[] = "abcdefghbcdefghicdefghijdefghijkefghijklfghijklmghijklmnhijklmnoijklmnopjklmnopqklmnopqrlmnopqrsmnopqrstnopqrstu";
+
+/* Digest test hash data. */
+static CK_BYTE xSha256HashOf896BitInput[] =
+{
+    0xcf, 0x5b, 0x16, 0xa7, 0x78, 0xaf, 0x83, 0x80, 0x03, 0x6c, 0xe5, 0x9e, 0x7b, 0x04, 0x92, 0x37,
+    0x0b, 0x24, 0x9b, 0x11, 0xe8, 0xf0, 0x7a, 0x51, 0xaf, 0xac, 0x45, 0x03, 0x7a, 0xfe, 0xe9, 0xd1
+};
+
+/* Task parameters for each test thread. */
+static MultithreadTaskParams_t xGlobalTaskParams[ PKCS11_TEST_MULTI_THREAD_TASK_COUNT ];
 
 /* The StartFinish test group is for General Purpose,
  * Session, Slot, and Token management functions.
@@ -230,6 +256,78 @@ static CK_RV prvBeforeRunningTests( void )
     }
 
     return xResult;
+}
+
+/*-----------------------------------------------------------*/
+
+static void prvMultiThreadHelper( void * pvTaskFxnPtr )
+{
+    uint32_t xTaskNumber;
+    int retThreadTimedWait;
+    ThreadHandle_t threadHandles[ PKCS11_TEST_MULTI_THREAD_TASK_COUNT ];
+
+    /* Create all the tasks. */
+    for( xTaskNumber = 0; xTaskNumber < PKCS11_TEST_MULTI_THREAD_TASK_COUNT; xTaskNumber++ )
+    {
+        threadHandles[ xTaskNumber ] = testParam.pThreadCreate( pvTaskFxnPtr, &( xGlobalTaskParams[ xTaskNumber ] ) );
+        TEST_ASSERT_MESSAGE( threadHandles[ xTaskNumber ] != NULL, "Create thread failed." );
+    }
+
+    /* Wait for all tasks to finish. */
+    for( xTaskNumber = 0; xTaskNumber < PKCS11_TEST_MULTI_THREAD_TASK_COUNT; xTaskNumber++ )
+    {
+        retThreadTimedWait = testParam.pThreadTimedWait( threadHandles[ xTaskNumber ], PKCS11_TEST_WAIT_THREAD_TIMEOUT_MS );
+
+        if( retThreadTimedWait != 0 )
+        {
+            TEST_PRINTF( "Waiting for task %u to finish in multi-threaded test failed %d.\r\n",
+                         xTaskNumber, retThreadTimedWait );
+        }
+    }
+
+    /* Check the tasks' results. */
+    if( TEST_PROTECT() )
+    {
+        for( xTaskNumber = 0; xTaskNumber < PKCS11_TEST_MULTI_THREAD_TASK_COUNT; xTaskNumber++ )
+        {
+            if( xGlobalTaskParams[ xTaskNumber ].xTestResult != 0 )
+            {
+                TEST_PRINTF( "Multi thread task %d returned failure.\r\n",
+                             xGlobalTaskParams[ xTaskNumber ].xTaskNumber );
+                TEST_FAIL();
+            }
+        }
+    }
+}
+
+/*-----------------------------------------------------------*/
+
+/* Thread function of generateRandomMultiThread test. */
+static void prvGenerateRandomMultiThreadTask( void * pvParameters )
+{
+    MultithreadTaskParams_t * pxMultiTaskParam = pvParameters;
+    uint32_t xCount;
+    CK_RV xResult;
+    CK_BYTE xRandomData[ PKCS11_TEST_RAND_BUFFER_SIZE ];
+    CK_SESSION_HANDLE xSession;
+
+    memcpy( &xSession, pxMultiTaskParam->pvTaskData, sizeof( CK_SESSION_HANDLE ) );
+
+    for( xCount = 0; xCount < PKCS11_TEST_MULTI_THREAD_LOOP_COUNT; xCount++ )
+    {
+        xResult = pxGlobalFunctionList->C_GenerateRandom( xSession,
+                                                          xRandomData,
+                                                          sizeof( xRandomData ) );
+
+        if( xResult != CKR_OK )
+        {
+            TEST_PRINTF( "GenerateRandom multi-thread task failed.  Error: %ld \r\n", xResult );
+            break;
+        }
+    }
+
+    /* Report the result of the loop. */
+    pxMultiTaskParam->xTestResult = xResult;
 }
 
 /*--------------------------------------------------------*/
@@ -562,6 +660,239 @@ TEST( Full_PKCS11_Capabilities, AFQP_Capabilities )
     #endif
 }
 
+/*--------------------------------------------------------*/
+/*-------------- No Object Tests ------------------------ */
+/*--------------------------------------------------------*/
+
+TEST_SETUP( Full_PKCS11_NoObject )
+{
+    CK_RV xResult;
+
+    xResult = xInitializePKCS11();
+    TEST_ASSERT_EQUAL_MESSAGE( CKR_OK, xResult, "Failed to initialize PKCS #11 module." );
+
+    xResult = xInitializePkcs11Session( &xGlobalSession );
+    TEST_ASSERT_EQUAL_MESSAGE( CKR_OK, xResult, "Failed to open PKCS #11 session." );
+}
+
+/*-----------------------------------------------------------*/
+
+TEST_TEAR_DOWN( Full_PKCS11_NoObject )
+{
+    CK_RV xResult;
+
+    xResult = pxGlobalFunctionList->C_CloseSession( xGlobalSession );
+    TEST_ASSERT_EQUAL_MESSAGE( CKR_OK, xResult, "Failed to close session." );
+
+    xResult = pxGlobalFunctionList->C_Finalize( NULL );
+    TEST_ASSERT_EQUAL_MESSAGE( CKR_OK, xResult, "Failed to finalize session." );
+}
+
+/*-----------------------------------------------------------*/
+
+TEST_GROUP_RUNNER( Full_PKCS11_NoObject )
+{
+    /* Reset the cryptoki to uninitialize state. */
+    prvBeforeRunningTests();
+
+    RUN_TEST_CASE( Full_PKCS11_NoObject, AFQP_Digest );
+    RUN_TEST_CASE( Full_PKCS11_NoObject, AFQP_Digest_ErrorConditions );
+    RUN_TEST_CASE( Full_PKCS11_NoObject, AFQP_GenerateRandom );
+    RUN_TEST_CASE( Full_PKCS11_NoObject, AFQP_GenerateRandomMultiThread );
+}
+
+/*-----------------------------------------------------------*/
+
+TEST( Full_PKCS11_NoObject, AFQP_Digest )
+{
+    CK_RV xResult = 0;
+
+    CK_MECHANISM xDigestMechanism;
+
+    CK_BYTE xDigestResult[ pkcs11SHA256_DIGEST_LENGTH ] = { 0 };
+    CK_ULONG xDigestLength = 0;
+
+    /* Hash with SHA256 */
+    xDigestMechanism.mechanism = CKM_SHA256;
+
+    xResult = pxGlobalFunctionList->C_DigestInit( xGlobalSession, &xDigestMechanism );
+    TEST_ASSERT_EQUAL( CKR_OK, xResult );
+
+    /* Subtract one because this hash was performed on the characters without the null terminator. */
+    xResult = pxGlobalFunctionList->C_DigestUpdate( xGlobalSession, x896BitInput, sizeof( x896BitInput ) - 1 );
+    TEST_ASSERT_EQUAL( CKR_OK, xResult );
+
+    /* Call C_DigestFinal on a NULL buffer to get the buffer length required. */
+    xResult = pxGlobalFunctionList->C_DigestFinal( xGlobalSession, NULL, &xDigestLength );
+    TEST_ASSERT_EQUAL( CKR_OK, xResult );
+    TEST_ASSERT_EQUAL( pkcs11SHA256_DIGEST_LENGTH, xDigestLength );
+
+    xResult = pxGlobalFunctionList->C_DigestFinal( xGlobalSession, xDigestResult, &xDigestLength );
+    TEST_ASSERT_EQUAL( CKR_OK, xResult );
+    TEST_ASSERT_EQUAL_INT8_ARRAY( xSha256HashOf896BitInput, xDigestResult, pkcs11SHA256_DIGEST_LENGTH );
+}
+
+/*-----------------------------------------------------------*/
+
+TEST( Full_PKCS11_NoObject, AFQP_Digest_ErrorConditions )
+{
+    CK_RV xResult = 0;
+    CK_MECHANISM xDigestMechanism;
+    CK_BYTE xDigestResult[ pkcs11SHA256_DIGEST_LENGTH ] = { 0 };
+    CK_ULONG xDigestLength = 0;
+
+    /* Make sure that no NULL pointers in functions to be called in this test. */
+    TEST_ASSERT_NOT_EQUAL( NULL, pxGlobalFunctionList->C_DigestInit );
+    TEST_ASSERT_NOT_EQUAL( NULL, pxGlobalFunctionList->C_DigestUpdate );
+    TEST_ASSERT_NOT_EQUAL( NULL, pxGlobalFunctionList->C_DigestFinal );
+
+    /* Invalid hash mechanism. */
+    xDigestMechanism.mechanism = 0x253; /*253 doesn't correspond to anything. */
+
+    xResult = pxGlobalFunctionList->C_DigestInit( xGlobalSession, &xDigestMechanism );
+    TEST_ASSERT_EQUAL( CKR_MECHANISM_INVALID, xResult );
+
+    /* Null Session. */
+    xDigestMechanism.mechanism = CKM_SHA256;
+    xResult = pxGlobalFunctionList->C_DigestInit( ( CK_SESSION_HANDLE ) NULL, &xDigestMechanism );
+    TEST_ASSERT_EQUAL( CKR_SESSION_HANDLE_INVALID, xResult );
+
+    /* Make sure that digest update fails if DigestInit did not succeed. */
+    xResult = pxGlobalFunctionList->C_DigestUpdate( xGlobalSession, x896BitInput, sizeof( x896BitInput ) - 1 );
+    TEST_ASSERT_EQUAL( CKR_OPERATION_NOT_INITIALIZED, xResult );
+
+    /* Initialize the session properly. */
+    xResult = pxGlobalFunctionList->C_DigestInit( xGlobalSession, &xDigestMechanism );
+    TEST_ASSERT_EQUAL( CKR_OK, xResult );
+
+    /* Try to update digest with a NULL session handle. */
+    xResult = pxGlobalFunctionList->C_DigestUpdate( ( CK_SESSION_HANDLE ) NULL, x896BitInput, sizeof( x896BitInput ) - 1 );
+    TEST_ASSERT_EQUAL( CKR_SESSION_HANDLE_INVALID, xResult );
+
+    /* DigestUpdate correctly.  Note that digest is not terminated because we didn't tell the session handle last time. */
+    xResult = pxGlobalFunctionList->C_DigestUpdate( xGlobalSession, x896BitInput, sizeof( x896BitInput ) - 1 );
+    TEST_ASSERT_EQUAL( CKR_OK, xResult );
+
+    /* Call C_DigestFinal on a buffer that is too small. */
+    xDigestLength = pkcs11SHA256_DIGEST_LENGTH - 1;
+    xResult = pxGlobalFunctionList->C_DigestFinal( xGlobalSession, xDigestResult, &xDigestLength );
+    TEST_ASSERT_EQUAL( CKR_BUFFER_TOO_SMALL, xResult );
+
+    /* Call C_DigestFinal on a NULL session handle. */
+    xDigestLength = pkcs11SHA256_DIGEST_LENGTH;
+    xResult = pxGlobalFunctionList->C_DigestFinal( ( CK_SESSION_HANDLE ) NULL, xDigestResult, &xDigestLength );
+    TEST_ASSERT_EQUAL( CKR_SESSION_HANDLE_INVALID, xResult );
+
+    /* Call C_DigestFinal on a proper buffer size. Note that Digest is not terminated if error is "buffer too small" or if session handle wasn't present. */
+    xDigestLength = pkcs11SHA256_DIGEST_LENGTH;
+    xResult = pxGlobalFunctionList->C_DigestFinal( xGlobalSession, xDigestResult, &xDigestLength );
+    TEST_ASSERT_EQUAL( CKR_OK, xResult );
+    TEST_ASSERT_EQUAL_INT8_ARRAY( xSha256HashOf896BitInput, xDigestResult, pkcs11SHA256_DIGEST_LENGTH );
+
+    /* Call C_DigestUpdate after the digest operation has been completed. */
+    xResult = pxGlobalFunctionList->C_DigestUpdate( xGlobalSession, x896BitInput, sizeof( x896BitInput ) - 1 );
+    TEST_ASSERT_EQUAL( CKR_OPERATION_NOT_INITIALIZED, xResult );
+}
+
+/*-----------------------------------------------------------*/
+
+TEST( Full_PKCS11_NoObject, AFQP_GenerateRandom )
+{
+    CK_RV xResult = 0;
+    uint32_t xSameSession = 0;
+    uint32_t xDifferentSessions = 0;
+    int i;
+
+    CK_BYTE xBuf1[ PKCS11_TEST_RAND_BUFFER_SIZE ];
+    CK_BYTE xBuf2[ PKCS11_TEST_RAND_BUFFER_SIZE ];
+    CK_BYTE xBuf3[ PKCS11_TEST_RAND_BUFFER_SIZE ];
+
+    /* Generate random bytes twice. */
+    if( CKR_OK == xResult )
+    {
+        xResult = pxGlobalFunctionList->C_GenerateRandom( xGlobalSession, xBuf1, PKCS11_TEST_RAND_BUFFER_SIZE );
+    }
+
+    if( CKR_OK == xResult )
+    {
+        xResult = pxGlobalFunctionList->C_GenerateRandom( xGlobalSession, xBuf2, PKCS11_TEST_RAND_BUFFER_SIZE );
+    }
+
+    if( CKR_OK == xResult )
+    {
+        /* Close the session and PKCS #11 module */
+        if( NULL != pxGlobalFunctionList )
+        {
+            ( void ) pxGlobalFunctionList->C_CloseSession( xGlobalSession );
+        }
+    }
+
+    /* Re-open PKCS #11 session. */
+    xResult = xInitializePkcs11Session( &xGlobalSession );
+
+    if( CKR_OK == xResult )
+    {
+        xResult = pxGlobalFunctionList->C_GenerateRandom( xGlobalSession, xBuf3, PKCS11_TEST_RAND_BUFFER_SIZE );
+    }
+
+    /* Check that the result is good. */
+    TEST_ASSERT_EQUAL_MESSAGE( CKR_OK, xResult, "C_GenerateRandom returns unexpected value." );
+
+    /* Check that the random bytes generated within session
+     * and between initializations of PKCS module are not the same. */
+    for( i = 0; i < PKCS11_TEST_RAND_BUFFER_SIZE; i++ )
+    {
+        if( xBuf1[ i ] == xBuf2[ i ] )
+        {
+            xSameSession++;
+        }
+
+        if( xBuf1[ i ] == xBuf3[ i ] )
+        {
+            xDifferentSessions++;
+        }
+    }
+
+    if( ( xSameSession > 1 ) || ( xDifferentSessions > 1 ) )
+    {
+        TEST_PRINTF( "First Random Bytes: %02X:%02X:%02X:%02X:%02X:%02X:%02X:%02X:%02X:%02X\r\n",
+                     xBuf1[ 0 ], xBuf1[ 1 ], xBuf1[ 2 ], xBuf1[ 3 ], xBuf1[ 4 ],
+                     xBuf1[ 5 ], xBuf1[ 6 ], xBuf1[ 7 ], xBuf1[ 8 ], xBuf1[ 9 ] );
+
+        TEST_PRINTF( "Second Set of Random Bytes: %02X:%02X:%02X:%02X:%02X:%02X:%02X:%02X:%02X:%02X\r\n",
+                     xBuf2[ 0 ], xBuf2[ 1 ], xBuf2[ 2 ], xBuf2[ 3 ], xBuf2[ 4 ],
+                     xBuf2[ 5 ], xBuf2[ 6 ], xBuf2[ 7 ], xBuf2[ 8 ], xBuf2[ 9 ] );
+
+        TEST_PRINTF( "Third Set of Random Bytes:  %02X:%02X:%02X:%02X:%02X:%02X:%02X:%02X:%02X:%02X\r\n",
+                     xBuf3[ 0 ], xBuf3[ 1 ], xBuf3[ 2 ], xBuf3[ 3 ], xBuf3[ 4 ],
+                     xBuf3[ 5 ], xBuf3[ 6 ], xBuf3[ 7 ], xBuf3[ 8 ], xBuf3[ 9 ] );
+    }
+
+    TEST_ASSERT_LESS_THAN( 2, xSameSession );
+    TEST_ASSERT_LESS_THAN( 2, xDifferentSessions );
+}
+
+/*-----------------------------------------------------------*/
+
+TEST( Full_PKCS11_NoObject, AFQP_GenerateRandomMultiThread )
+{
+    uint32_t xTaskNumber;
+    CK_SESSION_HANDLE xSessionHandle[ PKCS11_TEST_MULTI_THREAD_TASK_COUNT ];
+
+    for( xTaskNumber = 0; xTaskNumber < PKCS11_TEST_MULTI_THREAD_TASK_COUNT; xTaskNumber++ )
+    {
+        xInitializePkcs11Session( &xSessionHandle[ xTaskNumber ] );
+        xGlobalTaskParams[ xTaskNumber ].pvTaskData = &xSessionHandle[ xTaskNumber ];
+    }
+
+    prvMultiThreadHelper( ( void * ) prvGenerateRandomMultiThreadTask );
+
+    for( xTaskNumber = 0; xTaskNumber < PKCS11_TEST_MULTI_THREAD_TASK_COUNT; xTaskNumber++ )
+    {
+        pxGlobalFunctionList->C_CloseSession( xSessionHandle[ xTaskNumber ] );
+    }
+}
+
 /*-----------------------------------------------------------*/
 
 int RunPkcs11Test( void )
@@ -584,6 +915,10 @@ int RunPkcs11Test( void )
 
         /* Cryptoki capabilities test. */
         RUN_TEST_GROUP( Full_PKCS11_Capabilities );
+
+        /* Digest and random number generate test. No object related operation
+         * is required in this group. */
+        RUN_TEST_GROUP( Full_PKCS11_NoObject );
 
         status = UNITY_END();
     #endif /* if ( CORE_PKCS11_TEST_ENABLED == 1 ) */
