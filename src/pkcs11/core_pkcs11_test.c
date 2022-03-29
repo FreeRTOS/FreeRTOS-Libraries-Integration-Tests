@@ -30,9 +30,11 @@
 
 /* corePKCS11 includes. */
 #include "core_pki_utils.h"
+#include "core_pkcs11_config.h"
+#include "core_pkcs11_config_defaults.h"
 #include "core_pkcs11.h"
 
-/* Device provisioning. */
+/* Developer mode provisioning. */
 #include "aws_dev_mode_key_provisioning.h"
 
 /* Test includes. */
