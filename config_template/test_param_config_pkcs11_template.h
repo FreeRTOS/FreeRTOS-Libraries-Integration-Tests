@@ -106,7 +106,7 @@
 /**
  * @brief The PKCS #11 label for the AWS Trusted Root Certificate.
  *
- * @see aws_default_root_certificates.h
+ * @see iot_default_root_certificates.h
  */
 #define PKCS11_TEST_LABEL_ROOT_CERTIFICATE              pkcs11configLABEL_ROOT_CERTIFICATE
 
