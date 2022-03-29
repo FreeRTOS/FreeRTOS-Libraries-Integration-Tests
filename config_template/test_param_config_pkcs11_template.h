@@ -27,11 +27,6 @@
 #ifndef TEST_PARAM_CONFIG_PKCS11_TEMPLAE_H
 #define TEST_PARAM_CONFIG_PKCS11_TEMPLAE_H
 
-/**
- * @brief The index of the slot that should be used to open sessions for PKCS #11 tests.
- */
-#define PKCS11_TEST_SLOT_NUMBER                         ( 0 )
-
 /*
  * @brief Set to 1 if RSA private keys are supported by the platform.  0 if not.
  */
