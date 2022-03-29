@@ -1535,7 +1535,7 @@ TEST( Full_PKCS11_RSA, AFQP_GetAttributeValue )
 
         if( TEST_PROTECT() )
         {
-            lConversionReturn = convert_pem_to_der( cValidRSACertificate,
+            lConversionReturn = convert_pem_to_der( ( const unsigned char * ) cValidRSACertificate,
                                                     sizeof( cValidRSACertificate ),
                                                     pucDerObject,
                                                     &xDerLen );
