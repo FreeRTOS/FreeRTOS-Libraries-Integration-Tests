@@ -349,36 +349,6 @@ static void prvMultiThreadHelper( void * pvTaskFxnPtr )
 
 /*-----------------------------------------------------------*/
 
-/* Thread function of generateRandomMultiThread test. */
-static void prvGenerateRandomMultiThreadTask( void * pvParameters )
-{
-    MultithreadTaskParams_t * pxMultiTaskParam = pvParameters;
-    uint32_t xCount;
-    CK_RV xResult;
-    CK_BYTE xRandomData[ PKCS11_TEST_RAND_BUFFER_SIZE ];
-    CK_SESSION_HANDLE xSession;
-
-    memcpy( &xSession, pxMultiTaskParam->pvTaskData, sizeof( CK_SESSION_HANDLE ) );
-
-    for( xCount = 0; xCount < PKCS11_TEST_MULTI_THREAD_LOOP_COUNT; xCount++ )
-    {
-        xResult = pxGlobalFunctionList->C_GenerateRandom( xSession,
-                                                          xRandomData,
-                                                          sizeof( xRandomData ) );
-
-        if( xResult != CKR_OK )
-        {
-            TEST_PRINTF( "GenerateRandom multi-thread task failed.  Error: %ld \r\n", xResult );
-            break;
-        }
-    }
-
-    /* Report the result of the loop. */
-    pxMultiTaskParam->xTestResult = xResult;
-}
-
-/*-----------------------------------------------------------*/
-
 /* Test helper function to destroy the test objects. */
 static CK_RV prvDestroyTestCredentials( void )
 {
@@ -583,64 +553,6 @@ static void prvAfterRunningTests_Object( void )
 
 /*-----------------------------------------------------------*/
 
-/* Repeatedly tries to find previously provisioned private key and certificate. */
-static void prvFindObjectMultiThreadTask( void * pvParameters )
-{
-    MultithreadTaskParams_t * pxMultiTaskParam = pvParameters;
-    uint32_t xCount;
-    CK_RV xResult;
-    CK_OBJECT_HANDLE xHandle;
-    CK_SESSION_HANDLE xSession;
-
-    memcpy( &xSession, pxMultiTaskParam->pvTaskData, sizeof( CK_SESSION_HANDLE ) );
-
-    for( xCount = 0; xCount < PKCS11_TEST_MULTI_THREAD_LOOP_COUNT; xCount++ )
-    {
-        xResult = xFindObjectWithLabelAndClass( xSession,
-                                                PKCS11_TEST_LABEL_DEVICE_PRIVATE_KEY_FOR_TLS,
-                                                sizeof( PKCS11_TEST_LABEL_DEVICE_PRIVATE_KEY_FOR_TLS ) - 1,
-                                                CKO_PRIVATE_KEY,
-                                                &xHandle );
-
-        if( xResult != CKR_OK )
-        {
-            TEST_PRINTF( "FindObject multithreaded task failed to find private key.  Error: %ld  Count: %d \r\n", xResult, xCount );
-            break;
-        }
-
-        if( ( xHandle == CK_INVALID_HANDLE ) )
-        {
-            TEST_PRINTF( "FindObject multi-thread task failed to find private key.  Invalid object handle returned.  Count: %d \r\n", xCount );
-            xResult = CKR_OBJECT_HANDLE_INVALID; /* Mark xResult so that test fails. */
-            break;
-        }
-
-        xResult = xFindObjectWithLabelAndClass( xSession,
-                                                PKCS11_TEST_LABEL_DEVICE_CERTIFICATE_FOR_TLS,
-                                                sizeof( PKCS11_TEST_LABEL_DEVICE_CERTIFICATE_FOR_TLS ) - 1,
-                                                CKO_CERTIFICATE,
-                                                &xHandle );
-
-        if( xResult != CKR_OK )
-        {
-            TEST_PRINTF( "FindObject multithreaded task failed to find certificate.  Error: %ld  Count: %d \r\n", xResult, xCount );
-            break;
-        }
-
-        if( ( xHandle == CK_INVALID_HANDLE ) )
-        {
-            TEST_PRINTF( "FindObject multi-thread task failed to find certificate.  Invalid object handle returned. Count: %d \r\n", xCount );
-            xResult = CKR_OBJECT_HANDLE_INVALID; /* Mark xResult so that test fails. */
-            break;
-        }
-    }
-
-    /* Report the result of the loop. */
-    pxMultiTaskParam->xTestResult = xResult;
-}
-
-/*-----------------------------------------------------------*/
-
 static void prvProvisionEcCredentialsWithKeyImport( CK_OBJECT_HANDLE_PTR pxPrivateKeyHandle,
                                                     CK_OBJECT_HANDLE_PTR pxCertificateHandle,
                                                     CK_OBJECT_HANDLE_PTR pxPublicKeyHandle )
@@ -790,165 +702,6 @@ void prvProvisionEcTestCredentials( CK_OBJECT_HANDLE_PTR pxPrivateKeyHandle,
     #else
         prvProvisionEcCredentialsWithGenerateKeyPair( pxPrivateKeyHandle, pxCertificateHandle, pxPublicKeyHandle );
     #endif
-}
-
-/*-----------------------------------------------------------*/
-
-static void prvECSignVerifyMultiThreadTask( void * pvParameters )
-{
-    MultithreadTaskParams_t * pxMultiTaskParam = pvParameters;
-    SignVerifyMultiThread_t * pxSignStruct = pxMultiTaskParam->pvTaskData;
-    CK_SESSION_HANDLE xSession = pxSignStruct->xSession;
-    CK_OBJECT_HANDLE xPrivateKey = pxSignStruct->xPrivateKey;
-    CK_OBJECT_HANDLE xPublicKey = pxSignStruct->xPublicKey;
-    uint32_t xCount;
-    CK_RV xResult;
-    /* Note that ECDSA operations on a signature of all 0's is not permitted. */
-    CK_BYTE xHashedMessage[ pkcs11SHA256_DIGEST_LENGTH ] = { 0xab };
-    CK_MECHANISM xMechanism;
-    CK_BYTE xSignature[ 64 ] = { 0 };
-    CK_ULONG xSignatureLength;
-
-    for( xCount = 0; xCount < PKCS11_TEST_MULTI_THREAD_LOOP_COUNT; xCount++ )
-    {
-        xMechanism.mechanism = CKM_ECDSA;
-        xMechanism.pParameter = NULL;
-        xMechanism.ulParameterLen = 0;
-        xResult = pxGlobalFunctionList->C_SignInit( xSession, &xMechanism, xPrivateKey );
-
-        if( xResult != CKR_OK )
-        {
-            TEST_PRINTF( "Sign multi-threaded test failed to SignInit. Error: %ld  Count: %d \r\n", xResult, xCount );
-            break;
-        }
-
-        xSignatureLength = sizeof( xSignature );
-        xResult = pxGlobalFunctionList->C_Sign( xSession, xHashedMessage, pkcs11SHA256_DIGEST_LENGTH, xSignature, &xSignatureLength );
-
-        if( xResult != CKR_OK )
-        {
-            TEST_PRINTF( "Sign multi-threaded test failed to Sign. Error: %ld  Count: %d \r\n", xResult, xCount );
-            break;
-        }
-
-        xResult = pxGlobalFunctionList->C_VerifyInit( xSession, &xMechanism, xPublicKey );
-
-        if( xResult != CKR_OK )
-        {
-            TEST_PRINTF( "Multithread VerifyInit failed.  Error:     %ld, Count: %d \r\n", xResult, xCount );
-            break;
-        }
-
-        xResult = pxGlobalFunctionList->C_Verify( xSession, xHashedMessage, pkcs11SHA256_DIGEST_LENGTH, xSignature, sizeof( xSignature ) );
-
-        if( xResult != CKR_OK )
-        {
-            TEST_PRINTF( "Multithread Verify failed.  Error: %ld, Count: %d \r\n", xResult, xCount );
-            break;
-        }
-    }
-
-    /* Report the result of the loop. */
-    pxMultiTaskParam->xTestResult = xResult;
-}
-
-/*-----------------------------------------------------------*/
-
-static void prvECGetAttributeValueMultiThreadTask( void * pvParameters )
-{
-    MultithreadTaskParams_t * pxMultiTaskParam = pvParameters;
-    uint32_t xCount;
-    CK_RV xResult;
-    CK_OBJECT_HANDLE xPrivateKey;
-    CK_OBJECT_HANDLE xCertificate;
-    CK_SESSION_HANDLE xSession;
-    CK_ATTRIBUTE xTemplate;
-    CK_BYTE xEcParamsExpected[] = pkcs11DER_ENCODED_OID_P256;
-    CK_BYTE xEcParams[ sizeof( xEcParamsExpected ) ];
-    CK_BYTE xCertificateValue[ 1000 ]; /* TODO: Probably need a max cert length supported per-port. */
-    int lMbedReturn;
-    mbedtls_x509_crt xMbedCert;
-
-    memcpy( &xSession, pxMultiTaskParam->pvTaskData, sizeof( CK_SESSION_HANDLE ) );
-
-    xResult = xFindObjectWithLabelAndClass( xSession,
-                                            PKCS11_TEST_LABEL_DEVICE_PRIVATE_KEY_FOR_TLS,
-                                            sizeof( PKCS11_TEST_LABEL_DEVICE_PRIVATE_KEY_FOR_TLS ) - 1,
-                                            CKO_PRIVATE_KEY,
-                                            &xPrivateKey );
-
-    if( ( xResult != CKR_OK ) || ( xPrivateKey == CK_INVALID_HANDLE ) )
-    {
-        xResult = 1;
-        TEST_PRINTF( "Failed to find private key.  Return Value: %ld  Handle: %ld \r\n", xResult, xPrivateKey );
-    }
-
-    xResult = xFindObjectWithLabelAndClass( xSession,
-                                            PKCS11_TEST_LABEL_DEVICE_CERTIFICATE_FOR_TLS,
-                                            sizeof( PKCS11_TEST_LABEL_DEVICE_CERTIFICATE_FOR_TLS ) - 1,
-                                            CKO_CERTIFICATE,
-                                            &xCertificate );
-
-    if( ( xResult != CKR_OK ) || ( xCertificate == CK_INVALID_HANDLE ) )
-    {
-        xResult = 1;
-        TEST_PRINTF( "Failed to find certificate key.  Return Value: %ld  Handle: %ld \r\n", xResult, xCertificate );
-    }
-
-    if( xResult == CKR_OK )
-    {
-        for( xCount = 0; xCount < PKCS11_TEST_MULTI_THREAD_LOOP_COUNT; xCount++ )
-        {
-            xTemplate.type = CKA_EC_PARAMS;
-            xTemplate.pValue = xEcParams;
-            xTemplate.ulValueLen = sizeof( xEcParams );
-
-            xResult = pxGlobalFunctionList->C_GetAttributeValue( xSession, xPrivateKey, &xTemplate, 1 );
-
-            if( xResult != CKR_OK )
-            {
-                TEST_PRINTF( "GetAttributeValue multithread test failed to get private key's EC Params.  Error: %ld  Count: %d \r\n", xResult, xCount );
-                break;
-            }
-
-            if( memcmp( xEcParams, xEcParamsExpected, sizeof( xEcParams ) ) )
-            {
-                TEST_PRINTF( "GetAttributeValue multithread test returned an incorrect value for EC Params.  Error: %ld  Count: %d \r\n", xResult, xCount );
-                xResult = 1;
-                break;
-            }
-
-            xTemplate.type = CKA_VALUE;
-            xTemplate.pValue = xCertificateValue;
-            xTemplate.ulValueLen = sizeof( xCertificateValue );
-            xResult = pxGlobalFunctionList->C_GetAttributeValue( xGlobalSession, xCertificate, &xTemplate, 1 );
-
-            if( xResult != CKR_OK )
-            {
-                TEST_PRINTF( "GetAttributeValue multi-thread task failed to get certificate.  Error: %ld  Count: %d \r\n", xResult, xCount );
-                xResult = 1;
-                break;
-            }
-
-            /* Check that the certificate parses. */
-            mbedtls_x509_crt_init( &xMbedCert );
-
-            lMbedReturn = mbedtls_x509_crt_parse( &xMbedCert, xTemplate.pValue, xTemplate.ulValueLen );
-
-            if( lMbedReturn != 0 )
-            {
-                TEST_PRINTF( "GetAttributeValue multi-thread task found an invalid certificate value. Parse error: %d,  Count: %d \r\n", lMbedReturn, xCount );
-                TEST_PRINTF( "First 3 bytes of invalid certificate found are %d, %d, %d \r\n", ( int ) xCertificateValue[ 0 ], ( int ) xCertificateValue[ 1 ], ( int ) xCertificateValue[ 2 ] );
-                xResult = 1;
-                break;
-            }
-
-            mbedtls_x509_crt_free( &xMbedCert );
-        }
-    }
-
-    /* Report the result of the loop. */
-    pxMultiTaskParam->xTestResult = xResult;
 }
 
 /*--------------------------------------------------------*/
@@ -1495,6 +1248,36 @@ TEST( Full_PKCS11_NoObject, AFQP_GenerateRandom )
 
 /*-----------------------------------------------------------*/
 
+/* Thread function of generateRandomMultiThread test. */
+static void prvGenerateRandomMultiThreadTask( void * pvParameters )
+{
+    MultithreadTaskParams_t * pxMultiTaskParam = pvParameters;
+    uint32_t xCount;
+    CK_RV xResult;
+    CK_BYTE xRandomData[ PKCS11_TEST_RAND_BUFFER_SIZE ];
+    CK_SESSION_HANDLE xSession;
+
+    memcpy( &xSession, pxMultiTaskParam->pvTaskData, sizeof( CK_SESSION_HANDLE ) );
+
+    for( xCount = 0; xCount < PKCS11_TEST_MULTI_THREAD_LOOP_COUNT; xCount++ )
+    {
+        xResult = pxGlobalFunctionList->C_GenerateRandom( xSession,
+                                                          xRandomData,
+                                                          sizeof( xRandomData ) );
+
+        if( xResult != CKR_OK )
+        {
+            TEST_PRINTF( "GenerateRandom multi-thread task failed.  Error: %ld \r\n", xResult );
+            break;
+        }
+    }
+
+    /* Report the result of the loop. */
+    pxMultiTaskParam->xTestResult = xResult;
+}
+
+/*-----------------------------------------------------------*/
+
 TEST( Full_PKCS11_NoObject, AFQP_GenerateRandomMultiThread )
 {
     uint32_t xTaskNumber;
@@ -1609,6 +1392,65 @@ TEST( Full_PKCS11_RSA, AFQP_FindObject )
     CK_OBJECT_HANDLE xPublicKeyHandle = CK_INVALID_HANDLE;
 
     prvFindObjectTest( &xPrivateKeyHandle, &xCertificateHandle, &xPublicKeyHandle );
+}
+
+/*-----------------------------------------------------------*/
+
+/* Thread function of AFQP_FindObjectMultiThread test cases for EC and RSA.
+ * Repeatedly tries to find previously provisioned private key and certificate. */
+static void prvFindObjectMultiThreadTask( void * pvParameters )
+{
+    MultithreadTaskParams_t * pxMultiTaskParam = pvParameters;
+    uint32_t xCount;
+    CK_RV xResult;
+    CK_OBJECT_HANDLE xHandle;
+    CK_SESSION_HANDLE xSession;
+
+    memcpy( &xSession, pxMultiTaskParam->pvTaskData, sizeof( CK_SESSION_HANDLE ) );
+
+    for( xCount = 0; xCount < PKCS11_TEST_MULTI_THREAD_LOOP_COUNT; xCount++ )
+    {
+        xResult = xFindObjectWithLabelAndClass( xSession,
+                                                PKCS11_TEST_LABEL_DEVICE_PRIVATE_KEY_FOR_TLS,
+                                                sizeof( PKCS11_TEST_LABEL_DEVICE_PRIVATE_KEY_FOR_TLS ) - 1,
+                                                CKO_PRIVATE_KEY,
+                                                &xHandle );
+
+        if( xResult != CKR_OK )
+        {
+            TEST_PRINTF( "FindObject multithreaded task failed to find private key.  Error: %ld  Count: %d \r\n", xResult, xCount );
+            break;
+        }
+
+        if( ( xHandle == CK_INVALID_HANDLE ) )
+        {
+            TEST_PRINTF( "FindObject multi-thread task failed to find private key.  Invalid object handle returned.  Count: %d \r\n", xCount );
+            xResult = CKR_OBJECT_HANDLE_INVALID; /* Mark xResult so that test fails. */
+            break;
+        }
+
+        xResult = xFindObjectWithLabelAndClass( xSession,
+                                                PKCS11_TEST_LABEL_DEVICE_CERTIFICATE_FOR_TLS,
+                                                sizeof( PKCS11_TEST_LABEL_DEVICE_CERTIFICATE_FOR_TLS ) - 1,
+                                                CKO_CERTIFICATE,
+                                                &xHandle );
+
+        if( xResult != CKR_OK )
+        {
+            TEST_PRINTF( "FindObject multithreaded task failed to find certificate.  Error: %ld  Count: %d \r\n", xResult, xCount );
+            break;
+        }
+
+        if( ( xHandle == CK_INVALID_HANDLE ) )
+        {
+            TEST_PRINTF( "FindObject multi-thread task failed to find certificate.  Invalid object handle returned. Count: %d \r\n", xCount );
+            xResult = CKR_OBJECT_HANDLE_INVALID; /* Mark xResult so that test fails. */
+            break;
+        }
+    }
+
+    /* Report the result of the loop. */
+    pxMultiTaskParam->xTestResult = xResult;
 }
 
 /*-----------------------------------------------------------*/
@@ -2521,6 +2363,106 @@ TEST( Full_PKCS11_EC, AFQP_FindObjectMultiThread )
 
 /*-----------------------------------------------------------*/
 
+/* Thread function of AFQP_GetAttributeValueMultiThread test case. */
+static void prvECGetAttributeValueMultiThreadTask( void * pvParameters )
+{
+    MultithreadTaskParams_t * pxMultiTaskParam = pvParameters;
+    uint32_t xCount;
+    CK_RV xResult;
+    CK_OBJECT_HANDLE xPrivateKey;
+    CK_OBJECT_HANDLE xCertificate;
+    CK_SESSION_HANDLE xSession;
+    CK_ATTRIBUTE xTemplate;
+    CK_BYTE xEcParamsExpected[] = pkcs11DER_ENCODED_OID_P256;
+    CK_BYTE xEcParams[ sizeof( xEcParamsExpected ) ];
+    CK_BYTE xCertificateValue[ 1000 ]; /* TODO: Probably need a max cert length supported per-port. */
+    int lMbedReturn;
+    mbedtls_x509_crt xMbedCert;
+
+    memcpy( &xSession, pxMultiTaskParam->pvTaskData, sizeof( CK_SESSION_HANDLE ) );
+
+    xResult = xFindObjectWithLabelAndClass( xSession,
+                                            PKCS11_TEST_LABEL_DEVICE_PRIVATE_KEY_FOR_TLS,
+                                            sizeof( PKCS11_TEST_LABEL_DEVICE_PRIVATE_KEY_FOR_TLS ) - 1,
+                                            CKO_PRIVATE_KEY,
+                                            &xPrivateKey );
+
+    if( ( xResult != CKR_OK ) || ( xPrivateKey == CK_INVALID_HANDLE ) )
+    {
+        xResult = 1;
+        TEST_PRINTF( "Failed to find private key.  Return Value: %ld  Handle: %ld \r\n", xResult, xPrivateKey );
+    }
+
+    xResult = xFindObjectWithLabelAndClass( xSession,
+                                            PKCS11_TEST_LABEL_DEVICE_CERTIFICATE_FOR_TLS,
+                                            sizeof( PKCS11_TEST_LABEL_DEVICE_CERTIFICATE_FOR_TLS ) - 1,
+                                            CKO_CERTIFICATE,
+                                            &xCertificate );
+
+    if( ( xResult != CKR_OK ) || ( xCertificate == CK_INVALID_HANDLE ) )
+    {
+        xResult = 1;
+        TEST_PRINTF( "Failed to find certificate key.  Return Value: %ld  Handle: %ld \r\n", xResult, xCertificate );
+    }
+
+    if( xResult == CKR_OK )
+    {
+        for( xCount = 0; xCount < PKCS11_TEST_MULTI_THREAD_LOOP_COUNT; xCount++ )
+        {
+            xTemplate.type = CKA_EC_PARAMS;
+            xTemplate.pValue = xEcParams;
+            xTemplate.ulValueLen = sizeof( xEcParams );
+
+            xResult = pxGlobalFunctionList->C_GetAttributeValue( xSession, xPrivateKey, &xTemplate, 1 );
+
+            if( xResult != CKR_OK )
+            {
+                TEST_PRINTF( "GetAttributeValue multithread test failed to get private key's EC Params.  Error: %ld  Count: %d \r\n", xResult, xCount );
+                break;
+            }
+
+            if( memcmp( xEcParams, xEcParamsExpected, sizeof( xEcParams ) ) )
+            {
+                TEST_PRINTF( "GetAttributeValue multithread test returned an incorrect value for EC Params.  Error: %ld  Count: %d \r\n", xResult, xCount );
+                xResult = 1;
+                break;
+            }
+
+            xTemplate.type = CKA_VALUE;
+            xTemplate.pValue = xCertificateValue;
+            xTemplate.ulValueLen = sizeof( xCertificateValue );
+            xResult = pxGlobalFunctionList->C_GetAttributeValue( xGlobalSession, xCertificate, &xTemplate, 1 );
+
+            if( xResult != CKR_OK )
+            {
+                TEST_PRINTF( "GetAttributeValue multi-thread task failed to get certificate.  Error: %ld  Count: %d \r\n", xResult, xCount );
+                xResult = 1;
+                break;
+            }
+
+            /* Check that the certificate parses. */
+            mbedtls_x509_crt_init( &xMbedCert );
+
+            lMbedReturn = mbedtls_x509_crt_parse( &xMbedCert, xTemplate.pValue, xTemplate.ulValueLen );
+
+            if( lMbedReturn != 0 )
+            {
+                TEST_PRINTF( "GetAttributeValue multi-thread task found an invalid certificate value. Parse error: %d,  Count: %d \r\n", lMbedReturn, xCount );
+                TEST_PRINTF( "First 3 bytes of invalid certificate found are %d, %d, %d \r\n", ( int ) xCertificateValue[ 0 ], ( int ) xCertificateValue[ 1 ], ( int ) xCertificateValue[ 2 ] );
+                xResult = 1;
+                break;
+            }
+
+            mbedtls_x509_crt_free( &xMbedCert );
+        }
+    }
+
+    /* Report the result of the loop. */
+    pxMultiTaskParam->xTestResult = xResult;
+}
+
+/*-----------------------------------------------------------*/
+
 /* Same & different PKCS #11 sessions asking for attribute values of the same 2 objects. */
 TEST( Full_PKCS11_EC, AFQP_GetAttributeValueMultiThread )
 {
@@ -2552,6 +2494,67 @@ TEST( Full_PKCS11_EC, AFQP_GetAttributeValueMultiThread )
         xResult = pxGlobalFunctionList->C_CloseSession( xSessionHandle[ xTaskNumber ] );
         TEST_ASSERT_EQUAL_MESSAGE( CKR_OK, xResult, "Failed to close session." );
     }
+}
+
+/*-----------------------------------------------------------*/
+
+/* Thread function of AFQP_SignVerifyMultiThread test. */
+static void prvECSignVerifyMultiThreadTask( void * pvParameters )
+{
+    MultithreadTaskParams_t * pxMultiTaskParam = pvParameters;
+    SignVerifyMultiThread_t * pxSignStruct = pxMultiTaskParam->pvTaskData;
+    CK_SESSION_HANDLE xSession = pxSignStruct->xSession;
+    CK_OBJECT_HANDLE xPrivateKey = pxSignStruct->xPrivateKey;
+    CK_OBJECT_HANDLE xPublicKey = pxSignStruct->xPublicKey;
+    uint32_t xCount;
+    CK_RV xResult;
+    /* Note that ECDSA operations on a signature of all 0's is not permitted. */
+    CK_BYTE xHashedMessage[ pkcs11SHA256_DIGEST_LENGTH ] = { 0xab };
+    CK_MECHANISM xMechanism;
+    CK_BYTE xSignature[ 64 ] = { 0 };
+    CK_ULONG xSignatureLength;
+
+    for( xCount = 0; xCount < PKCS11_TEST_MULTI_THREAD_LOOP_COUNT; xCount++ )
+    {
+        xMechanism.mechanism = CKM_ECDSA;
+        xMechanism.pParameter = NULL;
+        xMechanism.ulParameterLen = 0;
+        xResult = pxGlobalFunctionList->C_SignInit( xSession, &xMechanism, xPrivateKey );
+
+        if( xResult != CKR_OK )
+        {
+            TEST_PRINTF( "Sign multi-threaded test failed to SignInit. Error: %ld  Count: %d \r\n", xResult, xCount );
+            break;
+        }
+
+        xSignatureLength = sizeof( xSignature );
+        xResult = pxGlobalFunctionList->C_Sign( xSession, xHashedMessage, pkcs11SHA256_DIGEST_LENGTH, xSignature, &xSignatureLength );
+
+        if( xResult != CKR_OK )
+        {
+            TEST_PRINTF( "Sign multi-threaded test failed to Sign. Error: %ld  Count: %d \r\n", xResult, xCount );
+            break;
+        }
+
+        xResult = pxGlobalFunctionList->C_VerifyInit( xSession, &xMechanism, xPublicKey );
+
+        if( xResult != CKR_OK )
+        {
+            TEST_PRINTF( "Multithread VerifyInit failed.  Error:     %ld, Count: %d \r\n", xResult, xCount );
+            break;
+        }
+
+        xResult = pxGlobalFunctionList->C_Verify( xSession, xHashedMessage, pkcs11SHA256_DIGEST_LENGTH, xSignature, sizeof( xSignature ) );
+
+        if( xResult != CKR_OK )
+        {
+            TEST_PRINTF( "Multithread Verify failed.  Error: %ld, Count: %d \r\n", xResult, xCount );
+            break;
+        }
+    }
+
+    /* Report the result of the loop. */
+    pxMultiTaskParam->xTestResult = xResult;
 }
 
 /*-----------------------------------------------------------*/
