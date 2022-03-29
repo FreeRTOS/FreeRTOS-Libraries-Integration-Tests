@@ -1930,7 +1930,7 @@ TEST( Full_PKCS11_EC, AFQP_CreateObject )
         xResult = xProvisionCertificate( xGlobalSession,
                                          ( uint8_t * ) tlsATS1_ROOT_CERTIFICATE_PEM,
                                          tlsATS1_ROOT_CERTIFICATE_LENGTH,
-                                         pkcs11configLABEL_ROOT_CERTIFICATE,
+                                         PKCS11_TEST_LABEL_ROOT_CERTIFICATE,
                                          &xRootCertificateHandle );
         TEST_ASSERT_EQUAL_MESSAGE( CKR_OK, xResult, "Failed to create root EC certificate." );
         TEST_ASSERT_NOT_EQUAL_MESSAGE( CK_INVALID_HANDLE, xRootCertificateHandle, "Invalid object handle returned for EC root certificate." );
@@ -1938,7 +1938,7 @@ TEST( Full_PKCS11_EC, AFQP_CreateObject )
         xResult = xProvisionCertificate( xGlobalSession,
                                          ( uint8_t * ) tlsATS1_ROOT_CERTIFICATE_PEM,
                                          tlsATS1_ROOT_CERTIFICATE_LENGTH,
-                                         pkcs11configLABEL_JITP_CERTIFICATE,
+                                         PKCS11_TEST_LABEL_JITP_CERTIFICATE,
                                          &xJITPCertificateHandle );
         TEST_ASSERT_EQUAL_MESSAGE( CKR_OK, xResult, "Failed to create JITP EC certificate." );
         TEST_ASSERT_NOT_EQUAL_MESSAGE( CK_INVALID_HANDLE, xJITPCertificateHandle, "Invalid object handle returned for EC JITP certificate." );
@@ -1947,7 +1947,7 @@ TEST( Full_PKCS11_EC, AFQP_CreateObject )
                                        ( uint8_t * ) cValidECDSAPublicKey,
                                        sizeof( cValidECDSAPrivateKey ),
                                        CKK_EC,
-                                       pkcs11configLABEL_CODE_VERIFICATION_KEY,
+                                       PKCS11_TEST_LABEL_CODE_VERIFICATION_KEY,
                                        &xCodeSignPublicKeyHandle );
         TEST_ASSERT_EQUAL_MESSAGE( CKR_OK, xResult, "Failed to create EC code sign public key." );
         TEST_ASSERT_NOT_EQUAL_MESSAGE( CK_INVALID_HANDLE, xCodeSignPublicKeyHandle, "Invalid object handle returned for EC code sign public key." );
