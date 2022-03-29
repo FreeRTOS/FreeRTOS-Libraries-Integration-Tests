@@ -61,12 +61,12 @@
  * execution of an existing image on device generates key-pair on device and flashing of
  * new image on device. */
 #ifndef DELAY_BEFORE_KEY_PAIR_GENERATION_SECS
-    #define DELAY_BEFORE_KEY_PAIR_GENERATION_SECS    10
+    #define DELAY_BEFORE_KEY_PAIR_GENERATION_SECS    ( 10 )
 #endif
 
 /**
- * Dev make use of the unity TEST_PRINTF function to print log. Log function
- * is disabled if not supported.
+ * Developer mode provisioning make use of the unity TEST_PRINTF function to print
+ * log. Log function is disabled if not supported.
  */
 #ifndef TEST_PRINTF
     #define TEST_PRINTF( ... )
@@ -122,8 +122,8 @@ typedef struct ProvisionedState_t
 
 /*-----------------------------------------------------------*/
 
-/* This helper function can be found in mbedtls utils pem2der.c.
- * (https://github.com/ARMmbed/mbedtls/blob/development/programs/util/pem2der.c#L75) */
+/* This helper function can be found in corePKCS11 mbedtls_utils.c
+ * (https://github.com/FreeRTOS/corePKCS11/blob/main/source/dependency/3rdparty/mbedtls_utils/mbedtls_utils.c) */
 extern int convert_pem_to_der( const unsigned char * pucInput,
                                size_t xLen,
                                unsigned char * pucOutput,
