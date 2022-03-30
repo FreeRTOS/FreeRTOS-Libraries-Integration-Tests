@@ -238,8 +238,8 @@ extern int convert_pem_to_der( const unsigned char * pucInput,
 /*-----------------------------------------------------------*/
 
 /* Test helper function to get the slot ID for testing. This function should be called
- * in the test cases only t cases only. The cryptoki must already be initialized
- * and pxGlobalFunctionList is provided. C_GetSlotList is verified in AFQP_GetSlotList. */
+ * in the test cases only. The cryptoki must already be initialized and pxGlobalFunctionList
+ * is provided. C_GetSlotList is verified in AFQP_GetSlotList. */
 static CK_SLOT_ID prvGetTestSlotId( void )
 {
     CK_RV xResult;
