@@ -722,10 +722,31 @@ TEST_TEAR_DOWN( Full_PKCS11_StartFinish )
 
 TEST_GROUP_RUNNER( Full_PKCS11_StartFinish )
 {
+    RUN_TEST_CASE( Full_PKCS11_StartFinish, AFQP_StartFinish_FirstTest );
     RUN_TEST_CASE( Full_PKCS11_StartFinish, AFQP_GetFunctionList );
     RUN_TEST_CASE( Full_PKCS11_StartFinish, AFQP_InitializeFinalize );
     RUN_TEST_CASE( Full_PKCS11_StartFinish, AFQP_GetSlotList );
     RUN_TEST_CASE( Full_PKCS11_StartFinish, AFQP_OpenSessionCloseSession );
+}
+
+/*-----------------------------------------------------------*/
+
+TEST( Full_PKCS11_StartFinish, AFQP_StartFinish_FirstTest )
+{
+    CK_RV xResult;
+
+    /* Finalize the PKCS #11 module to get it in a known state.
+     * Set up the PKCS #11 function list pointer. */
+    xResult = prvBeforeRunningTests();
+
+    /* prvBeforeRunningTests finalizes the PKCS #11 modules so that tests will start
+     * in a known state.  It is OK if the module was not previously initialized. */
+    if( xResult == CKR_CRYPTOKI_NOT_INITIALIZED )
+    {
+        xResult = CKR_OK;
+    }
+
+    TEST_ASSERT_EQUAL_MESSAGE( CKR_OK, xResult, "Setup for the PKCS #11 routine failed.  Test module will start in an unknown state." );
 }
 
 /*-----------------------------------------------------------*/
