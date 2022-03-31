@@ -174,22 +174,4 @@
  * #define OTA_PAL_USE_FILE_SYSTEM                          0
  */
 
-/**
- * @brief 1 if otaPal_CheckFileSignature() is implemented in aws_ota_pal.c.
- *
- * #define OTA_PAL_CHECK_FILE_SIGNATURE_SUPPORTED           1
- */
-
-/**
- * @brief 1 if otaPal_ReadAndAssumeCertificate() is implemented in aws_ota_pal.c.
- *
- * #define OTA_PAL_READ_AND_ASSUME_CERTIFICATE_SUPPORTED    1
- */
-
-/**
- * @brief 1 if using PKCS #11 to access the code sign certificate from NVM.
- *
- * #define OTA_PAL_READ_CERTIFICATE_FROM_NVM_WITH_PKCS11    0
- */
-
 #endif /* TEST_PARAM_CONFIG_H */
