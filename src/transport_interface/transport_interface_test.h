@@ -33,64 +33,26 @@
 /* Include for network connection. */
 #include "network_connection.h"
 
+/* Include for thread function. */
+#include "thread_function.h"
+
 /* Include for transport interface. */
 #include "transport_interface.h"
-
-/**
- * @brief Thread handle data structure definition.
- */
-typedef void * TestThreadHandle_t;
-
-/**
- * @brief Thread function to be executed in ThreadCreate_t function.
- *
- * @param[in] pParam The pParam parameter passed in ThreadCreate_t function.
- */
-typedef void ( * TestThreadFunction_t )( void * pParam );
-
-/**
- * @brief Thread create function for core PKCS11 test.
- *
- * @param[in] threadFunc The thread function to be executed in the created thread.
- * @param[in] pParam The pParam parameter passed to the thread function pParam parameter.
- *
- * @return NULL if create thread failed. Otherwise, return the handle of the created thread.
- */
-typedef TestThreadHandle_t ( * TestThreadCreate_t )( TestThreadFunction_t threadFunc,
-                                                     void * pParam );
-
-/**
- * @brief Timed waiting function to wait for the created thread exit.
- *
- * @param[in] threadHandle The handle of the created thread to be waited.
- * @param[in] timeoutMs The timeout value of to wait for the created thread exit.
- *
- * @return 0 if the thread exits within timeoutMs. Other value will be regarded as error.
- */
-typedef int ( * TestThreadTimedWait_t )( TestThreadHandle_t threadHandle,
-                                         uint32_t timeoutMs );
-
-/**
- * @brief Delay function to wait for the data transfer over transport network.
- *
- * @param[in] delayMs Delay in milliseconds.
- */
-typedef void (* TransportTestDelayFunc_t )( uint32_t delayMs );
 
 /**
  * @brief A struct representing transport interface test parameters.
  */
 typedef struct TransportTestParam
 {
-    TransportInterface_t * pTransport;            /**< @brief Transport interface structure to test. */
-    NetworkConnectFunc_t pNetworkConnect;         /**< @brief Network connect function pointer. */
-    NetworkDisconnectFunc_t pNetworkDisconnect;   /**< @brief Network disconnect function pointer. */
-    TransportTestDelayFunc_t pTransportTestDelay; /**< @brief Transport test delay function pointer. */
-    TestThreadCreate_t pTestThreadCreate;         /**< @brief Test thread create function. */
-    TestThreadTimedWait_t pTestThreadTimedWait;   /**< @brief Test thread timed wait function. */
-    void * pNetworkCredentials;                   /**< @brief Network credentials for network connection. */
-    void * pNetworkContext;                       /**< @brief Primary network context. */
-    void * pSecondNetworkContext;                 /**< @brief Secondary network context. */
+    TransportInterface_t * pTransport;          /**< @brief Transport interface structure to test. */
+    NetworkConnectFunc_t pNetworkConnect;       /**< @brief Network connect function pointer. */
+    NetworkDisconnectFunc_t pNetworkDisconnect; /**< @brief Network disconnect function pointer. */
+    ThreadDelayFunc_t pThreadDelay;             /**< @brief Transport test delay function pointer. */
+    ThreadCreate_t pThreadCreate;               /**< @brief Test thread create function. */
+    ThreadTimedWait_t pThreadTimedWait;         /**< @brief Test thread timed wait function. */
+    void * pNetworkCredentials;                 /**< @brief Network credentials for network connection. */
+    void * pNetworkContext;                     /**< @brief Primary network context. */
+    void * pSecondNetworkContext;               /**< @brief Secondary network context. */
 } TransportTestParam_t;
 
 /**

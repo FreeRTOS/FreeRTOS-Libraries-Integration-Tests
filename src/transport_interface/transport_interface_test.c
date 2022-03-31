@@ -119,6 +119,15 @@
  */
 #define TRANSPORT_TEST_WAIT_THREAD_RECEIVE_TIMEOUT_MS    ( 180000U )
 
+/**
+ * @brief Print progress in SendRecvCompare test.
+ *
+ * This debug function should be disabled if testing with IDT.
+ */
+#ifndef TRANSPORT_TEST_PRINT_DEBUG_PROGRESS
+    #define TRANSPORT_TEST_PRINT_DEBUG_PROGRESS    ( 0 )
+#endif
+
 /*-----------------------------------------------------------*/
 
 typedef struct threadParameter
@@ -291,7 +300,7 @@ static void prvTransportRecvData( TransportInterface_t * pTransport,
         }
 
         /* Delay to wait for the test data from the transport network. */
-        testParam.pTransportTestDelay( TRANSPORT_TEST_DELAY_MS );
+        testParam.pThreadDelay( TRANSPORT_TEST_DELAY_MS );
     }
 
     /* Check if all the data is recevied. */
@@ -351,8 +360,10 @@ static void prvSendRecvCompareFunc( void * pParam )
             break;
         }
 
-        /* Output information to indicate the test is running. */
-        UNITY_OUTPUT_CHAR( '.' );
+        #if ( TRANSPORT_TEST_PRINT_DEBUG_PROGRESS == 1 )
+            /* Output information to indicate the test is running. */
+            UNITY_OUTPUT_CHAR( '.' );
+        #endif
     }
 }
 
@@ -434,7 +445,7 @@ TEST_SETUP( Full_TransportInterfaceTest )
     TEST_ASSERT_NOT_NULL_MESSAGE( testParam.pNetworkContext, "testParam.pNetworkContext should not be NULL." );
     TEST_ASSERT_NOT_NULL_MESSAGE( testParam.pTransport->send, "testParam.pTransport->send should not be NULL." );
     TEST_ASSERT_NOT_NULL_MESSAGE( testParam.pTransport->recv, "testParam.pTransport->recv should not be NULL." );
-    TEST_ASSERT_NOT_NULL_MESSAGE( testParam.pTransportTestDelay, "testParam.pTransportTestDelay should not be NULL." );
+    TEST_ASSERT_NOT_NULL_MESSAGE( testParam.pThreadDelay, "testParam.pThreadDelay should not be NULL." );
 
     /* Setup the trasnport structure to use the primary network context. */
     pTestTransport = testParam.pTransport;
@@ -677,7 +688,7 @@ TEST( Full_TransportInterfaceTest, Transport_SendRecvCompareMultithreaded )
 {
     NetworkConnectStatus_t networkConnectResult = NETWORK_CONNECT_SUCCESS;
     int timedWaitResult = 0;
-    TestThreadHandle_t threadHandle[ TRANSPORT_TEST_MULTI_THREAD_TASK_COUNT ];
+    ThreadHandle_t threadHandle[ TRANSPORT_TEST_MULTI_THREAD_TASK_COUNT ];
     uint32_t threadIndex = 0;
 
     /* The primary thread parameter already setup in the test setup function. */
@@ -696,16 +707,16 @@ TEST( Full_TransportInterfaceTest, Transport_SendRecvCompareMultithreaded )
     for( threadIndex = 0; threadIndex < TRANSPORT_TEST_MULTI_THREAD_TASK_COUNT; threadIndex++ )
     {
         threadParameter[ threadIndex ].stopFlag = false;
-        threadHandle[ threadIndex ] = testParam.pTestThreadCreate( prvSendRecvCompareFunc,
-                                                                   &threadParameter[ threadIndex ] );
+        threadHandle[ threadIndex ] = testParam.pThreadCreate( prvSendRecvCompareFunc,
+                                                               &threadParameter[ threadIndex ] );
         TEST_ASSERT_MESSAGE( threadHandle != NULL, "Create thread failed." );
     }
 
     /* Waiting for all test threads complete. */
     for( threadIndex = 0; threadIndex < TRANSPORT_TEST_MULTI_THREAD_TASK_COUNT; threadIndex++ )
     {
-        timedWaitResult = testParam.pTestThreadTimedWait( threadHandle[ threadIndex ],
-                                                          TRANSPORT_TEST_WAIT_THREAD_TIMEOUT_MS );
+        timedWaitResult = testParam.pThreadTimedWait( threadHandle[ threadIndex ],
+                                                      TRANSPORT_TEST_WAIT_THREAD_TIMEOUT_MS );
 
         if( timedWaitResult != 0 )
         {
@@ -749,7 +760,7 @@ TEST( Full_TransportInterfaceTest, TransportSend_RemoteDisconnect )
                                      "Transport send should not have any error." );
 
     /* Delay to wait for the command send to server and server disconnection. */
-    testParam.pTransportTestDelay( TRANSPORT_TEST_NETWORK_DELAY_MS );
+    testParam.pThreadDelay( TRANSPORT_TEST_NETWORK_DELAY_MS );
 
     /* Negative value should be returned if a network disconnection has occurred. */
     transportResult = pTestTransport->send( pTestTransport->pNetworkContext,
@@ -779,7 +790,7 @@ TEST( Full_TransportInterfaceTest, TransportRecv_RemoteDisconnect )
                                      "Transport send should not have any error." );
 
     /* Delay to wait for the command send to server. */
-    testParam.pTransportTestDelay( TRANSPORT_TEST_NETWORK_DELAY_MS );
+    testParam.pThreadDelay( TRANSPORT_TEST_NETWORK_DELAY_MS );
 
     /* Negative value should be returned if a network disconnection has occurred. */
     transportResult = pTestTransport->recv( pTestTransport->pNetworkContext,
@@ -806,18 +817,18 @@ TEST( Full_TransportInterfaceTest, TransportRecv_RemoteDisconnect )
  */
 TEST( Full_TransportInterfaceTest, TransportRecv_NoDataToReceive )
 {
-    TestThreadHandle_t threadHandle;
+    ThreadHandle_t threadHandle;
     int timedWaitResult = 0;
 
     /* Create testing threads. */
     threadParameter[ TRANSPORT_TEST_INDEX ].stopFlag = false;
-    threadHandle = testParam.pTestThreadCreate( prvNoDataToReceiveFunc,
-                                                &threadParameter[ TRANSPORT_TEST_INDEX ] );
+    threadHandle = testParam.pThreadCreate( prvNoDataToReceiveFunc,
+                                            &threadParameter[ TRANSPORT_TEST_INDEX ] );
     TEST_ASSERT_MESSAGE( threadHandle != NULL, "Create thread failed." );
 
     /* Waiting for the test thread complete. */
-    timedWaitResult = testParam.pTestThreadTimedWait( threadHandle,
-                                                      TRANSPORT_TEST_WAIT_THREAD_RECEIVE_TIMEOUT_MS );
+    timedWaitResult = testParam.pThreadTimedWait( threadHandle,
+                                                  TRANSPORT_TEST_WAIT_THREAD_RECEIVE_TIMEOUT_MS );
 
     if( timedWaitResult != 0 )
     {
@@ -839,18 +850,18 @@ TEST( Full_TransportInterfaceTest, TransportRecv_NoDataToReceive )
  */
 TEST( Full_TransportInterfaceTest, TransportRecv_ReturnZeroRetry )
 {
-    TestThreadHandle_t threadHandle;
+    ThreadHandle_t threadHandle;
     int timedWaitResult = 0;
 
     /* Create testing threads. */
     threadParameter[ TRANSPORT_TEST_INDEX ].stopFlag = false;
-    threadHandle = testParam.pTestThreadCreate( prvRetunZeroRetryFunc,
-                                                &threadParameter[ TRANSPORT_TEST_INDEX ] );
+    threadHandle = testParam.pThreadCreate( prvRetunZeroRetryFunc,
+                                            &threadParameter[ TRANSPORT_TEST_INDEX ] );
     TEST_ASSERT_MESSAGE( threadHandle != NULL, "Create thread failed." );
 
     /* Waiting for the test thread complete. */
-    timedWaitResult = testParam.pTestThreadTimedWait( threadHandle,
-                                                      TRANSPORT_TEST_WAIT_THREAD_RECEIVE_TIMEOUT_MS );
+    timedWaitResult = testParam.pThreadTimedWait( threadHandle,
+                                                  TRANSPORT_TEST_WAIT_THREAD_RECEIVE_TIMEOUT_MS );
 
     if( timedWaitResult != 0 )
     {
