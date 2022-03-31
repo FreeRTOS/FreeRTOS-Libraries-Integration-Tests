@@ -33,7 +33,7 @@
 #include "core_pkcs11.h"
 
 /* Developer mode provisioning. */
-#include "aws_dev_mode_key_provisioning.h"
+#include "dev_mode_key_provisioning.h"
 
 /* Test includes. */
 #include "unity_fixture.h"
@@ -65,7 +65,44 @@
  *
  * corePKCS11 utilities are also used in this test. Currenlty, the slot number has to be 0.
  */
-#define PKCS11_TEST_SLOT_NUMBER                ( 0 )
+#define PKCS11_TEST_SLOT_NUMBER    ( 0 )
+
+/**
+ * @brief The PKCS #11 label for the object to be used for code verification.
+ *
+ * Used by over-the-air update code to verify an incoming signed image.
+ *
+ * For devices with on-chip storage, this should match the non-test label.
+ * For devices with secure elements or hardware limitations, this may be defined
+ * to a different label to preserve AWS IoT credentials for other test suites.
+ */
+#if ( pkcs11configJITP_CODEVERIFY_ROOT_CERT_SUPPORTED == 1 ) && !( defined PKCS11_TEST_LABEL_CODE_VERIFICATION_KEY )
+    #define PKCS11_TEST_LABEL_CODE_VERIFICATION_KEY    pkcs11configLABEL_CODE_VERIFICATION_KEY
+#endif
+
+/**
+ * @brief The PKCS #11 label for Just-In-Time-Provisioning.
+ *
+ * The certificate corresponding to the issuer of the device certificate
+ * (pkcs11configLABEL_DEVICE_CERTIFICATE_FOR_TLS) when using the JITR or
+ * JITP flow.
+ *
+ * For devices with on-chip storage, this should match the non-test label.
+ * For devices with secure elements or hardware limitations, this may be defined
+ * to a different label to preserve AWS IoT credentials for other test suites.
+ */
+#if ( pkcs11configJITP_CODEVERIFY_ROOT_CERT_SUPPORTED == 1 ) && !( defined PKCS11_TEST_LABEL_JITP_CERTIFICATE )
+    #define PKCS11_TEST_LABEL_JITP_CERTIFICATE    pkcs11configLABEL_JITP_CERTIFICATE
+#endif
+
+/**
+ * @brief The PKCS #11 label for the AWS Trusted Root Certificate.
+ *
+ * @see iot_default_root_certificates.h
+ */
+#if ( pkcs11configJITP_CODEVERIFY_ROOT_CERT_SUPPORTED == 1 ) && !( defined PKCS11_TEST_LABEL_ROOT_CERTIFICATE )
+    #define PKCS11_TEST_LABEL_ROOT_CERTIFICATE    pkcs11configLABEL_ROOT_CERTIFICATE
+#endif
 
 /**
  * @brief Number of simultaneous tasks for multithreaded tests.
@@ -92,7 +129,7 @@
 
 /**
  * @brief The test make use of the unity TEST_PRINTF function to print log. Log function
- * is disabled if not supported.
+ * is disabled if not supported. For IDT test, this function should be disabled.
  */
 #ifndef TEST_PRINTF
     #define TEST_PRINTF( ... )
@@ -127,7 +164,7 @@
  *
  * Reference core_pkcs11_mbedtls.c for length explanation.
  */
-#define pkcs11EC_POINT_LENGTH           ( ( 32UL * 2UL ) + 1UL + 1UL + 1UL )
+#define PKCS11_TEST_EC_POINT_LENGTH     ( ( 32UL * 2UL ) + 1UL + 1UL + 1UL )
 
 /*-----------------------------------------------------------*/
 
@@ -162,9 +199,7 @@ typedef struct SignVerifyMultiThread
 
 /*-----------------------------------------------------------*/
 
-/**
- * @brief Struct of test parameters filled in by user.
- */
+/* Struct of test parameters filled in by user. */
 Pkcs11TestParam_t testParam = { 0 };
 
 /* PKCS #11 Globals.
@@ -514,41 +549,6 @@ static void prvFindObjectTest( CK_OBJECT_HANDLE_PTR pxPrivateKeyHandle,
                                             &xTestObjectHandle );
     TEST_ASSERT_EQUAL_MESSAGE( CKR_OK, xResult, "Incorrect error code finding object that doesn't exist" );
     TEST_ASSERT_EQUAL_MESSAGE( CK_INVALID_HANDLE, xTestObjectHandle, "Incorrect error code finding object that doesn't exist" );
-}
-
-/*-----------------------------------------------------------*/
-
-/* If these tests may have manipulated the PKCS #11 objects
- * (private key, public keys and/or certificates), run this routine afterwards
- * to make sure that credentials are in a good state for the other test groups. */
-static void prvAfterRunningTests_Object( void )
-{
-    /* Only reprovision a device that supports importing private keys. */
-    #if ( PKCS11_TEST_IMPORT_PRIVATE_KEY_SUPPORT == 1 )
-        /* Check if the test label is the same as the run-time label. If labels
-         * are the same, then we are assuming that this device does not have a
-         * secure element. */
-        if( ( 0 == strcmp( pkcs11configLABEL_DEVICE_PRIVATE_KEY_FOR_TLS, PKCS11_TEST_LABEL_DEVICE_PRIVATE_KEY_FOR_TLS ) ) &&
-            ( 0 == strcmp( pkcs11configLABEL_DEVICE_CERTIFICATE_FOR_TLS, PKCS11_TEST_LABEL_DEVICE_CERTIFICATE_FOR_TLS ) ) )
-        {
-            /* Delete the old device private key and certificate, if that
-             * operation is supported by this port. Replace
-             * them with known-good AWS IoT credentials. */
-            xDestroyDefaultCryptoObjects( xGlobalSession );
-
-            /* Re-provision the device with default certs
-             * so that subsequent tests are not changed. */
-            vDevModeKeyProvisioning();
-            xCurrentCredentials = eClientCredential;
-        }
-        else
-        {
-            /* If the labels are different, then test credentials
-             * and application credentials are stored in separate
-             * slots which were not modified, so nothing special
-             * needs to be done. */
-        }
-    #endif /* if ( PKCS11_TEST_IMPORT_PRIVATE_KEY_SUPPORT == 1 ) */
 }
 
 /*-----------------------------------------------------------*/
@@ -1373,15 +1373,6 @@ TEST_GROUP_RUNNER( Full_PKCS11_RSA )
             /* Always destroy objects last. */
             RUN_TEST_CASE( Full_PKCS11_RSA, AFQP_DestroyObject );
         #endif
-
-        #if ( PKCS11_TEST_IMPORT_PRIVATE_KEY_SUPPORT == 1 )
-            /* This will re-import credentials if supported, it is expected that
-             * secure elements do not destroy the "real" credentials and the test
-             * suite will not try to re-provision a secure element if they are
-             * destroyed, so it is best to use a separate slot for throwaway test
-             * credentials. */
-            prvAfterRunningTests_Object();
-        #endif
     #endif /* if ( PKCS11_TEST_RSA_KEY_SUPPORT == 1 ) */
 }
 
@@ -1805,16 +1796,6 @@ TEST_GROUP_RUNNER( Full_PKCS11_EC )
         #if ( PKCS11_TEST_PREPROVISIONED_SUPPORT != 1 )
             RUN_TEST_CASE( Full_PKCS11_EC, AFQP_DestroyObject );
         #endif
-
-        #if ( PKCS11_TEST_IMPORT_PRIVATE_KEY_SUPPORT == 1 )
-            /* This will re-import credentials if supported, it is expected that
-             * secure elements do not destroy the "real" credentials and the test
-             * suite will not try to re-provision a secure element if they are
-             * destroyed, so it is best to use a separate slot for throwaway test
-             * credentials.
-             */
-            prvAfterRunningTests_Object();
-        #endif
     #endif /* if ( PKCS11_TEST_EC_KEY_SUPPORT == 1 ) */
 }
 
@@ -1836,7 +1817,7 @@ TEST( Full_PKCS11_EC, AFQP_GenerateKeyPair )
     CK_OBJECT_HANDLE xPublicKeyHandle = CK_INVALID_HANDLE;
     CK_OBJECT_HANDLE xCertificateHandle = CK_INVALID_HANDLE;
 
-    CK_BYTE xEcPoint[ pkcs11EC_POINT_LENGTH ] = { 0 };
+    CK_BYTE xEcPoint[ PKCS11_TEST_EC_POINT_LENGTH ] = { 0 };
     CK_BYTE xPrivateKeyBuffer[ 32 ] = { 0 };
     CK_KEY_TYPE xKeyType;
     CK_ATTRIBUTE xTemplate;
@@ -1949,16 +1930,16 @@ TEST( Full_PKCS11_EC, AFQP_CreateObject )
 
     #if ( pkcs11configJITP_CODEVERIFY_ROOT_CERT_SUPPORTED == 1 )
         xResult = xProvisionCertificate( xGlobalSession,
-                                         ( uint8_t * ) tlsATS1_ROOT_CERTIFICATE_PEM,
-                                         tlsATS1_ROOT_CERTIFICATE_LENGTH,
+                                         ( uint8_t * ) cValidECDSACertificate,
+                                         sizeof( cValidECDSACertificate ),
                                          PKCS11_TEST_LABEL_ROOT_CERTIFICATE,
                                          &xRootCertificateHandle );
         TEST_ASSERT_EQUAL_MESSAGE( CKR_OK, xResult, "Failed to create root EC certificate." );
         TEST_ASSERT_NOT_EQUAL_MESSAGE( CK_INVALID_HANDLE, xRootCertificateHandle, "Invalid object handle returned for EC root certificate." );
 
         xResult = xProvisionCertificate( xGlobalSession,
-                                         ( uint8_t * ) tlsATS1_ROOT_CERTIFICATE_PEM,
-                                         tlsATS1_ROOT_CERTIFICATE_LENGTH,
+                                         ( uint8_t * ) cValidECDSACertificate,
+                                         sizeof( cValidECDSACertificate ),
                                          PKCS11_TEST_LABEL_JITP_CERTIFICATE,
                                          &xJITPCertificateHandle );
         TEST_ASSERT_EQUAL_MESSAGE( CKR_OK, xResult, "Failed to create JITP EC certificate." );

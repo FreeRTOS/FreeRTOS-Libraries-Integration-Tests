@@ -21,7 +21,7 @@
  */
 
 /**
- * @file aws_dev_mode_key_provsioning.h
+ * @file dev_mode_key_provsioning.h
  * @brief Provisioning example code for developers.
  *
  * Helpers for importing device private key and device
@@ -31,8 +31,8 @@
  * should not be used in production code.
  */
 
-#ifndef _AWS_DEV_MODE_KEY_PROVISIONING_H_
-#define _AWS_DEV_MODE_KEY_PROVISIONING_H_
+#ifndef DEV_MODE_KEY_PROVISIONING_H
+#define DEV_MODE_KEY_PROVISIONING_H
 
 #include "core_pkcs11_config.h"
 #include "core_pkcs11.h"
@@ -250,4 +250,4 @@ CK_RV xDestroyProvidedObjects( CK_SESSION_HANDLE xSession,
                                CK_OBJECT_CLASS * pxClass,
                                CK_ULONG ulCount );
 
-#endif /* _AWS_DEV_MODE_KEY_PROVISIONING_H_ */
+#endif /* DEV_MODE_KEY_PROVISIONING_H */
