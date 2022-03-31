@@ -41,6 +41,7 @@ The JSON file contains the following options:
 
 ## Credential Creation for secure echo server
 ### **Server**
+Note that in order for full TLS verification to work, Common Name (CN) part in the following commands should be replaced with DNS name of the server.
 #### **RSA**
 The following openssl command can be used to generate self-signed server certificate:
 ```bash
