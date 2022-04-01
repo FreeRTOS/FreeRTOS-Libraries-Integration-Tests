@@ -99,6 +99,16 @@
 
 /*-----------------------------------------------------------*/
 
+#ifndef ECHO_SERVER_ENDPOINT
+    #error "Please define ECHO_SERVER_ENDPOINT"
+#endif
+
+#ifndef ECHO_SERVER_PORT
+    #error "Please define ECHO_SERVER_PORT"
+#endif
+
+/*-----------------------------------------------------------*/
+
 /**
  * @brief Struct of test parameters filled in by user.
  */
