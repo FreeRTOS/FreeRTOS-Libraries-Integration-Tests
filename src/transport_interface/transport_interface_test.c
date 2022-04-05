@@ -99,13 +99,15 @@
 
 /*-----------------------------------------------------------*/
 
-#ifndef ECHO_SERVER_ENDPOINT
-    #error "Please define ECHO_SERVER_ENDPOINT"
-#endif
-
-#ifndef ECHO_SERVER_PORT
-    #error "Please define ECHO_SERVER_PORT"
-#endif
+#if ( TRANSPORT_INTERFACE_TEST_ENABLED == 1 )
+    #ifndef ECHO_SERVER_ENDPOINT
+        #error "Please define ECHO_SERVER_ENDPOINT"
+    #endif
+    
+    #ifndef ECHO_SERVER_PORT
+        #error "Please define ECHO_SERVER_PORT"
+    #endif
+#endif /* if ( TRANSPORT_INTERFACE_TEST_ENABLED == 1 ) */
 
 /*-----------------------------------------------------------*/
 
