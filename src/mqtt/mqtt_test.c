@@ -169,6 +169,18 @@
 
 /*-----------------------------------------------------------*/
 
+#if ( MQTT_TEST_ENABLED == 1 )
+    #ifndef MQTT_SERVER_ENDPOINT
+        #error "Please define MQTT_SERVER_ENDPOINT"
+    #endif
+    
+    #ifndef MQTT_SERVER_PORT
+        #error "Please define MQTT_SERVER_PORT"
+    #endif
+#endif /* if ( MQTT_TEST_ENABLED == 1 ) */
+
+/*-----------------------------------------------------------*/
+
 /**
  * @brief a struct of test parameters filled in by user.
  */
