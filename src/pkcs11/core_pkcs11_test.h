@@ -45,7 +45,7 @@ typedef struct Pkcs11TestParam
     MemoryAlloc_t pMemoryAlloc;
     MemoryFree_t pMemoryFree;
     ThreadCreate_t pThreadCreate;
-    ThreadTimedWait_t pThreadTimedWait;
+    ThreadTimedJoin_t pThreadTimedJoin;
     ThreadDelayFunc_t pThreadDelay;
 } Pkcs11TestParam_t;
 

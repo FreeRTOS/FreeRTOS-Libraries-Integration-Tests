@@ -200,26 +200,6 @@ CK_RV xProvisionGenerateKeyPairEC( CK_SESSION_HANDLE xSession,
                                    CK_OBJECT_HANDLE_PTR pxPublicKeyHandle );
 
 /**
- *\brief Destroys FreeRTOS credentials stored in device PKCS #11 module.
- *
- * \note Not all ports support the deletion of all objects.  Successful
- * function return only indicates that all objects for which destroy is
- * supported on the port were erased from non-volatile memory.
- *
- * Destroys objects with the following labels, if applicable:
- *     pkcs11configLABEL_DEVICE_CERTIFICATE_FOR_TLS,
- *     pkcs11configLABEL_CODE_VERIFICATION_KEY,
- *     pkcs11configLABEL_DEVICE_PRIVATE_KEY_FOR_TLS,
- *     pkcs11configLABEL_DEVICE_PUBLIC_KEY_FOR_TLS
- *
- *   \param[in] xSession         A valid PKCS #11 session handle.
- *
- *   \return CKR_OK if all credentials were destroyed.
- *   Otherwise, a positive PKCS #11 error code.
- */
-CK_RV xDestroyDefaultCryptoObjects( CK_SESSION_HANDLE xSession );
-
-/**
  * \brief Destroys specified credentials in PKCS #11 module.
  *
  * \note Some ports only support lookup of objects by label (and

@@ -794,32 +794,3 @@ CK_RV xDestroyProvidedObjects( CK_SESSION_HANDLE xSession,
 }
 
 /*-----------------------------------------------------------*/
-
-/* Delete well-known crypto objects from storage. */
-CK_RV xDestroyDefaultCryptoObjects( CK_SESSION_HANDLE xSession )
-{
-    CK_RV xResult;
-    CK_BYTE * pxPkcsLabels[] =
-    {
-        ( CK_BYTE * ) pkcs11configLABEL_DEVICE_CERTIFICATE_FOR_TLS,
-        ( CK_BYTE * ) pkcs11configLABEL_CODE_VERIFICATION_KEY,
-        ( CK_BYTE * ) pkcs11configLABEL_DEVICE_PRIVATE_KEY_FOR_TLS,
-        ( CK_BYTE * ) pkcs11configLABEL_DEVICE_PUBLIC_KEY_FOR_TLS
-    };
-    CK_OBJECT_CLASS xClass[] =
-    {
-        CKO_CERTIFICATE,
-        CKO_PUBLIC_KEY,
-        CKO_PRIVATE_KEY,
-        CKO_PUBLIC_KEY
-    };
-
-    xResult = xDestroyProvidedObjects( xSession,
-                                       pxPkcsLabels,
-                                       xClass,
-                                       sizeof( xClass ) / sizeof( CK_OBJECT_CLASS ) );
-
-    return xResult;
-}
-
-/*-----------------------------------------------------------*/

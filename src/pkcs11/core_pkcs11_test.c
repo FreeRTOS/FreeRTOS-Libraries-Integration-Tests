@@ -76,7 +76,7 @@
  * For devices with secure elements or hardware limitations, this may be defined
  * to a different label to preserve AWS IoT credentials for other test suites.
  */
-#if ( pkcs11configJITP_CODEVERIFY_ROOT_CERT_SUPPORTED == 1 ) && !( defined PKCS11_TEST_LABEL_CODE_VERIFICATION_KEY )
+#ifndef PKCS11_TEST_LABEL_CODE_VERIFICATION_KEY
     #define PKCS11_TEST_LABEL_CODE_VERIFICATION_KEY    pkcs11configLABEL_CODE_VERIFICATION_KEY
 #endif
 
@@ -91,7 +91,7 @@
  * For devices with secure elements or hardware limitations, this may be defined
  * to a different label to preserve AWS IoT credentials for other test suites.
  */
-#if ( pkcs11configJITP_CODEVERIFY_ROOT_CERT_SUPPORTED == 1 ) && !( defined PKCS11_TEST_LABEL_JITP_CERTIFICATE )
+#ifndef PKCS11_TEST_LABEL_JITP_CERTIFICATE
     #define PKCS11_TEST_LABEL_JITP_CERTIFICATE    pkcs11configLABEL_JITP_CERTIFICATE
 #endif
 
@@ -100,7 +100,7 @@
  *
  * @see iot_default_root_certificates.h
  */
-#if ( pkcs11configJITP_CODEVERIFY_ROOT_CERT_SUPPORTED == 1 ) && !( defined PKCS11_TEST_LABEL_ROOT_CERTIFICATE )
+#ifndef PKCS11_TEST_LABEL_ROOT_CERTIFICATE
     #define PKCS11_TEST_LABEL_ROOT_CERTIFICATE    pkcs11configLABEL_ROOT_CERTIFICATE
 #endif
 
@@ -199,19 +199,20 @@ typedef struct SignVerifyMultiThread
 
 /*-----------------------------------------------------------*/
 
-/* Struct of test parameters filled in by user. */
+/* Struct of test parameters filled in by user. This parameter also need to be used
+ * in dev_mod_key_provisioning.c file. */
 Pkcs11TestParam_t testParam = { 0 };
 
 /* PKCS #11 Globals.
  * These are used to reduce setup and tear down calls. */
-CK_SESSION_HANDLE xGlobalSession = 0;
-CK_FUNCTION_LIST_PTR pxGlobalFunctionList = NULL_PTR;
-CredentialsProvisioned_t xCurrentCredentials = eStateUnknown;
+static CK_SESSION_HANDLE xGlobalSession = 0;
+static CK_FUNCTION_LIST_PTR pxGlobalFunctionList = NULL_PTR;
+static CredentialsProvisioned_t xCurrentCredentials = eStateUnknown;
 
 /* PKCS #11 Global Data Containers. */
-CK_BYTE rsaHashedMessage[ pkcs11SHA256_DIGEST_LENGTH ] = { 0 };
-CK_BYTE ecdsaSignature[ pkcs11RSA_2048_SIGNATURE_LENGTH ] = { 0x00 };
-CK_BYTE ecdsaHashedMessage[ pkcs11SHA256_DIGEST_LENGTH ] = { 0xab };
+static CK_BYTE rsaHashedMessage[ pkcs11SHA256_DIGEST_LENGTH ] = { 0 };
+static CK_BYTE ecdsaSignature[ pkcs11RSA_2048_SIGNATURE_LENGTH ] = { 0x00 };
+static CK_BYTE ecdsaHashedMessage[ pkcs11SHA256_DIGEST_LENGTH ] = { 0xab };
 
 /* Digest test input data. */
 static CK_BYTE x896BitInput[] = "abcdefghbcdefghicdefghijdefghijkefghijklfghijklmghijklmnhijklmnoijklmnopjklmnopqklmnopqrlmnopqrsmnopqrstnopqrstu";
@@ -345,12 +346,14 @@ static CK_RV prvBeforeRunningTests( void )
 static void prvMultiThreadHelper( void * pvTaskFxnPtr )
 {
     uint32_t xTaskNumber;
-    int retThreadTimedWait;
+    int retThreadTimedJoin;
     ThreadHandle_t threadHandles[ PKCS11_TEST_MULTI_THREAD_TASK_COUNT ];
 
     /* Create all the tasks. */
     for( xTaskNumber = 0; xTaskNumber < PKCS11_TEST_MULTI_THREAD_TASK_COUNT; xTaskNumber++ )
     {
+        xGlobalTaskParams[ xTaskNumber ].xTaskNumber = xTaskNumber;
+        xGlobalTaskParams[ xTaskNumber ].xTestResult = 0;
         threadHandles[ xTaskNumber ] = testParam.pThreadCreate( pvTaskFxnPtr, &( xGlobalTaskParams[ xTaskNumber ] ) );
         TEST_ASSERT_MESSAGE( threadHandles[ xTaskNumber ] != NULL, "Create thread failed." );
     }
@@ -358,12 +361,13 @@ static void prvMultiThreadHelper( void * pvTaskFxnPtr )
     /* Wait for all tasks to finish. */
     for( xTaskNumber = 0; xTaskNumber < PKCS11_TEST_MULTI_THREAD_TASK_COUNT; xTaskNumber++ )
     {
-        retThreadTimedWait = testParam.pThreadTimedWait( threadHandles[ xTaskNumber ], PKCS11_TEST_WAIT_THREAD_TIMEOUT_MS );
+        retThreadTimedJoin = testParam.pThreadTimedJoin( threadHandles[ xTaskNumber ], PKCS11_TEST_WAIT_THREAD_TIMEOUT_MS );
 
-        if( retThreadTimedWait != 0 )
+        if( retThreadTimedJoin != 0 )
         {
+            xGlobalTaskParams[ xTaskNumber ].xTestResult = CKR_GENERAL_ERROR;
             TEST_PRINTF( "Waiting for task %u to finish in multi-threaded test failed %d.\r\n",
-                         xTaskNumber, retThreadTimedWait );
+                         xTaskNumber, retThreadTimedJoin );
         }
     }
 
@@ -1700,9 +1704,7 @@ TEST( Full_PKCS11_RSA, AFQP_GenerateKeyPair )
     xResult = pxGlobalFunctionList->C_Sign( xGlobalSession, xPaddedHash, pkcs11RSA_2048_SIGNATURE_LENGTH, xSignature, &xSignatureLength );
     TEST_ASSERT_EQUAL_MESSAGE( CKR_OK, xResult, "Failed to RSA Sign." );
 
-    /* Verify the signature with mbedTLS */
-
-    /* Set up the RSA public key. */
+    /* Verify the signature with mbedTLS. Set up the RSA public key. */
     mbedtls_rsa_init( &xRsaContext, MBEDTLS_RSA_PKCS_V15, 0 );
 
     if( TEST_PROTECT() )
@@ -1716,6 +1718,7 @@ TEST( Full_PKCS11_RSA, AFQP_GenerateKeyPair )
         TEST_ASSERT_EQUAL( 0, xResult );
         xResult = mbedtls_rsa_pkcs1_verify( &xRsaContext, NULL, NULL, MBEDTLS_RSA_PUBLIC, MBEDTLS_MD_SHA256, 32, xHashedMessage, xSignature );
         TEST_ASSERT_EQUAL_MESSAGE( 0, xResult, "mbedTLS failed to parse valid RSA key (verification)" );
+
         /* Verify the signature with the generated public key. */
         xResult = pxGlobalFunctionList->C_VerifyInit( xGlobalSession, &xMechanism, xPublicKeyHandle );
         TEST_ASSERT_EQUAL_MESSAGE( CKR_OK, xResult, "Failed to VerifyInit RSA." );
