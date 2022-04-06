@@ -69,12 +69,6 @@
 
 /**
  * @brief The PKCS #11 label for the object to be used for code verification.
- *
- * Used by over-the-air update code to verify an incoming signed image.
- *
- * For devices with on-chip storage, this should match the non-test label.
- * For devices with secure elements or hardware limitations, this may be defined
- * to a different label to preserve AWS IoT credentials for other test suites.
  */
 #ifndef PKCS11_TEST_LABEL_CODE_VERIFICATION_KEY
     #define PKCS11_TEST_LABEL_CODE_VERIFICATION_KEY    pkcs11configLABEL_CODE_VERIFICATION_KEY
@@ -82,14 +76,6 @@
 
 /**
  * @brief The PKCS #11 label for Just-In-Time-Provisioning.
- *
- * The certificate corresponding to the issuer of the device certificate
- * (pkcs11configLABEL_DEVICE_CERTIFICATE_FOR_TLS) when using the JITR or
- * JITP flow.
- *
- * For devices with on-chip storage, this should match the non-test label.
- * For devices with secure elements or hardware limitations, this may be defined
- * to a different label to preserve AWS IoT credentials for other test suites.
  */
 #ifndef PKCS11_TEST_LABEL_JITP_CERTIFICATE
     #define PKCS11_TEST_LABEL_JITP_CERTIFICATE    pkcs11configLABEL_JITP_CERTIFICATE
@@ -97,8 +83,6 @@
 
 /**
  * @brief The PKCS #11 label for the AWS Trusted Root Certificate.
- *
- * @see iot_default_root_certificates.h
  */
 #ifndef PKCS11_TEST_LABEL_ROOT_CERTIFICATE
     #define PKCS11_TEST_LABEL_ROOT_CERTIFICATE    pkcs11configLABEL_ROOT_CERTIFICATE
@@ -1389,6 +1373,12 @@ TEST( Full_PKCS11_RSA, AFQP_CreateObject )
     CK_OBJECT_HANDLE xPublicKeyHandle = CK_INVALID_HANDLE;
     CK_OBJECT_HANDLE xCertificateHandle = CK_INVALID_HANDLE;
 
+    #if ( pkcs11configJITP_CODEVERIFY_ROOT_CERT_SUPPORTED == 1 )
+        CK_OBJECT_HANDLE xRootCertificateHandle = CK_INVALID_HANDLE;
+        CK_OBJECT_HANDLE xCodeSignPublicKeyHandle = CK_INVALID_HANDLE;
+        CK_OBJECT_HANDLE xJITPCertificateHandle = CK_INVALID_HANDLE;
+    #endif /* if ( pkcs11configJITP_CODEVERIFY_ROOT_CERT_SUPPORTED == 1 ) */
+
     if( xCurrentCredentials != eNone )
     {
         xResult = prvDestroyTestCredentials();
@@ -1397,6 +1387,36 @@ TEST( Full_PKCS11_RSA, AFQP_CreateObject )
     }
 
     prvProvisionRsaTestCredentials( &xPrivateKeyHandle, &xPublicKeyHandle, &xCertificateHandle );
+
+    #if ( pkcs11configJITP_CODEVERIFY_ROOT_CERT_SUPPORTED == 1 )
+        xResult = xProvisionCertificate( xGlobalSession,
+                                         ( uint8_t * ) cValidRSACertificate,
+                                         sizeof( cValidRSACertificate ),
+                                         PKCS11_TEST_LABEL_ROOT_CERTIFICATE,
+                                         &xRootCertificateHandle );
+        TEST_ASSERT_EQUAL_MESSAGE( CKR_OK, xResult, "Failed to create root RSA certificate." );
+        TEST_ASSERT_NOT_EQUAL_MESSAGE( CK_INVALID_HANDLE, xRootCertificateHandle,
+                                       "Invalid object handle returned for RSA root certificate." );
+
+        xResult = xProvisionCertificate( xGlobalSession,
+                                         ( uint8_t * ) cValidRSACertificate,
+                                         sizeof( cValidRSACertificate ),
+                                         PKCS11_TEST_LABEL_JITP_CERTIFICATE,
+                                         &xJITPCertificateHandle );
+        TEST_ASSERT_EQUAL_MESSAGE( CKR_OK, xResult, "Failed to create JITP RSA certificate." );
+        TEST_ASSERT_NOT_EQUAL_MESSAGE( CK_INVALID_HANDLE, xJITPCertificateHandle,
+                                       "Invalid object handle returned for RSA JITP certificate." );
+
+        xResult = xProvisionPublicKey( xGlobalSession,
+                                       ( uint8_t * ) cValidRSAPublicKey,
+                                       sizeof( cValidRSAPublicKey ),
+                                       CKK_RSA,
+                                       PKCS11_TEST_LABEL_CODE_VERIFICATION_KEY,
+                                       &xCodeSignPublicKeyHandle );
+        TEST_ASSERT_EQUAL_MESSAGE( CKR_OK, xResult, "Failed to create RSA code sign public key." );
+        TEST_ASSERT_NOT_EQUAL_MESSAGE( CK_INVALID_HANDLE, xCodeSignPublicKeyHandle,
+                                       "Invalid object handle returned for RSA code sign public key." );
+    #endif /* if ( pkcs11configJITP_CODEVERIFY_ROOT_CERT_SUPPORTED == 1 ) */
 }
 
 /*-----------------------------------------------------------*/
@@ -1950,7 +1970,7 @@ TEST( Full_PKCS11_EC, AFQP_CreateObject )
 
         xResult = xProvisionPublicKey( xGlobalSession,
                                        ( uint8_t * ) cValidECDSAPublicKey,
-                                       sizeof( cValidECDSAPrivateKey ),
+                                       sizeof( cValidECDSAPublicKey ),
                                        CKK_EC,
                                        PKCS11_TEST_LABEL_CODE_VERIFICATION_KEY,
                                        &xCodeSignPublicKeyHandle );
