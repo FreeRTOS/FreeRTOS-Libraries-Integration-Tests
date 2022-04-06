@@ -39,6 +39,7 @@
 #include "mqtt_test.h"
 #include "test_execution_config.h"
 #include "test_param_config.h"
+#include "platform_function.h"
 
 /*-----------------------------------------------------------*/
 
@@ -1005,7 +1006,7 @@ TEST( MqttTest, MQTT_ProcessLoop_KeepAlive )
     TEST_ASSERT_EQUAL( 0, context.pingReqSendTimeMs );
 
     /* Sleep until control packet needs to be sent. */
-    Clock_SleepMs( MQTT_KEEP_ALIVE_INTERVAL_SECONDS * 1000 );
+    FRTest_TimeDelay( MQTT_KEEP_ALIVE_INTERVAL_SECONDS * 1000 );
     TEST_ASSERT_EQUAL( MQTTSuccess, MQTT_ProcessLoop( &context, MQTT_PROCESS_LOOP_TIMEOUT_MS ) );
 
     TEST_ASSERT_NOT_EQUAL( 0, context.pingReqSendTimeMs );
@@ -1127,7 +1128,7 @@ TEST( MqttTest, MQTT_Restore_Session_Duplicate_Incoming_Publish_Qos1 )
     /* Make sure that a record was created for the incoming PUBLISH packet. */
     TEST_ASSERT_NOT_EQUAL( MQTT_PACKET_ID_INVALID, context.incomingPublishRecords[ 0 ].packetId );
 
-    Clock_SleepMs( 30000 );
+    FRTest_TimeDelay( 30000 );
 
     /* We will re-establish an MQTT over TLS connection with the broker to restore
      * the persistent session. */

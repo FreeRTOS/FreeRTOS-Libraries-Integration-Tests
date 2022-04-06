@@ -47,7 +47,6 @@ typedef struct TransportTestParam
     TransportInterface_t * pTransport;          /**< @brief Transport interface structure to test. */
     NetworkConnectFunc_t pNetworkConnect;       /**< @brief Network connect function pointer. */
     NetworkDisconnectFunc_t pNetworkDisconnect; /**< @brief Network disconnect function pointer. */
-    ThreadDelayFunc_t pThreadDelay;             /**< @brief Transport test delay function pointer. */
     ThreadCreate_t pThreadCreate;               /**< @brief Test thread create function. */
     ThreadTimedWait_t pThreadTimedWait;         /**< @brief Test thread timed wait function. */
     void * pNetworkCredentials;                 /**< @brief Network credentials for network connection. */

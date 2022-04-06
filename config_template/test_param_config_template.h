@@ -134,4 +134,12 @@
  * #define TRANSPORT_CLIENT_PRIVATE_KEY  NULL
  */
 
+/**
+ * @brief Microseconds to delay the start of test.
+ *
+ * @note This configuration is optional. Default is 5000.
+ *
+ * #define TEST_START_DELAY_MS  5000
+ */
+
 #endif /* TEST_PARAM_CONFIG_H */
