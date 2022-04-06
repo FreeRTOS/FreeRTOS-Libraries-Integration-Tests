@@ -21,36 +21,19 @@
  */
 
 /**
- * @file qualification_test.c
- * @brief Implements the entry function for LTS qualification test.
+ * @file plaform_function.h
+ * @brief Declaration of platform functions that users need to implement.
  */
-#include "test_execution_config.h"
-#include "platform_function.h"
+#ifndef PLATFORM_FUNCTION_H
+#define PLATFORM_FUNCTION_H
 
-#if ( MQTT_TEST_ENABLED == 1 )
-    #include "mqtt_test.h"
-#endif
+#include <stdint.h>
 
-#if ( TRANSPORT_INTERFACE_TEST_ENABLED == 1 )
-    #include "transport_interface_test.h"
-#endif
+/**
+ * @brief Delay function to wait for at least specified amount of time.
+ *
+ * @param[in] delayMs Delay in milliseconds.
+ */
+void FRTest_TimeDelay( uint32_t delayMs );
 
-#ifndef TEST_START_DELAY_MS
-    #define TEST_START_DELAY_MS  5000
-#endif
-
-/*-----------------------------------------------------------*/
-
-void RunQualificationTest( void )
-{
-    FRTest_TimeDelay( TEST_START_DELAY_MS );
-    #if ( TRANSPORT_INTERFACE_TEST_ENABLED == 1 )
-        RunTransportInterfaceTest();
-    #endif
-
-    #if ( MQTT_TEST_ENABLED == 1 )
-        RunMqttTest();
-    #endif
-}
-
-/*-----------------------------------------------------------*/
+#endif /* PLATFORM_FUNCTION_H */

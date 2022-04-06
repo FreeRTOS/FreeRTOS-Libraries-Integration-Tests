@@ -35,6 +35,9 @@
 #include "test_execution_config.h"
 #include "test_param_config.h"
 
+/* Include for platform functions */
+#include "platform_function.h"
+
 /* Include for Unity framework. */
 #include "unity.h"
 #include "unity_fixture.h"
@@ -312,7 +315,7 @@ static void prvTransportRecvData( TransportInterface_t * pTransport,
         }
 
         /* Delay to wait for the test data from the transport network. */
-        testParam.pThreadDelay( TRANSPORT_TEST_DELAY_MS );
+        FRTest_TimeDelay( TRANSPORT_TEST_DELAY_MS );
     }
 
     /* Check if all the data is recevied. */
@@ -457,7 +460,6 @@ TEST_SETUP( Full_TransportInterfaceTest )
     TEST_ASSERT_NOT_NULL_MESSAGE( testParam.pNetworkContext, "testParam.pNetworkContext should not be NULL." );
     TEST_ASSERT_NOT_NULL_MESSAGE( testParam.pTransport->send, "testParam.pTransport->send should not be NULL." );
     TEST_ASSERT_NOT_NULL_MESSAGE( testParam.pTransport->recv, "testParam.pTransport->recv should not be NULL." );
-    TEST_ASSERT_NOT_NULL_MESSAGE( testParam.pThreadDelay, "testParam.pThreadDelay should not be NULL." );
 
     /* Setup the trasnport structure to use the primary network context. */
     pTestTransport = testParam.pTransport;
@@ -772,7 +774,7 @@ TEST( Full_TransportInterfaceTest, TransportSend_RemoteDisconnect )
                                      "Transport send should not have any error." );
 
     /* Delay to wait for the command send to server and server disconnection. */
-    testParam.pThreadDelay( TRANSPORT_TEST_NETWORK_DELAY_MS );
+    FRTest_TimeDelay( TRANSPORT_TEST_NETWORK_DELAY_MS );
 
     /* Negative value should be returned if a network disconnection has occurred. */
     transportResult = pTestTransport->send( pTestTransport->pNetworkContext,
@@ -802,7 +804,7 @@ TEST( Full_TransportInterfaceTest, TransportRecv_RemoteDisconnect )
                                      "Transport send should not have any error." );
 
     /* Delay to wait for the command send to server. */
-    testParam.pThreadDelay( TRANSPORT_TEST_NETWORK_DELAY_MS );
+    FRTest_TimeDelay( TRANSPORT_TEST_NETWORK_DELAY_MS );
 
     /* Negative value should be returned if a network disconnection has occurred. */
     transportResult = pTestTransport->recv( pTestTransport->pNetworkContext,
