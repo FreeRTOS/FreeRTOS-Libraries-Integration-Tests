@@ -253,6 +253,17 @@ static const provisionMethod_t pkcs11TestProvisionMethod[] =
 };
 static uint32_t xNumTestProvisionMethod = sizeof( pkcs11TestProvisionMethod ) / sizeof( provisionMethod_t );
 
+static const provisionMethod_t pkcs11TestRsaProvisionMethod[] =
+{
+    #if ( PKCS11_TEST_PREPROVISIONED_SUPPORT == 1 )
+        eProvisionPreprovisioned,
+    #endif
+    #if ( PKCS11_TEST_IMPORT_PRIVATE_KEY_SUPPORT == 1 )
+        eProvisionImportPrivateKey
+    #endif
+};
+static uint32_t xNumTestRsaProvisionMethod = sizeof( pkcs11TestRsaProvisionMethod ) / sizeof( provisionMethod_t );
+
 /* The StartFinish test group is for General Purpose,
  * Session, Slot, and Token management functions.
  * These tests do not require provisioning. */
@@ -460,67 +471,62 @@ static CK_RV prvDestroyTestCredentials( void )
 /*-----------------------------------------------------------*/
 
 /* Test helper function to provision RSA test credentials or return RSA key handles. */
-static void prvProvisionRsaTestCredentials( CK_OBJECT_HANDLE_PTR pxPrivateKeyHandle,
-                                            CK_OBJECT_HANDLE_PTR pxPublicKeyHandle,
-                                            CK_OBJECT_HANDLE_PTR pxCertificateHandle )
+static void prvProvisionRsaCredentialsWithKeyImport( CK_OBJECT_HANDLE_PTR pxPrivateKeyHandle,
+                                                     CK_OBJECT_HANDLE_PTR pxPublicKeyHandle,
+                                                     CK_OBJECT_HANDLE_PTR pxCertificateHandle )
 {
     CK_RV xResult;
 
-    if( xCurrentCredentials != eRsaTest )
+    prvDestroyTestCredentials();
+    xCurrentCredentials = eNone;
+
+    /* Create a public key. */
+    xResult = xProvisionPublicKey( xGlobalSession,
+                                   ( uint8_t * ) cValidRSAPublicKey,
+                                   sizeof( cValidRSAPublicKey ),
+                                   CKK_RSA,
+                                   ( uint8_t * ) PKCS11_TEST_LABEL_DEVICE_PUBLIC_KEY_FOR_TLS,
+                                   pxPublicKeyHandle );
+
+    TEST_ASSERT_EQUAL_MESSAGE( CKR_OK, xResult, "Failed to create RSA public key." );
+    TEST_ASSERT_NOT_EQUAL_MESSAGE( CK_INVALID_HANDLE, *pxPublicKeyHandle, "Invalid object handle returned for RSA public key." );
+
+    /* Create a private key. */
+    xResult = xProvisionPrivateKey( xGlobalSession,
+                                    ( uint8_t * ) cValidRSAPrivateKey,
+                                    sizeof( cValidRSAPrivateKey ),
+                                    ( uint8_t * ) PKCS11_TEST_LABEL_DEVICE_PRIVATE_KEY_FOR_TLS,
+                                    pxPrivateKeyHandle );
+
+    TEST_ASSERT_EQUAL_MESSAGE( CKR_OK, xResult, "Failed to create RSA private key." );
+    TEST_ASSERT_NOT_EQUAL_MESSAGE( CK_INVALID_HANDLE, *pxPrivateKeyHandle, "Invalid object handle returned for RSA private key." );
+
+    /* Create a certificate. */
+    xResult = xProvisionCertificate( xGlobalSession,
+                                     ( uint8_t * ) cValidRSACertificate,
+                                     sizeof( cValidRSACertificate ),
+                                     ( uint8_t * ) PKCS11_TEST_LABEL_DEVICE_CERTIFICATE_FOR_TLS,
+                                     pxCertificateHandle );
+
+    TEST_ASSERT_EQUAL_MESSAGE( CKR_OK, xResult, "Failed to create RSA certificate." );
+    TEST_ASSERT_NOT_EQUAL_MESSAGE( CK_INVALID_HANDLE, *pxCertificateHandle, "Invalid object handle returned for RSA certificate." );
+    xCurrentCredentials = eRsaTest;
+}
+
+/*-----------------------------------------------------------*/
+
+static void prvProvisionRsaTestCredentials( provisionMethod_t testProvisonMethod,
+                                            CK_OBJECT_HANDLE_PTR pxPrivateKeyHandle,
+                                            CK_OBJECT_HANDLE_PTR pxCertificateHandle,
+                                            CK_OBJECT_HANDLE_PTR pxPublicKeyHandle )
+{
+    if( testProvisonMethod == eProvisionImportPrivateKey )
     {
-        xResult = prvDestroyTestCredentials();
-        TEST_ASSERT_EQUAL_MESSAGE( CKR_OK, xResult, "Failed to destroy credentials in test setup." );
-        xCurrentCredentials = eNone;
-
-        /* Create a public key. */
-        xResult = xProvisionPublicKey( xGlobalSession,
-                                       ( uint8_t * ) cValidRSAPublicKey,
-                                       sizeof( cValidRSAPublicKey ),
-                                       CKK_RSA,
-                                       ( uint8_t * ) PKCS11_TEST_LABEL_DEVICE_PUBLIC_KEY_FOR_TLS,
-                                       pxPublicKeyHandle );
-
-        TEST_ASSERT_EQUAL_MESSAGE( CKR_OK, xResult, "Failed to create RSA public key." );
-        TEST_ASSERT_NOT_EQUAL_MESSAGE( CK_INVALID_HANDLE, *pxPublicKeyHandle, "Invalid object handle returned for RSA public key." );
-
-        /* Create a private key. */
-        xResult = xProvisionPrivateKey( xGlobalSession,
-                                        ( uint8_t * ) cValidRSAPrivateKey,
-                                        sizeof( cValidRSAPrivateKey ),
-                                        ( uint8_t * ) PKCS11_TEST_LABEL_DEVICE_PRIVATE_KEY_FOR_TLS,
-                                        pxPrivateKeyHandle );
-
-        TEST_ASSERT_EQUAL_MESSAGE( CKR_OK, xResult, "Failed to create RSA private key." );
-        TEST_ASSERT_NOT_EQUAL_MESSAGE( CK_INVALID_HANDLE, *pxPrivateKeyHandle, "Invalid object handle returned for RSA private key." );
-
-        /* Create a certificate. */
-        xResult = xProvisionCertificate( xGlobalSession,
-                                         ( uint8_t * ) cValidRSACertificate,
-                                         sizeof( cValidRSACertificate ),
-                                         ( uint8_t * ) PKCS11_TEST_LABEL_DEVICE_CERTIFICATE_FOR_TLS,
-                                         pxCertificateHandle );
-
-        TEST_ASSERT_EQUAL_MESSAGE( CKR_OK, xResult, "Failed to create RSA certificate." );
-        TEST_ASSERT_NOT_EQUAL_MESSAGE( CK_INVALID_HANDLE, *pxCertificateHandle, "Invalid object handle returned for RSA certificate." );
-        xCurrentCredentials = eRsaTest;
+        prvProvisionRsaCredentialsWithKeyImport( pxPrivateKeyHandle, pxCertificateHandle, pxPublicKeyHandle );
     }
     else
     {
-        xResult = xFindObjectWithLabelAndClass( xGlobalSession,
-                                                PKCS11_TEST_LABEL_DEVICE_PRIVATE_KEY_FOR_TLS,
-                                                sizeof( PKCS11_TEST_LABEL_DEVICE_PRIVATE_KEY_FOR_TLS ) - 1,
-                                                CKO_PRIVATE_KEY,
-                                                pxPrivateKeyHandle );
-        TEST_ASSERT_EQUAL_MESSAGE( CKR_OK, xResult, "Failed to find RSA private key." );
-        TEST_ASSERT_NOT_EQUAL_MESSAGE( CK_INVALID_HANDLE, *pxPrivateKeyHandle, "Invalid object handle found for RSA private key." );
-
-        xResult = xFindObjectWithLabelAndClass( xGlobalSession,
-                                                PKCS11_TEST_LABEL_DEVICE_CERTIFICATE_FOR_TLS,
-                                                sizeof( PKCS11_TEST_LABEL_DEVICE_CERTIFICATE_FOR_TLS ) - 1,
-                                                CKO_CERTIFICATE,
-                                                pxCertificateHandle );
-        TEST_ASSERT_EQUAL_MESSAGE( CKR_OK, xResult, "Failed to find RSA certificate." );
-        TEST_ASSERT_NOT_EQUAL_MESSAGE( CK_INVALID_HANDLE, *pxCertificateHandle, "Invalid object handle found for RSA certificate." );
+        /* Do nothing for the preprovision test cases. */
     }
 }
 
@@ -1345,10 +1351,8 @@ TEST_GROUP_RUNNER( Full_PKCS11_RSA )
         RUN_TEST_CASE( Full_PKCS11_RSA, AFQP_FindObjectMultiThread );
         RUN_TEST_CASE( Full_PKCS11_RSA, AFQP_GetAttributeValueMultiThread );
 
-        #if ( PKCS11_TEST_PREPROVISIONED_SUPPORT != 1 )
-            /* Always destroy objects last. */
-            RUN_TEST_CASE( Full_PKCS11_RSA, AFQP_DestroyObject );
-        #endif
+        /* Always destroy objects last. */
+        RUN_TEST_CASE( Full_PKCS11_RSA, AFQP_DestroyObject );
     #endif /* if ( PKCS11_TEST_RSA_KEY_SUPPORT == 1 ) */
 }
 
@@ -1367,14 +1371,7 @@ TEST( Full_PKCS11_RSA, AFQP_CreateObject )
         CK_OBJECT_HANDLE xJITPCertificateHandle = CK_INVALID_HANDLE;
     #endif /* if ( pkcs11configJITP_CODEVERIFY_ROOT_CERT_SUPPORTED == 1 ) */
 
-    if( xCurrentCredentials != eNone )
-    {
-        xResult = prvDestroyTestCredentials();
-        TEST_ASSERT_EQUAL_MESSAGE( CKR_OK, xResult, "Failed to destroy credentials in test setup." );
-        xCurrentCredentials = eNone;
-    }
-
-    prvProvisionRsaTestCredentials( &xPrivateKeyHandle, &xPublicKeyHandle, &xCertificateHandle );
+    prvProvisionRsaCredentialsWithKeyImport( &xPrivateKeyHandle, &xPublicKeyHandle, &xCertificateHandle );
 
     #if ( pkcs11configJITP_CODEVERIFY_ROOT_CERT_SUPPORTED == 1 )
         xResult = xProvisionCertificate( xGlobalSession,
@@ -1479,15 +1476,11 @@ static void prvFindObjectMultiThreadTask( void * pvParameters )
 
 /*-----------------------------------------------------------*/
 
-/* Different session trying to find token objects. */
-TEST( Full_PKCS11_RSA, AFQP_FindObjectMultiThread )
+static void prvTestRsaFindObjectMultiThread( provisionMethod_t testProvisionMethod )
 {
     CK_RV xResult;
     uint32_t xTaskNumber;
     CK_SESSION_HANDLE xSessionHandle[ PKCS11_TEST_MULTI_THREAD_TASK_COUNT ];
-    CK_OBJECT_HANDLE xPrivateKey;
-    CK_OBJECT_HANDLE xPublicKey;
-    CK_OBJECT_HANDLE xCertificate;
 
     for( xTaskNumber = 0; xTaskNumber < PKCS11_TEST_MULTI_THREAD_TASK_COUNT; xTaskNumber++ )
     {
@@ -1501,8 +1494,6 @@ TEST( Full_PKCS11_RSA, AFQP_FindObjectMultiThread )
         xGlobalTaskParams[ xTaskNumber ].pvTaskData = &xSessionHandle[ xTaskNumber ];
     }
 
-    prvProvisionRsaTestCredentials( &xPrivateKey, &xPublicKey, &xCertificate );
-
     prvMultiThreadHelper( ( void * ) prvFindObjectMultiThreadTask );
 
     for( xTaskNumber = 0; xTaskNumber < PKCS11_TEST_MULTI_THREAD_TASK_COUNT; xTaskNumber++ )
@@ -1514,7 +1505,28 @@ TEST( Full_PKCS11_RSA, AFQP_FindObjectMultiThread )
 
 /*-----------------------------------------------------------*/
 
-TEST( Full_PKCS11_RSA, AFQP_GetAttributeValue )
+/* Different session trying to find token objects. */
+TEST( Full_PKCS11_RSA, AFQP_FindObjectMultiThread )
+{
+    uint32_t provisionIndex;
+    CK_OBJECT_HANDLE xPrivateKeyHandle = CK_INVALID_HANDLE;
+    CK_OBJECT_HANDLE xCertificateHandle = CK_INVALID_HANDLE;
+    CK_OBJECT_HANDLE xPublicKeyHandle = CK_INVALID_HANDLE;
+
+    for( provisionIndex = 0; provisionIndex < xNumTestProvisionMethod; provisionIndex++ )
+    {
+        prvProvisionRsaTestCredentials( pkcs11TestRsaProvisionMethod[ provisionIndex ],
+                                        &xPrivateKeyHandle,
+                                        &xCertificateHandle,
+                                        &xPublicKeyHandle );
+
+        prvTestRsaFindObjectMultiThread( pkcs11TestRsaProvisionMethod[ provisionIndex ] );
+    }
+}
+
+/*-----------------------------------------------------------*/
+
+static void prvTestRsaGetAttributeValue( provisionMethod_t testProvisionMethod )
 {
     CK_RV xResult;
     CK_ATTRIBUTE xTemplate;
@@ -1595,7 +1607,27 @@ TEST( Full_PKCS11_RSA, AFQP_GetAttributeValue )
 
 /*-----------------------------------------------------------*/
 
-TEST( Full_PKCS11_RSA, AFQP_Sign )
+TEST( Full_PKCS11_RSA, AFQP_GetAttributeValue )
+{
+    uint32_t provisionIndex;
+    CK_OBJECT_HANDLE xPrivateKeyHandle = CK_INVALID_HANDLE;
+    CK_OBJECT_HANDLE xCertificateHandle = CK_INVALID_HANDLE;
+    CK_OBJECT_HANDLE xPublicKeyHandle = CK_INVALID_HANDLE;
+
+    for( provisionIndex = 0; provisionIndex < xNumTestProvisionMethod; provisionIndex++ )
+    {
+        prvProvisionRsaTestCredentials( pkcs11TestRsaProvisionMethod[ provisionIndex ],
+                                        &xPrivateKeyHandle,
+                                        &xCertificateHandle,
+                                        &xPublicKeyHandle );
+
+        prvTestRsaGetAttributeValue( pkcs11TestRsaProvisionMethod[ provisionIndex ] );
+    }
+}
+
+/*-----------------------------------------------------------*/
+
+static void prvTestRsaSign( provisionMethod_t testProvisionMethod )
 {
     CK_RV xResult;
     CK_OBJECT_HANDLE xPrivateKeyHandle;
@@ -1607,7 +1639,7 @@ TEST( Full_PKCS11_RSA, AFQP_Sign )
     CK_ULONG xSignatureLength;
     CK_BYTE xHashPlusOid[ pkcs11RSA_SIGNATURE_INPUT_LENGTH ];
 
-    prvProvisionRsaTestCredentials( &xPrivateKeyHandle, &xPublicKeyHandle, &xCertificateHandle );
+    prvFindObjectTest( &xPrivateKeyHandle, &xCertificateHandle, &xPublicKeyHandle );
 
     xResult = vAppendSHA256AlgorithmIdentifierSequence( xHashedMessage, xHashPlusOid );
     TEST_ASSERT_EQUAL_MESSAGE( CKR_OK, xResult, "Failed to append hash algorithm to RSA signature material." );
@@ -1654,6 +1686,25 @@ TEST( Full_PKCS11_RSA, AFQP_Sign )
 
 /*-----------------------------------------------------------*/
 
+TEST( Full_PKCS11_RSA, AFQP_Sign )
+{
+    uint32_t provisionIndex;
+    CK_OBJECT_HANDLE xPrivateKeyHandle = CK_INVALID_HANDLE;
+    CK_OBJECT_HANDLE xCertificateHandle = CK_INVALID_HANDLE;
+    CK_OBJECT_HANDLE xPublicKeyHandle = CK_INVALID_HANDLE;
+
+    for( provisionIndex = 0; provisionIndex < xNumTestProvisionMethod; provisionIndex++ )
+    {
+        prvProvisionRsaTestCredentials( pkcs11TestRsaProvisionMethod[ provisionIndex ],
+                                        &xPrivateKeyHandle,
+                                        &xCertificateHandle,
+                                        &xPublicKeyHandle );
+
+        prvTestRsaSign( pkcs11TestRsaProvisionMethod[ provisionIndex ] );
+    }
+}
+
+/*-----------------------------------------------------------*/
 
 /* Thread function of AFQP_GetAttributeValueMultiThread test case. */
 static void prvRSAGetAttributeValueMultiThreadTask( void * pvParameters )
@@ -1705,8 +1756,7 @@ static void prvRSAGetAttributeValueMultiThreadTask( void * pvParameters )
 
 /*-----------------------------------------------------------*/
 
-/* Same & different PKCS #11 sessions asking for attribute values of the same 2 objects. */
-TEST( Full_PKCS11_RSA, AFQP_GetAttributeValueMultiThread )
+static void prvTestRsaGetAttributeValueMultiThread( provisionMethod_t testProvisionMethod )
 {
     CK_RV xResult;
     uint32_t xTaskNumber;
@@ -1739,6 +1789,27 @@ TEST( Full_PKCS11_RSA, AFQP_GetAttributeValueMultiThread )
     {
         xResult = pxGlobalFunctionList->C_CloseSession( xAttributeStruct[ xTaskNumber ].xSession );
         TEST_ASSERT_EQUAL_MESSAGE( CKR_OK, xResult, "Failed to close session." );
+    }
+}
+
+/*-----------------------------------------------------------*/
+
+/* Same & different PKCS #11 sessions asking for attribute values of the same 2 objects. */
+TEST( Full_PKCS11_RSA, AFQP_GetAttributeValueMultiThread )
+{
+    uint32_t provisionIndex;
+    CK_OBJECT_HANDLE xPrivateKeyHandle = CK_INVALID_HANDLE;
+    CK_OBJECT_HANDLE xCertificateHandle = CK_INVALID_HANDLE;
+    CK_OBJECT_HANDLE xPublicKeyHandle = CK_INVALID_HANDLE;
+
+    for( provisionIndex = 0; provisionIndex < xNumTestProvisionMethod; provisionIndex++ )
+    {
+        prvProvisionRsaTestCredentials( pkcs11TestRsaProvisionMethod[ provisionIndex ],
+                                        &xPrivateKeyHandle,
+                                        &xCertificateHandle,
+                                        &xPublicKeyHandle );
+
+        prvTestRsaGetAttributeValueMultiThread( pkcs11TestRsaProvisionMethod[ provisionIndex ] );
     }
 }
 
@@ -1829,12 +1900,35 @@ TEST( Full_PKCS11_RSA, AFQP_GenerateKeyPair )
 
 /*-----------------------------------------------------------*/
 
-TEST( Full_PKCS11_RSA, AFQP_DestroyObject )
+static void prvTestRsaDestroyObject( provisionMethod_t testProvisionMethod )
 {
     CK_RV xResult = CKR_OK;
 
-    xResult = prvDestroyTestCredentials();
-    TEST_ASSERT_EQUAL_MESSAGE( CKR_OK, xResult, "Failed to destroy RSA credentials." );
+    if( testProvisionMethod != eProvisionPreprovisioned )
+    {
+        xResult = prvDestroyTestCredentials();
+        TEST_ASSERT_EQUAL_MESSAGE( CKR_OK, xResult, "Failed to destroy RSA credentials." );
+    }
+}
+
+/*-----------------------------------------------------------*/
+
+TEST( Full_PKCS11_RSA, AFQP_DestroyObject )
+{
+    uint32_t provisionIndex;
+    CK_OBJECT_HANDLE xPrivateKeyHandle = CK_INVALID_HANDLE;
+    CK_OBJECT_HANDLE xCertificateHandle = CK_INVALID_HANDLE;
+    CK_OBJECT_HANDLE xPublicKeyHandle = CK_INVALID_HANDLE;
+
+    for( provisionIndex = 0; provisionIndex < xNumTestProvisionMethod; provisionIndex++ )
+    {
+        prvProvisionRsaTestCredentials( pkcs11TestRsaProvisionMethod[ provisionIndex ],
+                                        &xPrivateKeyHandle,
+                                        &xCertificateHandle,
+                                        &xPublicKeyHandle );
+
+        prvTestRsaDestroyObject( pkcs11TestRsaProvisionMethod[ provisionIndex ] );
+    }
 }
 
 /*--------------------------------------------------------*/
