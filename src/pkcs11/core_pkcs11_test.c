@@ -1412,6 +1412,7 @@ static void prvFindObjectMultiThreadTask( void * pvParameters )
 
     for( xCount = 0; xCount < PKCS11_TEST_MULTI_THREAD_LOOP_COUNT; xCount++ )
     {
+        /* Find the private key object. */
         xResult = xFindObjectWithLabelAndClass( xSession,
                                                 PKCS11_TEST_LABEL_DEVICE_PRIVATE_KEY_FOR_TLS,
                                                 sizeof( PKCS11_TEST_LABEL_DEVICE_PRIVATE_KEY_FOR_TLS ) - 1,
@@ -1431,6 +1432,7 @@ static void prvFindObjectMultiThreadTask( void * pvParameters )
             break;
         }
 
+        /* Find the certificate object. */
         xResult = xFindObjectWithLabelAndClass( xSession,
                                                 PKCS11_TEST_LABEL_DEVICE_CERTIFICATE_FOR_TLS,
                                                 sizeof( PKCS11_TEST_LABEL_DEVICE_CERTIFICATE_FOR_TLS ) - 1,
@@ -1449,6 +1451,26 @@ static void prvFindObjectMultiThreadTask( void * pvParameters )
             xResult = CKR_OBJECT_HANDLE_INVALID; /* Mark xResult so that test fails. */
             break;
         }
+
+        /* Find the public key object. */
+        xResult = xFindObjectWithLabelAndClass( xSession,
+                                                PKCS11_TEST_LABEL_DEVICE_PUBLIC_KEY_FOR_TLS,
+                                                sizeof( PKCS11_TEST_LABEL_DEVICE_PUBLIC_KEY_FOR_TLS ) - 1,
+                                                CKO_PUBLIC_KEY,
+                                                &xHandle );
+
+        if( xResult != CKR_OK )
+        {
+            TEST_PRINTF( "FindObject multithreaded task failed to find public key.  Error: %ld  Count: %d \r\n", xResult, xCount );
+            break;
+        }
+
+        if( ( xHandle == CK_INVALID_HANDLE ) )
+        {
+            TEST_PRINTF( "FindObject multi-thread task failed to find public key.  Invalid object handle returned. Count: %d \r\n", xCount );
+            xResult = CKR_OBJECT_HANDLE_INVALID; /* Mark xResult so that test fails. */
+            break;
+        }
     }
 
     /* Report the result of the loop. */
@@ -1462,6 +1484,9 @@ static void prvTestRsaFindObjectMultiThread( provisionMethod_t testProvisionMeth
     CK_RV xResult;
     uint32_t xTaskNumber;
     CK_SESSION_HANDLE xSessionHandle[ PKCS11_TEST_MULTI_THREAD_TASK_COUNT ];
+    CK_OBJECT_HANDLE xPrivateKeyHandle;
+    CK_OBJECT_HANDLE xPublicKeyHandle;
+    CK_OBJECT_HANDLE xCertificateHandle;
 
     for( xTaskNumber = 0; xTaskNumber < PKCS11_TEST_MULTI_THREAD_TASK_COUNT; xTaskNumber++ )
     {
@@ -1474,6 +1499,8 @@ static void prvTestRsaFindObjectMultiThread( provisionMethod_t testProvisionMeth
 
         xGlobalTaskParams[ xTaskNumber ].pvTaskData = &xSessionHandle[ xTaskNumber ];
     }
+
+    prvFindObjectTest( &xPrivateKeyHandle, &xCertificateHandle, &xPublicKeyHandle );
 
     prvMultiThreadHelper( ( void * ) prvFindObjectMultiThreadTask );
 
@@ -2596,6 +2623,9 @@ static void prvTestEcFindObjectMultiThread( provisionMethod_t testProvisonMethod
     CK_RV xResult;
     uint32_t xTaskNumber;
     CK_SESSION_HANDLE xSessionHandle[ PKCS11_TEST_MULTI_THREAD_TASK_COUNT ];
+    CK_OBJECT_HANDLE xPrivateKeyHandle;
+    CK_OBJECT_HANDLE xPublicKeyHandle;
+    CK_OBJECT_HANDLE xCertificateHandle;
 
     for( xTaskNumber = 0; xTaskNumber < PKCS11_TEST_MULTI_THREAD_TASK_COUNT; xTaskNumber++ )
     {
@@ -2608,6 +2638,8 @@ static void prvTestEcFindObjectMultiThread( provisionMethod_t testProvisonMethod
 
         xGlobalTaskParams[ xTaskNumber ].pvTaskData = &xSessionHandle[ xTaskNumber ];
     }
+
+    prvFindObjectTest( &xPrivateKeyHandle, &xCertificateHandle, &xPublicKeyHandle );
 
     prvMultiThreadHelper( ( void * ) prvFindObjectMultiThreadTask );
 
