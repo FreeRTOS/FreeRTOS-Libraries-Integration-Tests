@@ -98,32 +98,42 @@
  * #define TRANSPORT_CLIENT_PRIVATE_KEY  NULL
  */
 
-/*
- * @brief Set to 1 if RSA private keys are supported by the platform.  0 if not.
+/**
+ * @brief The PKCS #11 supports RSA key function.
+ *
+ * Set to 1 if RSA private keys are supported by the platform. 0 if not.
  *
  * #define PKCS11_TEST_RSA_KEY_SUPPORT                     ( 1 )
  */
 
-/*
- * @brief Set to 1 if elliptic curve private keys are supported by the platform.  0 if not.
+/**
+ * @brief The PKCS #11 supports EC key function.
+ *
+ * Set to 1 if elliptic curve private keys are supported by the platform. 0 if not.
  *
  * #define PKCS11_TEST_EC_KEY_SUPPORT                      ( 1 )
  */
 
-/*
- * @brief Set to 1 if importing device private key via C_CreateObject is supported.  0 if not.
+/**
+ * @brief The PKCS #11 supports import key method.
+ *
+ * Set to 1 if importing device private key via C_CreateObject is supported. 0 if not.
  *
  * #define PKCS11_TEST_IMPORT_PRIVATE_KEY_SUPPORT          ( 1 )
  */
 
-/*
- * @brief Set to 1 if generating a device private-public key pair via C_GenerateKeyPair. 0 if not.
+/**
+ * @brief The PKCS #11 supports generate keypair method.
+ *
+ * Set to 1 if generating a device private-public key pair via C_GenerateKeyPair. 0 if not.
  *
  * #define PKCS11_TEST_GENERATE_KEYPAIR_SUPPORT            ( 1 )
  */
 
-/*
- * @brief Set to 1 if preprovisioning is supported.
+/**
+ * @brief The PKCS #11 supports preprovisioning method.
+ *
+ * Set to 1 if preprovisioning is supported.
  *
  * #define PKCS11_TEST_PREPROVISIONED_SUPPORT              ( 0 )
  */
@@ -159,13 +169,22 @@
  */
 
 /**
+ * @brief The PKCS #11 supports storage for JITP.
+ *
+ * The PKCS11 test will verify the following labels with create/destory objects.
+ * PKCS11_TEST_LABEL_CODE_VERIFICATION_KEY
+ * PKCS11_TEST_LABEL_JITP_CERTIFICATE
+ * PKCS11_TEST_LABEL_ROOT_CERTIFICATE
+ * Set to 1 if PKCS #11 supports storage for JITP certificate, code verify certificate,
+ * and trusted server root certificate.
+ *
+ * #define PKCS11_TEST_JITP_CODEVERIFY_ROOT_CERT_SUPPORTED pkcs11configJITP_CODEVERIFY_ROOT_CERT_SUPPORTED
+ */
+
+/**
  * @brief The PKCS #11 label for the object to be used for code verification.
  *
- * Used by over-the-air update code to verify an incoming signed image.
- *
- * For devices with on-chip storage, this should match the non-test label.
- * For devices with secure elements or hardware limitations, this may be defined
- * to a different label to preserve AWS IoT credentials for other test suites.
+ * This label has to be defined if PKCS11_TEST_JITP_CODEVERIFY_ROOT_CERT_SUPPORTED is set to 1.
  *
  * #define PKCS11_TEST_LABEL_CODE_VERIFICATION_KEY    pkcs11configLABEL_CODE_VERIFICATION_KEY
  */
@@ -173,19 +192,15 @@
 /**
  * @brief The PKCS #11 label for Just-In-Time-Provisioning.
  *
- * The certificate corresponding to the issuer of the device certificate
- * (pkcs11configLABEL_DEVICE_CERTIFICATE_FOR_TLS) when using the JITR or
- * JITP flow.
- *
- * For devices with on-chip storage, this should match the non-test label.
- * For devices with secure elements or hardware limitations, this may be defined
- * to a different label to preserve AWS IoT credentials for other test suites.
+ * This label has to be defined if PKCS11_TEST_JITP_CODEVERIFY_ROOT_CERT_SUPPORTED is set to 1.
  *
  * #define PKCS11_TEST_LABEL_JITP_CERTIFICATE    pkcs11configLABEL_JITP_CERTIFICATE
  */
 
 /**
  * @brief The PKCS #11 label for the AWS Trusted Root Certificate.
+ *
+ * This label has to be defined if PKCS11_TEST_JITP_CODEVERIFY_ROOT_CERT_SUPPORTED is set to 1.
  *
  * #define PKCS11_TEST_LABEL_ROOT_CERTIFICATE    pkcs11configLABEL_ROOT_CERTIFICATE
  */

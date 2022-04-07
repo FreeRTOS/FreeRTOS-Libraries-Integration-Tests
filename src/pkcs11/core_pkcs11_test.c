@@ -68,27 +68,6 @@
 #define PKCS11_TEST_SLOT_NUMBER    ( 0 )
 
 /**
- * @brief The PKCS #11 label for the object to be used for code verification.
- */
-#ifndef PKCS11_TEST_LABEL_CODE_VERIFICATION_KEY
-    #define PKCS11_TEST_LABEL_CODE_VERIFICATION_KEY    pkcs11configLABEL_CODE_VERIFICATION_KEY
-#endif
-
-/**
- * @brief The PKCS #11 label for Just-In-Time-Provisioning.
- */
-#ifndef PKCS11_TEST_LABEL_JITP_CERTIFICATE
-    #define PKCS11_TEST_LABEL_JITP_CERTIFICATE    pkcs11configLABEL_JITP_CERTIFICATE
-#endif
-
-/**
- * @brief The PKCS #11 label for the AWS Trusted Root Certificate.
- */
-#ifndef PKCS11_TEST_LABEL_ROOT_CERTIFICATE
-    #define PKCS11_TEST_LABEL_ROOT_CERTIFICATE    pkcs11configLABEL_ROOT_CERTIFICATE
-#endif
-
-/**
  * @brief Number of simultaneous tasks for multithreaded tests.
  *
  * Each task consumes both stack and heap space, which may cause memory allocation
@@ -428,7 +407,7 @@ static CK_RV prvDestroyTestCredentials( void )
         ( CK_BYTE * ) PKCS11_TEST_LABEL_DEVICE_CERTIFICATE_FOR_TLS,
         ( CK_BYTE * ) PKCS11_TEST_LABEL_DEVICE_PRIVATE_KEY_FOR_TLS,
         ( CK_BYTE * ) PKCS11_TEST_LABEL_DEVICE_PUBLIC_KEY_FOR_TLS,
-        #if ( pkcs11configJITP_CODEVERIFY_ROOT_CERT_SUPPORTED == 1 )
+        #if ( PKCS11_TEST_JITP_CODEVERIFY_ROOT_CERT_SUPPORTED == 1 )
             ( CK_BYTE * ) PKCS11_TEST_LABEL_CODE_VERIFICATION_KEY,
             ( CK_BYTE * ) PKCS11_TEST_LABEL_JITP_CERTIFICATE,
             ( CK_BYTE * ) PKCS11_TEST_LABEL_ROOT_CERTIFICATE
@@ -439,7 +418,7 @@ static CK_RV prvDestroyTestCredentials( void )
         CKO_CERTIFICATE,
         CKO_PRIVATE_KEY,
         CKO_PUBLIC_KEY,
-        #if ( pkcs11configJITP_CODEVERIFY_ROOT_CERT_SUPPORTED == 1 )
+        #if ( PKCS11_TEST_JITP_CODEVERIFY_ROOT_CERT_SUPPORTED == 1 )
             CKO_PUBLIC_KEY,
             CKO_CERTIFICATE,
             CKO_CERTIFICATE
@@ -1365,15 +1344,15 @@ TEST( Full_PKCS11_RSA, AFQP_CreateObject )
     CK_OBJECT_HANDLE xPublicKeyHandle = CK_INVALID_HANDLE;
     CK_OBJECT_HANDLE xCertificateHandle = CK_INVALID_HANDLE;
 
-    #if ( pkcs11configJITP_CODEVERIFY_ROOT_CERT_SUPPORTED == 1 )
+    #if ( PKCS11_TEST_JITP_CODEVERIFY_ROOT_CERT_SUPPORTED == 1 )
         CK_OBJECT_HANDLE xRootCertificateHandle = CK_INVALID_HANDLE;
         CK_OBJECT_HANDLE xCodeSignPublicKeyHandle = CK_INVALID_HANDLE;
         CK_OBJECT_HANDLE xJITPCertificateHandle = CK_INVALID_HANDLE;
-    #endif /* if ( pkcs11configJITP_CODEVERIFY_ROOT_CERT_SUPPORTED == 1 ) */
+    #endif /* if ( PKCS11_TEST_JITP_CODEVERIFY_ROOT_CERT_SUPPORTED == 1 ) */
 
     prvProvisionRsaCredentialsWithKeyImport( &xPrivateKeyHandle, &xPublicKeyHandle, &xCertificateHandle );
 
-    #if ( pkcs11configJITP_CODEVERIFY_ROOT_CERT_SUPPORTED == 1 )
+    #if ( PKCS11_TEST_JITP_CODEVERIFY_ROOT_CERT_SUPPORTED == 1 )
         xResult = xProvisionCertificate( xGlobalSession,
                                          ( uint8_t * ) cValidRSACertificate,
                                          sizeof( cValidRSACertificate ),
@@ -1401,7 +1380,7 @@ TEST( Full_PKCS11_RSA, AFQP_CreateObject )
         TEST_ASSERT_EQUAL_MESSAGE( CKR_OK, xResult, "Failed to create RSA code sign public key." );
         TEST_ASSERT_NOT_EQUAL_MESSAGE( CK_INVALID_HANDLE, xCodeSignPublicKeyHandle,
                                        "Invalid object handle returned for RSA code sign public key." );
-    #endif /* if ( pkcs11configJITP_CODEVERIFY_ROOT_CERT_SUPPORTED == 1 ) */
+    #endif /* if ( PKCS11_TEST_JITP_CODEVERIFY_ROOT_CERT_SUPPORTED == 1 ) */
 }
 
 /*-----------------------------------------------------------*/
@@ -2103,12 +2082,12 @@ TEST( Full_PKCS11_EC, AFQP_CreateObject )
     CK_OBJECT_HANDLE xCertificateHandle;
     CK_OBJECT_HANDLE xPublicKeyHandle;
 
-    #if ( pkcs11configJITP_CODEVERIFY_ROOT_CERT_SUPPORTED == 1 )
+    #if ( PKCS11_TEST_JITP_CODEVERIFY_ROOT_CERT_SUPPORTED == 1 )
         CK_RV xResult;
         CK_OBJECT_HANDLE xRootCertificateHandle;
         CK_OBJECT_HANDLE xCodeSignPublicKeyHandle;
         CK_OBJECT_HANDLE xJITPCertificateHandle;
-    #endif /* if ( pkcs11configJITP_CODEVERIFY_ROOT_CERT_SUPPORTED == 1 ) */
+    #endif /* if ( PKCS11_TEST_JITP_CODEVERIFY_ROOT_CERT_SUPPORTED == 1 ) */
 
     /* Ignore result as this might fail if the credentials did not exist. */
     prvDestroyTestCredentials();
@@ -2117,7 +2096,7 @@ TEST( Full_PKCS11_EC, AFQP_CreateObject )
                                             &xCertificateHandle,
                                             &xPublicKeyHandle );
 
-    #if ( pkcs11configJITP_CODEVERIFY_ROOT_CERT_SUPPORTED == 1 )
+    #if ( PKCS11_TEST_JITP_CODEVERIFY_ROOT_CERT_SUPPORTED == 1 )
         xResult = xProvisionCertificate( xGlobalSession,
                                          ( uint8_t * ) cValidECDSACertificate,
                                          sizeof( cValidECDSACertificate ),
@@ -2142,7 +2121,7 @@ TEST( Full_PKCS11_EC, AFQP_CreateObject )
                                        &xCodeSignPublicKeyHandle );
         TEST_ASSERT_EQUAL_MESSAGE( CKR_OK, xResult, "Failed to create EC code sign public key." );
         TEST_ASSERT_NOT_EQUAL_MESSAGE( CK_INVALID_HANDLE, xCodeSignPublicKeyHandle, "Invalid object handle returned for EC code sign public key." );
-    #endif /* if ( pkcs11configJITP_CODEVERIFY_ROOT_CERT_SUPPORTED == 1 ) */
+    #endif /* if ( PKCS11_TEST_JITP_CODEVERIFY_ROOT_CERT_SUPPORTED == 1 ) */
 }
 
 /*-----------------------------------------------------------*/
