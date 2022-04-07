@@ -65,7 +65,7 @@
  *
  * corePKCS11 utilities are also used in this test. Currenlty, the slot number has to be 0.
  */
-#define PKCS11_TEST_SLOT_NUMBER    ( 0 )
+#define PKCS11_TEST_SLOT_NUMBER                ( 0 )
 
 /**
  * @brief Number of simultaneous tasks for multithreaded tests.
@@ -1331,7 +1331,9 @@ TEST_GROUP_RUNNER( Full_PKCS11_RSA )
         RUN_TEST_CASE( Full_PKCS11_RSA, AFQP_GetAttributeValueMultiThread );
 
         /* Always destroy objects last. */
-        RUN_TEST_CASE( Full_PKCS11_RSA, AFQP_DestroyObject );
+        #if ( PKCS11_TEST_PREPROVISIONED_SUPPORT != 1 )
+            RUN_TEST_CASE( Full_PKCS11_RSA, AFQP_DestroyObject );
+        #endif
     #endif /* if ( PKCS11_TEST_RSA_KEY_SUPPORT == 1 ) */
 }
 
@@ -1963,7 +1965,9 @@ TEST_GROUP_RUNNER( Full_PKCS11_EC )
         RUN_TEST_CASE( Full_PKCS11_EC, AFQP_GetAttributeValueMultiThread );
         RUN_TEST_CASE( Full_PKCS11_EC, AFQP_SignVerifyMultiThread );
 
-        RUN_TEST_CASE( Full_PKCS11_EC, AFQP_DestroyObject );
+        #if ( PKCS11_TEST_PREPROVISIONED_SUPPORT != 1 )
+            RUN_TEST_CASE( Full_PKCS11_EC, AFQP_DestroyObject );
+        #endif
     #endif /* if ( PKCS11_TEST_EC_KEY_SUPPORT == 1 ) */
 }
 
