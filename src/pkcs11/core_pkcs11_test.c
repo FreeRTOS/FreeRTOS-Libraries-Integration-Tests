@@ -982,11 +982,6 @@ TEST( Full_PKCS11_Capabilities, AFQP_Capabilities )
         TEST_ASSERT_TRUE( MechanismInfo.ulMaxKeySize >= pkcs11RSA_2048_MODULUS_BITS &&
                           MechanismInfo.ulMinKeySize <= pkcs11RSA_2048_MODULUS_BITS );
 
-        /* Check consistency with static configuration. */
-        #if ( 0 == PKCS11_TEST_RSA_KEY_SUPPORT )
-            TEST_FAIL_MESSAGE( "Static and runtime configuration for key generation support are inconsistent." );
-        #endif
-
         TEST_PRINTF( "%s", "The PKCS #11 module supports RSA signing.\r\n" );
     }
 
@@ -1000,11 +995,6 @@ TEST( Full_PKCS11_Capabilities, AFQP_Capabilities )
 
         TEST_ASSERT_TRUE( MechanismInfo.ulMaxKeySize >= pkcs11ECDSA_P256_KEY_BITS &&
                           MechanismInfo.ulMinKeySize <= pkcs11ECDSA_P256_KEY_BITS );
-
-        /* Check consistency with static configuration. */
-        #if ( 0 == PKCS11_TEST_EC_KEY_SUPPORT )
-            TEST_FAIL_MESSAGE( "Static and runtime configuration for key generation support are inconsistent." );
-        #endif
 
         TEST_PRINTF( "%s", "The PKCS #11 module supports ECDSA.\r\n" );
     }
@@ -1023,21 +1013,6 @@ TEST( Full_PKCS11_Capabilities, AFQP_Capabilities )
 
             xSupportsKeyGen = CK_TRUE;
             TEST_PRINTF( "%s", "The PKCS #11 module supports elliptic-curve key generation.\r\n" );
-        }
-
-        /* Check for consistency between static configuration and runtime key
-         * generation settings. */
-        if( CK_TRUE == xSupportsKeyGen )
-        {
-            #if ( 0 == PKCS11_TEST_GENERATE_KEYPAIR_SUPPORT )
-                TEST_FAIL_MESSAGE( "Static and runtime configuration for key generation support are inconsistent." );
-            #endif
-        }
-        else
-        {
-            #if ( 1 == PKCS11_TEST_GENERATE_KEYPAIR_SUPPORT )
-                TEST_FAIL_MESSAGE( "Static and runtime configuration for key generation support are inconsistent." );
-            #endif
         }
     #endif /* if ( PKCS11_TEST_PREPROVISIONED_SUPPORT != 1 ) */
 
