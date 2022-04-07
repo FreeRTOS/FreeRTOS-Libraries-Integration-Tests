@@ -1353,9 +1353,12 @@ TEST_GROUP_RUNNER( Full_PKCS11_RSA )
          */
 
         RUN_TEST_CASE( Full_PKCS11_RSA, AFQP_FindObject );
-        RUN_TEST_CASE( Full_PKCS11_RSA, AFQP_FindObjectMultiThread );
         RUN_TEST_CASE( Full_PKCS11_RSA, AFQP_GetAttributeValue );
         RUN_TEST_CASE( Full_PKCS11_RSA, AFQP_Sign );
+
+        /* RSA multi-threaded test. */
+        RUN_TEST_CASE( Full_PKCS11_RSA, AFQP_FindObjectMultiThread );
+        RUN_TEST_CASE( Full_PKCS11_RSA, AFQP_GetAttributeValueMultiThread );
 
         #if ( PKCS11_TEST_PREPROVISIONED_SUPPORT != 1 )
             /* Always destroy objects last. */
@@ -1662,6 +1665,103 @@ TEST( Full_PKCS11_RSA, AFQP_Sign )
     }
 
     mbedtls_pk_free( &xMbedPkContext );
+}
+
+/*-----------------------------------------------------------*/
+
+
+/* Thread function of AFQP_GetAttributeValueMultiThread test case. */
+static void prvRSAGetAttributeValueMultiThreadTask( void * pvParameters )
+{
+    MultithreadTaskParams_t * pxMultiTaskParam = pvParameters;
+    CK_RV xResult;
+    CK_ATTRIBUTE xTemplate;
+    CK_OBJECT_HANDLE xCertificateHandle = CK_INVALID_HANDLE;
+    CK_OBJECT_HANDLE xPrivateKeyHandle = CK_INVALID_HANDLE;
+    CK_BYTE xCertificateValue[ CERTIFICATE_VALUE_LENGTH ];
+    CK_BYTE xKeyComponent[ ( pkcs11RSA_2048_MODULUS_BITS / 8 ) + 1 ] = { 0 };
+    uint32_t xCount;
+
+    if( TEST_PROTECT() )
+    {
+        for( xCount = 0; xCount < PKCS11_TEST_MULTI_THREAD_LOOP_COUNT; xCount++ )
+        {
+            /* Get the certificate handle. */
+            xResult = xFindObjectWithLabelAndClass( xGlobalSession,
+                                                    PKCS11_TEST_LABEL_DEVICE_CERTIFICATE_FOR_TLS,
+                                                    sizeof( PKCS11_TEST_LABEL_DEVICE_CERTIFICATE_FOR_TLS ) - 1,
+                                                    CKO_CERTIFICATE,
+                                                    &xCertificateHandle );
+            TEST_ASSERT_EQUAL_MESSAGE( CKR_OK, xResult, "Failed to find RSA certificate." );
+            TEST_ASSERT_NOT_EQUAL_MESSAGE( CK_INVALID_HANDLE, xCertificateHandle, "Invalid object handle found for RSA certificate." );
+
+            /* Get the certificate value length. */
+            xTemplate.type = CKA_VALUE;
+            xTemplate.pValue = NULL;
+            xTemplate.ulValueLen = 0;
+            xResult = pxGlobalFunctionList->C_GetAttributeValue( xGlobalSession, xCertificateHandle, &xTemplate, 1 );
+            TEST_ASSERT_EQUAL_MESSAGE( CERTIFICATE_VALUE_LENGTH, xTemplate.ulValueLen, "GetAttributeValue returned incorrect length of RSA certificate value" );
+
+            /* Get the certificate value. */
+            xTemplate.pValue = xCertificateValue;
+            xResult = pxGlobalFunctionList->C_GetAttributeValue( xGlobalSession, xCertificateHandle, &xTemplate, 1 );
+            TEST_ASSERT_EQUAL_MESSAGE( CKR_OK, xResult, "Failed to get RSA certificate value" );
+            TEST_ASSERT_EQUAL_MESSAGE( CERTIFICATE_VALUE_LENGTH, xTemplate.ulValueLen, "GetAttributeValue returned incorrect length of RSA certificate value" );
+
+            /* Get the private key handle. */
+            xResult = xFindObjectWithLabelAndClass( xGlobalSession,
+                                                    PKCS11_TEST_LABEL_DEVICE_PRIVATE_KEY_FOR_TLS,
+                                                    sizeof( PKCS11_TEST_LABEL_DEVICE_PRIVATE_KEY_FOR_TLS ) - 1,
+                                                    CKO_PRIVATE_KEY,
+                                                    &xPrivateKeyHandle );
+            TEST_ASSERT_EQUAL_MESSAGE( CKR_OK, xResult, "Failed to find RSA private key." );
+            TEST_ASSERT_NOT_EQUAL_MESSAGE( CK_INVALID_HANDLE, xPrivateKeyHandle, "Invalid object handle found for RSA private key." );
+
+            /* Check that the private key cannot be retrieved. */
+            xTemplate.type = CKA_PRIVATE_EXPONENT;
+            xTemplate.pValue = xKeyComponent;
+            xTemplate.ulValueLen = sizeof( xKeyComponent );
+            xResult = pxGlobalFunctionList->C_GetAttributeValue( xGlobalSession, xPrivateKeyHandle, &xTemplate, 1 );
+            TEST_ASSERT_EQUAL_MESSAGE( CKR_ATTRIBUTE_SENSITIVE, xResult, "Incorrect error code retrieved when trying to obtain private key." );
+            TEST_ASSERT_EACH_EQUAL_INT8_MESSAGE( 0, xKeyComponent, sizeof( xKeyComponent ), "Private key bytes returned when they should not be." );
+
+            /* Reset the test result after retrieve private key attribute test. */
+            xResult = 0;
+        }
+    }
+
+    /* Report the result of the loop. */
+    pxMultiTaskParam->xTestResult = xResult;
+}
+
+/*-----------------------------------------------------------*/
+
+/* Same & different PKCS #11 sessions asking for attribute values of the same 2 objects. */
+TEST( Full_PKCS11_RSA, AFQP_GetAttributeValueMultiThread )
+{
+    CK_RV xResult;
+    uint32_t xTaskNumber;
+    CK_SESSION_HANDLE xSessionHandle[ PKCS11_TEST_MULTI_THREAD_TASK_COUNT ];
+
+    for( xTaskNumber = 0; xTaskNumber < PKCS11_TEST_MULTI_THREAD_TASK_COUNT; xTaskNumber++ )
+    {
+        xResult = xInitializePkcs11Session( &xSessionHandle[ xTaskNumber ] );
+
+        if( xResult != CKR_USER_ALREADY_LOGGED_IN )
+        {
+            TEST_ASSERT_EQUAL_MESSAGE( CKR_OK, xResult, "Failed to initialize PKCS #11 session." );
+        }
+
+        xGlobalTaskParams[ xTaskNumber ].pvTaskData = &xSessionHandle[ xTaskNumber ];
+    }
+
+    prvMultiThreadHelper( ( void * ) prvRSAGetAttributeValueMultiThreadTask );
+
+    for( xTaskNumber = 0; xTaskNumber < PKCS11_TEST_MULTI_THREAD_TASK_COUNT; xTaskNumber++ )
+    {
+        xResult = pxGlobalFunctionList->C_CloseSession( xSessionHandle[ xTaskNumber ] );
+        TEST_ASSERT_EQUAL_MESSAGE( CKR_OK, xResult, "Failed to close session." );
+    }
 }
 
 /*-----------------------------------------------------------*/
