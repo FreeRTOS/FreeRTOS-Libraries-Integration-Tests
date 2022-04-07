@@ -196,12 +196,7 @@ TEST( Full_OTA_PAL, otaPal_CloseFile_InvalidSignatureBlockWritten )
 
         /* Try to close the file. */
         xOtaStatus = otaPal_CloseFile( &xOtaFile );
-
-        if( ( OtaPalSignatureCheckFailed != OTA_PAL_MAIN_ERR( xOtaStatus ) ) &&
-            ( OtaPalFileClose != OTA_PAL_MAIN_ERR( xOtaStatus ) ) )
-        {
-            TEST_ASSERT_TRUE( 0 );
-        }
+        TEST_ASSERT_EQUAL( OtaPalSignatureCheckFailed, OTA_PAL_MAIN_ERR( xOtaStatus ) );
     }
 }
 
@@ -231,12 +226,7 @@ TEST( Full_OTA_PAL, otaPal_CloseFile_InvalidSignatureNoBlockWritten )
     {
         /* Try to close the file. */
         xOtaStatus = otaPal_CloseFile( &xOtaFile );
-
-        if( ( OtaPalSignatureCheckFailed != OTA_PAL_MAIN_ERR( xOtaStatus ) ) &&
-            ( OtaPalFileClose != OTA_PAL_MAIN_ERR( xOtaStatus ) ) )
-        {
-            TEST_ASSERT_TRUE( 0 );
-        }
+        TEST_ASSERT_EQUAL( OtaPalSignatureCheckFailed, OTA_PAL_MAIN_ERR( xOtaStatus ) );
     }
 }
 
@@ -282,12 +272,7 @@ TEST( Full_OTA_PAL, otaPal_CloseFile_NonexistingCodeSignerCertificate )
             xOtaFile.pCertFilepath = ( uint8_t * ) ( "nonexistingfile.crt" );
 
             xOtaStatus = otaPal_CloseFile( &xOtaFile );
-
-            if( ( OtaPalBadSignerCert != OTA_PAL_MAIN_ERR( xOtaStatus ) ) &&
-                ( OtaPalFileClose != OTA_PAL_MAIN_ERR( xOtaStatus ) ) )
-            {
-                TEST_ASSERT_TRUE( 0 );
-            }
+            TEST_ASSERT_EQUAL( OtaPalBadSignerCert , OTA_PAL_MAIN_ERR( xOtaStatus ) );
         }
     #endif /* if ( OTA_PAL_USE_FILE_SYSTEM == 1 ) */
 }
@@ -653,12 +638,7 @@ TEST( Full_OTA_PAL, otaPal_GetPlatformImageState_InvalidImageStateFromFileCloseF
         xOtaFile.pCertFilepath = ( uint8_t * ) OTA_PAL_CERTIFICATE_FILE;
 
         xOtaStatus = otaPal_CloseFile( &xOtaFile );
-
-        if( ( OtaPalSignatureCheckFailed != OTA_PAL_MAIN_ERR( xOtaStatus ) ) &&
-            ( OtaPalFileClose != OTA_PAL_MAIN_ERR( xOtaStatus ) ) )
-        {
-            TEST_ASSERT_TRUE( 0 );
-        }
+        TEST_ASSERT_EQUAL( OtaPalSignatureCheckFailed, OTA_PAL_MAIN_ERR( xOtaStatus ) );
 
         /* The file failed to close, so it is invalid or in an unknown state. */
         ePalImageState = otaPal_GetPlatformImageState( &xOtaFile );
