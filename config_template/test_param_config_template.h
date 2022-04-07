@@ -171,7 +171,7 @@
 /**
  * @brief The PKCS #11 supports storage for JITP.
  *
- * The PKCS11 test will verify the following labels with create/destory objects.
+ * The PKCS11 test will verify the following labels with create/destroy objects.
  * PKCS11_TEST_LABEL_CODE_VERIFICATION_KEY
  * PKCS11_TEST_LABEL_JITP_CERTIFICATE
  * PKCS11_TEST_LABEL_ROOT_CERTIFICATE
