@@ -33,27 +33,25 @@
 /* Include for network connection. */
 #include "network_connection.h"
 
+/* Include for thread function. */
+#include "thread_function.h"
+
 /* Include for transport interface. */
 #include "transport_interface.h"
-
-/**
- * @brief Delay function to wait for the data transfer over transport network.
- *
- * @param[in] delayMs Delay in milliseconds.
- */
-typedef void (* TransportTestDelayFunc_t )( uint32_t delayMs );
 
 /**
  * @brief A struct representing transport interface test parameters.
  */
 typedef struct TransportTestParam
 {
-    TransportInterface_t * pTransport;            /**< @brief Transport interface structure to test. */
-    NetworkConnectFunc_t pNetworkConnect;         /**< @brief Network connect function pointer. */
-    NetworkDisconnectFunc_t pNetworkDisconnect;   /**< @brief Network disconnect function pointer. */
-    TransportTestDelayFunc_t pTransportTestDelay; /**< @brief Transport test delay function pointer. */
-    void * pNetworkCredentials;                   /**< @brief Network credentials for network connection. */
-    void * pNetworkContext;                       /**< @brief Primary network context. */
+    TransportInterface_t * pTransport;          /**< @brief Transport interface structure to test. */
+    NetworkConnectFunc_t pNetworkConnect;       /**< @brief Network connect function pointer. */
+    NetworkDisconnectFunc_t pNetworkDisconnect; /**< @brief Network disconnect function pointer. */
+    ThreadCreate_t pThreadCreate;               /**< @brief Test thread create function. */
+    ThreadTimedWait_t pThreadTimedWait;         /**< @brief Test thread timed wait function. */
+    void * pNetworkCredentials;                 /**< @brief Network credentials for network connection. */
+    void * pNetworkContext;                     /**< @brief Primary network context. */
+    void * pSecondNetworkContext;               /**< @brief Secondary network context. */
 } TransportTestParam_t;
 
 /**

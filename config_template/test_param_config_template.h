@@ -51,6 +51,42 @@
  */
 
 /**
+ * @brief Root certificate of the IoT Core.
+ *
+ * @note This certificate should be PEM-encoded.
+ *
+ * Must include the PEM header and footer:
+ * "-----BEGIN CERTIFICATE-----\n"\
+ * "...base64 data...\n"\
+ * "-----END CERTIFICATE-----\n"
+ *
+ * #define IOT_CORE_ROOT_CA NULL
+ */
+
+/**
+ * @brief Client certificate to connect to MQTT server.
+ *
+ * @note This certificate should be PEM-encoded.
+ *
+ * Must include the PEM header and footer:
+ * "-----BEGIN CERTIFICATE-----\n"\
+ * "...base64 data...\n"\
+ * "-----END CERTIFICATE-----\n"
+ *
+ * #define MQTT_CLIENT_CERTIFICATE NULL
+ */
+
+/**
+ * @brief Client private key to connect to MQTT server.
+ *
+ * @note This is should only be used for testing purpose.
+ *
+ * For qualification, the key should be generated on-device.
+ *
+ * #define MQTT_CLIENT_PRIVATE_KEY  NULL
+ */
+
+/**
  * @brief Endpoint of the echo server to connect to in transport interface test.
  *
  * #define ECHO_SERVER_ENDPOINT   "PLACE_HOLDER"
@@ -96,6 +132,14 @@
  * For qualification, the key should be generated on-device.
  *
  * #define TRANSPORT_CLIENT_PRIVATE_KEY  NULL
+ */
+
+/**
+ * @brief Microseconds to delay the start of test.
+ *
+ * @note This configuration is optional. Default is 5000.
+ *
+ * #define TEST_START_DELAY_MS  5000
  */
 
 /**

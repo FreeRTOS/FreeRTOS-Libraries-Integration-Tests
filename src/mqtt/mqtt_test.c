@@ -34,10 +34,12 @@
 #include "core_mqtt_state.h"
 #include "clock.h"
 #include "unity.h"
+#include "unity_fixture.h"
 
 #include "mqtt_test.h"
 #include "test_execution_config.h"
 #include "test_param_config.h"
+#include "platform_function.h"
 
 /*-----------------------------------------------------------*/
 
@@ -88,9 +90,9 @@
 #define TEST_MQTT_TOPIC                         CLIENT_IDENTIFIER "/iot/integration/test"
 
 /**
- * @brief Sample topic filter 2 to use in tests.
+ * @brief Sample topic filter to test MQTT retainted message.
  */
-#define TEST_MQTT_TOPIC_2                       CLIENT_IDENTIFIER "/iot/integration/test2"
+#define TEST_MQTT_RETAIN_TOPIC                  CLIENT_IDENTIFIER "/iot/integration/testretain"
 
 /**
  * @brief Length of sample topic filter.
@@ -165,6 +167,18 @@
  * @brief The MQTT message published in this example.
  */
 #define MQTT_EXAMPLE_MESSAGE                "Hello World!"
+
+/*-----------------------------------------------------------*/
+
+#if ( MQTT_TEST_ENABLED == 1 )
+    #ifndef MQTT_SERVER_ENDPOINT
+        #error "Please define MQTT_SERVER_ENDPOINT"
+    #endif
+    
+    #ifndef MQTT_SERVER_PORT
+        #error "Please define MQTT_SERVER_PORT"
+    #endif
+#endif /* if ( MQTT_TEST_ENABLED == 1 ) */
 
 /*-----------------------------------------------------------*/
 
@@ -341,6 +355,11 @@ static void startPersistentSession();
  */
 static void resumePersistentSession();
 
+
+/**
+ * @brief Test group for transport interface test.
+ */
+TEST_GROUP( MqttTest );
 /*-----------------------------------------------------------*/
 
 static void establishMqttSession( MQTTContext_t * pContext,
@@ -722,7 +741,10 @@ static MQTTStatus_t publishToTopic( MQTTContext_t * pContext,
 
 /*-----------------------------------------------------------*/
 
-void setUp( void )
+/**
+ * @brief Test setup function for MQTT tests.
+ */
+TEST_SETUP( MqttTest )
 {
     struct timespec tp;
 
@@ -760,7 +782,10 @@ void setUp( void )
 
 /*-----------------------------------------------------------*/
 
-void tearDown( void )
+/**
+ * @brief Test tear down function for MQTT tests.
+ */
+TEST_TEAR_DOWN( MqttTest )
 {
     MQTTStatus_t mqttStatus;
 
@@ -787,7 +812,12 @@ void tearDown( void )
 
 /*-----------------------------------------------------------*/
 
-void test_MQTT_Subscribe_Publish_With_Qos_0( void )
+/**
+ * @brief Tests Subscribe and Publish operations with the MQTT broken using QoS 0.
+ * The test subscribes to a topic, and then publishes to the same topic. The
+ * broker is expected to route the publish message back to the test.
+ */
+TEST( MqttTest, MQTT_Subscribe_Publish_With_Qos_0 )
 {
     /* Subscribe to a topic with Qos 0. */
     TEST_ASSERT_EQUAL( MQTTSuccess, subscribeToTopic(
@@ -845,7 +875,7 @@ void test_MQTT_Subscribe_Publish_With_Qos_0( void )
  * The test subscribes to a topic, and then publishes to the same topic. The
  * broker is expected to route the publish message back to the test.
  */
-void test_MQTT_Subscribe_Publish_With_Qos_1( void )
+TEST( MqttTest, MQTT_Subscribe_Publish_With_Qos_1 )
 {
     /* Subscribe to a topic with Qos 1. */
     TEST_ASSERT_EQUAL( MQTTSuccess, subscribeToTopic(
@@ -908,7 +938,7 @@ void test_MQTT_Subscribe_Publish_With_Qos_1( void )
  * The test subscribes to a topic, and then publishes to the same topic. The
  * broker is expected to route the publish message back to the test.
  */
-void test_MQTT_Connect_LWT( void )
+TEST( MqttTest, MQTT_Connect_LWT )
 {
     bool sessionPresent;
     MQTTContext_t secondMqttContext;
@@ -968,7 +998,7 @@ void test_MQTT_Connect_LWT( void )
  * @brief Verifies that the MQTT library sends a Ping Request packet if the connection is
  * idle for more than the keep-alive period.
  */
-void test_MQTT_ProcessLoop_KeepAlive( void )
+TEST( MqttTest, MQTT_ProcessLoop_KeepAlive )
 {
     uint32_t connectPacketTime = context.lastPacketTime;
     uint32_t elapsedTime = 0;
@@ -976,7 +1006,7 @@ void test_MQTT_ProcessLoop_KeepAlive( void )
     TEST_ASSERT_EQUAL( 0, context.pingReqSendTimeMs );
 
     /* Sleep until control packet needs to be sent. */
-    Clock_SleepMs( MQTT_KEEP_ALIVE_INTERVAL_SECONDS * 1000 );
+    FRTest_TimeDelay( MQTT_KEEP_ALIVE_INTERVAL_SECONDS * 1000 );
     TEST_ASSERT_EQUAL( MQTTSuccess, MQTT_ProcessLoop( &context, MQTT_PROCESS_LOOP_TIMEOUT_MS ) );
 
     TEST_ASSERT_NOT_EQUAL( 0, context.pingReqSendTimeMs );
@@ -993,7 +1023,7 @@ void test_MQTT_ProcessLoop_KeepAlive( void )
  * un-acknowledged in its first attempt.
  * Tests that the library is able to support resending the PUBLISH packet with the DUP flag.
  */
-void test_MQTT_Resend_Unacked_Publish_QoS1( void )
+TEST( MqttTest, MQTT_Resend_Unacked_Publish_QoS1 )
 {
     /* Start a persistent session with the broker. */
     startPersistentSession();
@@ -1066,7 +1096,7 @@ void test_MQTT_Resend_Unacked_Publish_QoS1( void )
  * Tests that the library responds with a PUBACK to the duplicate incoming QoS 1 PUBLISH
  * packet that was un-acknowledged in a previous connection of the same session.
  */
-void test_MQTT_Restore_Session_Duplicate_Incoming_Publish_Qos1( void )
+TEST( MqttTest, MQTT_Restore_Session_Duplicate_Incoming_Publish_Qos1 )
 {
     /* Start a persistent session with the broker. */
     startPersistentSession();
@@ -1098,7 +1128,7 @@ void test_MQTT_Restore_Session_Duplicate_Incoming_Publish_Qos1( void )
     /* Make sure that a record was created for the incoming PUBLISH packet. */
     TEST_ASSERT_NOT_EQUAL( MQTT_PACKET_ID_INVALID, context.incomingPublishRecords[ 0 ].packetId );
 
-    Clock_SleepMs( 30000 );
+    FRTest_TimeDelay( 30000 );
 
     /* We will re-establish an MQTT over TLS connection with the broker to restore
      * the persistent session. */
@@ -1122,11 +1152,11 @@ void test_MQTT_Restore_Session_Duplicate_Incoming_Publish_Qos1( void )
  * @brief Verifies that the library supports notifying the broker to retain a PUBLISH message
  * for a topic using the retain flag.
  */
-void test_MQTT_Publish_With_Retain_Flag( void )
+TEST( MqttTest, MQTT_Publish_With_Retain_Flag )
 {
     /* Publish to a topic with the "retain" flag set. */
     TEST_ASSERT_EQUAL( MQTTSuccess, publishToTopic( &context,
-                                                    TEST_MQTT_TOPIC,
+                                                    TEST_MQTT_RETAIN_TOPIC,
                                                     true,  /* setRetainFlag */
                                                     false, /* isDuplicate */
                                                     MQTTQoS1,
@@ -1140,7 +1170,7 @@ void test_MQTT_Publish_With_Retain_Flag( void )
     /* Subscribe to the same topic that we published the message to.
      * The broker should send the "retained" message with the "retain" flag set. */
     TEST_ASSERT_EQUAL( MQTTSuccess, subscribeToTopic(
-                           &context, TEST_MQTT_TOPIC, MQTTQoS1 ) );
+                           &context, TEST_MQTT_RETAIN_TOPIC, MQTTQoS1 ) );
     TEST_ASSERT_FALSE( receivedSubAck );
     TEST_ASSERT_EQUAL( MQTTSuccess,
                        MQTT_ProcessLoop( &context, 2 * MQTT_PROCESS_LOOP_TIMEOUT_MS ) );
@@ -1158,7 +1188,7 @@ void test_MQTT_Publish_With_Retain_Flag( void )
 
     /* Publish to another topic with the "retain" flag set to 0. */
     TEST_ASSERT_EQUAL( MQTTSuccess, publishToTopic( &context,
-                                                    TEST_MQTT_TOPIC_2,
+                                                    TEST_MQTT_TOPIC,
                                                     false, /* setRetainFlag */
                                                     false, /* isDuplicate */
                                                     MQTTQoS1,
@@ -1174,7 +1204,7 @@ void test_MQTT_Publish_With_Retain_Flag( void )
      * We don't expect the broker to send the message to us (as we
      * PUBLISHed without a retain flag set). */
     TEST_ASSERT_EQUAL( MQTTSuccess, subscribeToTopic(
-                           &context, TEST_MQTT_TOPIC_2, MQTTQoS1 ) );
+                           &context, TEST_MQTT_TOPIC, MQTTQoS1 ) );
     TEST_ASSERT_FALSE( receivedSubAck );
     TEST_ASSERT_EQUAL( MQTTSuccess,
                        MQTT_ProcessLoop( &context, 2 * MQTT_PROCESS_LOOP_TIMEOUT_MS ) );
@@ -1182,6 +1212,22 @@ void test_MQTT_Publish_With_Retain_Flag( void )
 
     /* Make sure that the library did not receive an incoming PUBLISH from the broker. */
     TEST_ASSERT_FALSE( receivedRetainedMessage );
+}
+
+/*-----------------------------------------------------------*/
+
+/**
+ * @brief Test group runner for MQTT test against MQTT broker.
+ */
+TEST_GROUP_RUNNER( MqttTest )
+{
+        RUN_TEST_CASE( MqttTest, MQTT_Subscribe_Publish_With_Qos_0 );
+        RUN_TEST_CASE( MqttTest, MQTT_Subscribe_Publish_With_Qos_1 );
+        RUN_TEST_CASE( MqttTest, MQTT_Connect_LWT );
+        RUN_TEST_CASE( MqttTest, MQTT_ProcessLoop_KeepAlive );
+        RUN_TEST_CASE( MqttTest, MQTT_Resend_Unacked_Publish_QoS1 );
+        RUN_TEST_CASE( MqttTest, MQTT_Restore_Session_Duplicate_Incoming_Publish_Qos1 );
+        RUN_TEST_CASE( MqttTest, MQTT_Publish_With_Retain_Flag );
 }
 
 /*-----------------------------------------------------------*/
@@ -1195,17 +1241,18 @@ int RunMqttTest( void )
         SetupMqttTestParam( &testParam );
         testHostInfo.pHostName = MQTT_SERVER_ENDPOINT;
         testHostInfo.port = MQTT_SERVER_PORT;
+
+        /* Initialize unity. */
+        UnityFixture.Verbose = 1;
+        UnityFixture.GroupFilter = 0;
+        UnityFixture.NameFilter = 0;
+        UnityFixture.RepeatCount = 1;
+
         UNITY_BEGIN();
-        RUN_TEST( test_MQTT_Subscribe_Publish_With_Qos_0 );
-        RUN_TEST( test_MQTT_Subscribe_Publish_With_Qos_1 );
-        RUN_TEST( test_MQTT_Connect_LWT );
-        RUN_TEST( test_MQTT_ProcessLoop_KeepAlive );
-        RUN_TEST( test_MQTT_Resend_Unacked_Publish_QoS1 );
-        RUN_TEST( test_MQTT_Restore_Session_Duplicate_Incoming_Publish_Qos1 );
-        RUN_TEST( test_MQTT_Publish_With_Retain_Flag );
+
+        RUN_TEST_GROUP( MqttTest );
+
         status = UNITY_END();
     #endif /* if ( MQTT_TEST_ENABLED == 1 ) */
     return status;
 }
-
-/*-----------------------------------------------------------*/
