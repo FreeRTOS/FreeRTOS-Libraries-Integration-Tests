@@ -113,6 +113,20 @@
 #endif
 
 /**
+ * @brief Preprovision must not be tested with other provisiong method enabled.
+ */
+#if ( PKCS11_TEST_PREPROVISIONED_SUPPORT != 0 ) && ( ( PKCS11_TEST_GENERATE_KEYPAIR_SUPPORT != 0 ) || ( PKCS11_TEST_IMPORT_PRIVATE_KEY_SUPPORT != 0 ) )
+    #error "Preprovision mechanism must be tested alone without other provision mechanism enabled."
+#endif
+
+/**
+ * @brief Preprovision must be tested with only one key function.
+ */
+#if ( PKCS11_TEST_PREPROVISIONED_SUPPORT != 0 ) && ( PKCS11_TEST_RSA_KEY_SUPPORT != 0 ) && ( PKCS11_TEST_EC_KEY_SUPPORT != 0 )
+    #error "Preprovision mechanism must be tested with only one key function enabled."
+#endif
+
+/**
  * @brief Random buffer size for random number generate test.
  */
 #define PKCS11_TEST_RAND_BUFFER_SIZE    ( 10 )
