@@ -177,6 +177,10 @@ typedef struct GetAttributeValueMultiThread
     CK_OBJECT_HANDLE xCertificate;
 } GetAttributeValueMultiThread_t;
 
+/* Test function pointer to be called by object test helper. Object test helper setup
+ * credentials with different provision method and call the test function. */
+typedef void ( * testFunctionPointer_t )( provisionMethod_t testProvisionMethod );
+
 /*-----------------------------------------------------------*/
 
 /* Struct of test parameters filled in by user. This parameter also need to be used
@@ -684,6 +688,48 @@ static void prvProvisionEcTestCredentials( provisionMethod_t testProvisonMethod,
     else
     {
         /* Do nothing for the preprovision test cases. */
+    }
+}
+
+/*-----------------------------------------------------------*/
+
+/* RSA object test helper to run the test function with all enabled provisioning method. */
+static void prvRsaObjectTestHelper( testFunctionPointer_t testFunction )
+{
+    uint32_t provisionIndex;
+    CK_OBJECT_HANDLE xPrivateKeyHandle = CK_INVALID_HANDLE;
+    CK_OBJECT_HANDLE xCertificateHandle = CK_INVALID_HANDLE;
+    CK_OBJECT_HANDLE xPublicKeyHandle = CK_INVALID_HANDLE;
+
+    for( provisionIndex = 0; provisionIndex < xNumTestRsaProvisionMethod; provisionIndex++ )
+    {
+        prvProvisionRsaTestCredentials( pkcs11TestRsaProvisionMethod[ provisionIndex ],
+                                        &xPrivateKeyHandle,
+                                        &xCertificateHandle,
+                                        &xPublicKeyHandle );
+
+        testFunction( pkcs11TestRsaProvisionMethod[ provisionIndex ] );
+    }
+}
+
+/*-----------------------------------------------------------*/
+
+/* EC object test helper to run the test function with all enabled provisioning method. */
+static void prvEcObjectTestHelper( testFunctionPointer_t testFunction )
+{
+    uint32_t provisionIndex;
+    CK_OBJECT_HANDLE xPrivateKeyHandle = CK_INVALID_HANDLE;
+    CK_OBJECT_HANDLE xCertificateHandle = CK_INVALID_HANDLE;
+    CK_OBJECT_HANDLE xPublicKeyHandle = CK_INVALID_HANDLE;
+
+    for( provisionIndex = 0; provisionIndex < xNumTestProvisionMethod; provisionIndex++ )
+    {
+        prvProvisionEcTestCredentials( pkcs11TestProvisionMethod[ provisionIndex ],
+                                       &xPrivateKeyHandle,
+                                       &xCertificateHandle,
+                                       &xPublicKeyHandle );
+
+        testFunction( pkcs11TestProvisionMethod[ provisionIndex ] );
     }
 }
 
@@ -1387,13 +1433,20 @@ TEST( Full_PKCS11_RSA, AFQP_CreateObject )
 
 /*-----------------------------------------------------------*/
 
-TEST( Full_PKCS11_RSA, AFQP_FindObject )
+static void prvTestRsaFindObject( provisionMethod_t testProvisionMethod )
 {
     CK_OBJECT_HANDLE xPrivateKeyHandle = CK_INVALID_HANDLE;
     CK_OBJECT_HANDLE xCertificateHandle = CK_INVALID_HANDLE;
     CK_OBJECT_HANDLE xPublicKeyHandle = CK_INVALID_HANDLE;
 
     prvFindObjectTest( &xPrivateKeyHandle, &xCertificateHandle, &xPublicKeyHandle );
+}
+
+/*-----------------------------------------------------------*/
+
+TEST( Full_PKCS11_RSA, AFQP_FindObject )
+{
+    prvRsaObjectTestHelper( prvTestRsaFindObject );
 }
 
 /*-----------------------------------------------------------*/
@@ -1516,20 +1569,7 @@ static void prvTestRsaFindObjectMultiThread( provisionMethod_t testProvisionMeth
 /* Different session trying to find token objects. */
 TEST( Full_PKCS11_RSA, AFQP_FindObjectMultiThread )
 {
-    uint32_t provisionIndex;
-    CK_OBJECT_HANDLE xPrivateKeyHandle = CK_INVALID_HANDLE;
-    CK_OBJECT_HANDLE xCertificateHandle = CK_INVALID_HANDLE;
-    CK_OBJECT_HANDLE xPublicKeyHandle = CK_INVALID_HANDLE;
-
-    for( provisionIndex = 0; provisionIndex < xNumTestProvisionMethod; provisionIndex++ )
-    {
-        prvProvisionRsaTestCredentials( pkcs11TestRsaProvisionMethod[ provisionIndex ],
-                                        &xPrivateKeyHandle,
-                                        &xCertificateHandle,
-                                        &xPublicKeyHandle );
-
-        prvTestRsaFindObjectMultiThread( pkcs11TestRsaProvisionMethod[ provisionIndex ] );
-    }
+    prvRsaObjectTestHelper( prvTestRsaFindObjectMultiThread );
 }
 
 /*-----------------------------------------------------------*/
@@ -1617,20 +1657,7 @@ static void prvTestRsaGetAttributeValue( provisionMethod_t testProvisionMethod )
 
 TEST( Full_PKCS11_RSA, AFQP_GetAttributeValue )
 {
-    uint32_t provisionIndex;
-    CK_OBJECT_HANDLE xPrivateKeyHandle = CK_INVALID_HANDLE;
-    CK_OBJECT_HANDLE xCertificateHandle = CK_INVALID_HANDLE;
-    CK_OBJECT_HANDLE xPublicKeyHandle = CK_INVALID_HANDLE;
-
-    for( provisionIndex = 0; provisionIndex < xNumTestProvisionMethod; provisionIndex++ )
-    {
-        prvProvisionRsaTestCredentials( pkcs11TestRsaProvisionMethod[ provisionIndex ],
-                                        &xPrivateKeyHandle,
-                                        &xCertificateHandle,
-                                        &xPublicKeyHandle );
-
-        prvTestRsaGetAttributeValue( pkcs11TestRsaProvisionMethod[ provisionIndex ] );
-    }
+    prvRsaObjectTestHelper( prvTestRsaGetAttributeValue );
 }
 
 /*-----------------------------------------------------------*/
@@ -1696,20 +1723,7 @@ static void prvTestRsaSign( provisionMethod_t testProvisionMethod )
 
 TEST( Full_PKCS11_RSA, AFQP_Sign )
 {
-    uint32_t provisionIndex;
-    CK_OBJECT_HANDLE xPrivateKeyHandle = CK_INVALID_HANDLE;
-    CK_OBJECT_HANDLE xCertificateHandle = CK_INVALID_HANDLE;
-    CK_OBJECT_HANDLE xPublicKeyHandle = CK_INVALID_HANDLE;
-
-    for( provisionIndex = 0; provisionIndex < xNumTestProvisionMethod; provisionIndex++ )
-    {
-        prvProvisionRsaTestCredentials( pkcs11TestRsaProvisionMethod[ provisionIndex ],
-                                        &xPrivateKeyHandle,
-                                        &xCertificateHandle,
-                                        &xPublicKeyHandle );
-
-        prvTestRsaSign( pkcs11TestRsaProvisionMethod[ provisionIndex ] );
-    }
+    prvRsaObjectTestHelper( prvTestRsaSign );
 }
 
 /*-----------------------------------------------------------*/
@@ -1805,20 +1819,7 @@ static void prvTestRsaGetAttributeValueMultiThread( provisionMethod_t testProvis
 /* Same & different PKCS #11 sessions asking for attribute values of the same 2 objects. */
 TEST( Full_PKCS11_RSA, AFQP_GetAttributeValueMultiThread )
 {
-    uint32_t provisionIndex;
-    CK_OBJECT_HANDLE xPrivateKeyHandle = CK_INVALID_HANDLE;
-    CK_OBJECT_HANDLE xCertificateHandle = CK_INVALID_HANDLE;
-    CK_OBJECT_HANDLE xPublicKeyHandle = CK_INVALID_HANDLE;
-
-    for( provisionIndex = 0; provisionIndex < xNumTestProvisionMethod; provisionIndex++ )
-    {
-        prvProvisionRsaTestCredentials( pkcs11TestRsaProvisionMethod[ provisionIndex ],
-                                        &xPrivateKeyHandle,
-                                        &xCertificateHandle,
-                                        &xPublicKeyHandle );
-
-        prvTestRsaGetAttributeValueMultiThread( pkcs11TestRsaProvisionMethod[ provisionIndex ] );
-    }
+    prvRsaObjectTestHelper( prvTestRsaGetAttributeValueMultiThread );
 }
 
 /*-----------------------------------------------------------*/
@@ -1923,20 +1924,7 @@ static void prvTestRsaDestroyObject( provisionMethod_t testProvisionMethod )
 
 TEST( Full_PKCS11_RSA, AFQP_DestroyObject )
 {
-    uint32_t provisionIndex;
-    CK_OBJECT_HANDLE xPrivateKeyHandle = CK_INVALID_HANDLE;
-    CK_OBJECT_HANDLE xCertificateHandle = CK_INVALID_HANDLE;
-    CK_OBJECT_HANDLE xPublicKeyHandle = CK_INVALID_HANDLE;
-
-    for( provisionIndex = 0; provisionIndex < xNumTestProvisionMethod; provisionIndex++ )
-    {
-        prvProvisionRsaTestCredentials( pkcs11TestRsaProvisionMethod[ provisionIndex ],
-                                        &xPrivateKeyHandle,
-                                        &xCertificateHandle,
-                                        &xPublicKeyHandle );
-
-        prvTestRsaDestroyObject( pkcs11TestRsaProvisionMethod[ provisionIndex ] );
-    }
+    prvRsaObjectTestHelper( prvTestRsaDestroyObject );
 }
 
 /*--------------------------------------------------------*/
@@ -2170,20 +2158,7 @@ static void prvTestEcFindObject( provisionMethod_t testProvisonMethod )
 
 TEST( Full_PKCS11_EC, AFQP_FindObject )
 {
-    uint32_t provisionIndex;
-    CK_OBJECT_HANDLE xPrivateKeyHandle = CK_INVALID_HANDLE;
-    CK_OBJECT_HANDLE xCertificateHandle = CK_INVALID_HANDLE;
-    CK_OBJECT_HANDLE xPublicKeyHandle = CK_INVALID_HANDLE;
-
-    for( provisionIndex = 0; provisionIndex < xNumTestProvisionMethod; provisionIndex++ )
-    {
-        prvProvisionEcTestCredentials( pkcs11TestProvisionMethod[ provisionIndex ],
-                                       &xPrivateKeyHandle,
-                                       &xCertificateHandle,
-                                       &xPublicKeyHandle );
-
-        prvTestEcFindObject( pkcs11TestProvisionMethod[ provisionIndex ] );
-    }
+    prvEcObjectTestHelper( prvTestEcFindObject );
 }
 
 /*-----------------------------------------------------------*/
@@ -2366,20 +2341,7 @@ static void prvTestEcGetAttributeValue( provisionMethod_t testProvisonMethod )
 
 TEST( Full_PKCS11_EC, AFQP_GetAttributeValue )
 {
-    uint32_t provisionIndex;
-    CK_OBJECT_HANDLE xPrivateKeyHandle = CK_INVALID_HANDLE;
-    CK_OBJECT_HANDLE xCertificateHandle = CK_INVALID_HANDLE;
-    CK_OBJECT_HANDLE xPublicKeyHandle = CK_INVALID_HANDLE;
-
-    for( provisionIndex = 0; provisionIndex < xNumTestProvisionMethod; provisionIndex++ )
-    {
-        prvProvisionEcTestCredentials( pkcs11TestProvisionMethod[ provisionIndex ],
-                                       &xPrivateKeyHandle,
-                                       &xCertificateHandle,
-                                       &xPublicKeyHandle );
-
-        prvTestEcGetAttributeValue( pkcs11TestProvisionMethod[ provisionIndex ] );
-    }
+    prvEcObjectTestHelper( prvTestEcGetAttributeValue );
 }
 
 /*-----------------------------------------------------------*/
@@ -2498,20 +2460,7 @@ static void prvTestEcSign( provisionMethod_t testProvisonMethod )
 
 TEST( Full_PKCS11_EC, AFQP_Sign )
 {
-    uint32_t provisionIndex;
-    CK_OBJECT_HANDLE xPrivateKeyHandle = CK_INVALID_HANDLE;
-    CK_OBJECT_HANDLE xCertificateHandle = CK_INVALID_HANDLE;
-    CK_OBJECT_HANDLE xPublicKeyHandle = CK_INVALID_HANDLE;
-
-    for( provisionIndex = 0; provisionIndex < xNumTestProvisionMethod; provisionIndex++ )
-    {
-        prvProvisionEcTestCredentials( pkcs11TestProvisionMethod[ provisionIndex ],
-                                       &xPrivateKeyHandle,
-                                       &xCertificateHandle,
-                                       &xPublicKeyHandle );
-
-        prvTestEcSign( pkcs11TestProvisionMethod[ provisionIndex ] );
-    }
+    prvEcObjectTestHelper( prvTestEcSign );
 }
 
 /*-----------------------------------------------------------*/
@@ -2600,20 +2549,7 @@ static void prvTestEcVerify( provisionMethod_t testProvisonMethod )
 
 TEST( Full_PKCS11_EC, AFQP_Verify )
 {
-    uint32_t provisionIndex;
-    CK_OBJECT_HANDLE xPrivateKeyHandle = CK_INVALID_HANDLE;
-    CK_OBJECT_HANDLE xCertificateHandle = CK_INVALID_HANDLE;
-    CK_OBJECT_HANDLE xPublicKeyHandle = CK_INVALID_HANDLE;
-
-    for( provisionIndex = 0; provisionIndex < xNumTestProvisionMethod; provisionIndex++ )
-    {
-        prvProvisionEcTestCredentials( pkcs11TestProvisionMethod[ provisionIndex ],
-                                       &xPrivateKeyHandle,
-                                       &xCertificateHandle,
-                                       &xPublicKeyHandle );
-
-        prvTestEcVerify( pkcs11TestProvisionMethod[ provisionIndex ] );
-    }
+    prvEcObjectTestHelper( prvTestEcVerify );
 }
 
 /*-----------------------------------------------------------*/
@@ -2655,20 +2591,7 @@ static void prvTestEcFindObjectMultiThread( provisionMethod_t testProvisonMethod
 /* Different session trying to find token objects. */
 TEST( Full_PKCS11_EC, AFQP_FindObjectMultiThread )
 {
-    uint32_t provisionIndex;
-    CK_OBJECT_HANDLE xPrivateKeyHandle = CK_INVALID_HANDLE;
-    CK_OBJECT_HANDLE xCertificateHandle = CK_INVALID_HANDLE;
-    CK_OBJECT_HANDLE xPublicKeyHandle = CK_INVALID_HANDLE;
-
-    for( provisionIndex = 0; provisionIndex < xNumTestProvisionMethod; provisionIndex++ )
-    {
-        prvProvisionEcTestCredentials( pkcs11TestProvisionMethod[ provisionIndex ],
-                                       &xPrivateKeyHandle,
-                                       &xCertificateHandle,
-                                       &xPublicKeyHandle );
-
-        prvTestEcFindObjectMultiThread( pkcs11TestProvisionMethod[ provisionIndex ] );
-    }
+    prvEcObjectTestHelper( prvTestEcFindObjectMultiThread );
 }
 
 /*-----------------------------------------------------------*/
@@ -2785,20 +2708,7 @@ static void prvTestEcGetAttributeValueMultiThread( provisionMethod_t testProvisi
 /* Same & different PKCS #11 sessions asking for attribute values of the same 2 objects. */
 TEST( Full_PKCS11_EC, AFQP_GetAttributeValueMultiThread )
 {
-    uint32_t provisionIndex;
-    CK_OBJECT_HANDLE xPrivateKeyHandle = CK_INVALID_HANDLE;
-    CK_OBJECT_HANDLE xCertificateHandle = CK_INVALID_HANDLE;
-    CK_OBJECT_HANDLE xPublicKeyHandle = CK_INVALID_HANDLE;
-
-    for( provisionIndex = 0; provisionIndex < xNumTestProvisionMethod; provisionIndex++ )
-    {
-        prvProvisionEcTestCredentials( pkcs11TestProvisionMethod[ provisionIndex ],
-                                       &xPrivateKeyHandle,
-                                       &xCertificateHandle,
-                                       &xPublicKeyHandle );
-
-        prvTestEcFindObjectMultiThread( pkcs11TestProvisionMethod[ provisionIndex ] );
-    }
+    prvEcObjectTestHelper( prvTestEcGetAttributeValueMultiThread );
 }
 
 /*-----------------------------------------------------------*/
@@ -2902,20 +2812,7 @@ static void prvTestEcSignVerifyMultiThread( provisionMethod_t testProvisionMetho
 
 TEST( Full_PKCS11_EC, AFQP_SignVerifyMultiThread )
 {
-    uint32_t provisionIndex;
-    CK_OBJECT_HANDLE xPrivateKeyHandle = CK_INVALID_HANDLE;
-    CK_OBJECT_HANDLE xCertificateHandle = CK_INVALID_HANDLE;
-    CK_OBJECT_HANDLE xPublicKeyHandle = CK_INVALID_HANDLE;
-
-    for( provisionIndex = 0; provisionIndex < xNumTestProvisionMethod; provisionIndex++ )
-    {
-        prvProvisionEcTestCredentials( pkcs11TestProvisionMethod[ provisionIndex ],
-                                       &xPrivateKeyHandle,
-                                       &xCertificateHandle,
-                                       &xPublicKeyHandle );
-
-        prvTestEcSignVerifyMultiThread( pkcs11TestProvisionMethod[ provisionIndex ] );
-    }
+    prvEcObjectTestHelper( prvTestEcSignVerifyMultiThread );
 }
 
 /*-----------------------------------------------------------*/
@@ -2937,20 +2834,7 @@ static void prvTestEcDestroyObject( provisionMethod_t testProvisionMethod )
 
 TEST( Full_PKCS11_EC, AFQP_DestroyObject )
 {
-    uint32_t provisionIndex;
-    CK_OBJECT_HANDLE xPrivateKeyHandle = CK_INVALID_HANDLE;
-    CK_OBJECT_HANDLE xCertificateHandle = CK_INVALID_HANDLE;
-    CK_OBJECT_HANDLE xPublicKeyHandle = CK_INVALID_HANDLE;
-
-    for( provisionIndex = 0; provisionIndex < xNumTestProvisionMethod; provisionIndex++ )
-    {
-        prvProvisionEcTestCredentials( pkcs11TestProvisionMethod[ provisionIndex ],
-                                       &xPrivateKeyHandle,
-                                       &xCertificateHandle,
-                                       &xPublicKeyHandle );
-
-        prvTestEcDestroyObject( pkcs11TestProvisionMethod[ provisionIndex ] );
-    }
+    prvEcObjectTestHelper( prvTestEcDestroyObject );
 }
 
 /*-----------------------------------------------------------*/
