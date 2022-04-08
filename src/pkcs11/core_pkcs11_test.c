@@ -50,7 +50,7 @@
 #include "mbedtls/x509_crt.h"
 
 /* corePKCS11 test includes. */
-#include "core_pkcs11_test.h"
+#include "platform_function.h"
 #include "rsa_test_credentials.h"
 #include "ecdsa_test_credentials.h"
 
@@ -183,10 +183,6 @@ typedef void ( * testFunctionPointer_t )( provisionMethod_t testProvisionMethod 
 
 /*-----------------------------------------------------------*/
 
-/* Struct of test parameters filled in by user. This parameter also need to be used
- * in dev_mod_key_provisioning.c file. */
-Pkcs11TestParam_t testParam = { 0 };
-
 /* PKCS #11 Globals.
  * These are used to reduce setup and tear down calls. */
 static CK_SESSION_HANDLE xGlobalSession = 0;
@@ -300,7 +296,7 @@ static CK_SLOT_ID prvGetTestSlotId( void )
     TEST_ASSERT_GREATER_THAN_MESSAGE( 0, xSlotCount, "Slot count incorrectly updated." );
 
     /* Allocate memory to receive the list of slots. */
-    pxSlotId = testParam.pMemoryAlloc( sizeof( CK_SLOT_ID ) * ( xSlotCount ) );
+    pxSlotId = FRTest_MemoryAlloc( sizeof( CK_SLOT_ID ) * ( xSlotCount ) );
     TEST_ASSERT_NOT_EQUAL_MESSAGE( NULL, pxSlotId, "Failed malloc memory for slot list." );
 
     /* Call C_GetSlotList again to receive all slots with tokens present. */
@@ -308,7 +304,7 @@ static CK_SLOT_ID prvGetTestSlotId( void )
     TEST_ASSERT_EQUAL_MESSAGE( CKR_OK, xResult, "Failed to get slot count." );
     xSlotId = pxSlotId[ PKCS11_TEST_SLOT_NUMBER ];
 
-    testParam.pMemoryFree( pxSlotId );
+    FRTest_MemoryFree( pxSlotId );
     return xSlotId;
 }
 
@@ -356,21 +352,21 @@ static void prvMultiThreadHelper( void * pvTaskFxnPtr )
 {
     uint32_t xTaskNumber;
     int retThreadTimedJoin;
-    ThreadHandle_t threadHandles[ PKCS11_TEST_MULTI_THREAD_TASK_COUNT ];
+    FRTestThreadHandle_t threadHandles[ PKCS11_TEST_MULTI_THREAD_TASK_COUNT ];
 
     /* Create all the tasks. */
     for( xTaskNumber = 0; xTaskNumber < PKCS11_TEST_MULTI_THREAD_TASK_COUNT; xTaskNumber++ )
     {
         xGlobalTaskParams[ xTaskNumber ].xTaskNumber = xTaskNumber;
         xGlobalTaskParams[ xTaskNumber ].xTestResult = 0;
-        threadHandles[ xTaskNumber ] = testParam.pThreadCreate( pvTaskFxnPtr, &( xGlobalTaskParams[ xTaskNumber ] ) );
+        threadHandles[ xTaskNumber ] = FRTest_ThreadCreate( pvTaskFxnPtr, &( xGlobalTaskParams[ xTaskNumber ] ) );
         TEST_ASSERT_MESSAGE( threadHandles[ xTaskNumber ] != NULL, "Create thread failed." );
     }
 
     /* Wait for all tasks to finish. */
     for( xTaskNumber = 0; xTaskNumber < PKCS11_TEST_MULTI_THREAD_TASK_COUNT; xTaskNumber++ )
     {
-        retThreadTimedJoin = testParam.pThreadTimedJoin( threadHandles[ xTaskNumber ], PKCS11_TEST_WAIT_THREAD_TIMEOUT_MS );
+        retThreadTimedJoin = FRTest_ThreadTimedJoin( threadHandles[ xTaskNumber ], PKCS11_TEST_WAIT_THREAD_TIMEOUT_MS );
 
         if( retThreadTimedJoin != 0 )
         {
@@ -865,7 +861,7 @@ TEST( Full_PKCS11_StartFinish, AFQP_GetSlotList )
         TEST_ASSERT_GREATER_THAN_MESSAGE( 0, xSlotCount, "Slot count incorrectly updated." );
 
         /* Allocate memory to receive the list of slots, plus one extra. */
-        pxSlotId = testParam.pMemoryAlloc( sizeof( CK_SLOT_ID ) * ( xSlotCount + 1 ) );
+        pxSlotId = FRTest_MemoryAlloc( sizeof( CK_SLOT_ID ) * ( xSlotCount + 1 ) );
         TEST_ASSERT_NOT_EQUAL_MESSAGE( NULL, pxSlotId, "Failed malloc memory for slot list." );
 
         /* Call C_GetSlotList again to receive all slots with tokens present. */
@@ -887,7 +883,7 @@ TEST( Full_PKCS11_StartFinish, AFQP_GetSlotList )
 
     if( pxSlotId != NULL )
     {
-        testParam.pMemoryFree( pxSlotId );
+        FRTest_MemoryFree( pxSlotId );
     }
 
     xResult = pxGlobalFunctionList->C_Finalize( NULL );
@@ -1613,7 +1609,7 @@ static void prvTestRsaGetAttributeValue( provisionMethod_t testProvisionMethod )
     if( testProvisionMethod == eProvisionImportPrivateKey )
     {
         /* Verify the imported certificate. */
-        pucDerObject = testParam.pMemoryAlloc( sizeof( cValidRSACertificate ) );
+        pucDerObject = FRTest_MemoryAlloc( sizeof( cValidRSACertificate ) );
         TEST_ASSERT( pucDerObject != NULL );
         xDerLen = sizeof( cValidRSACertificate );
 
@@ -1630,7 +1626,7 @@ static void prvTestRsaGetAttributeValue( provisionMethod_t testProvisionMethod )
 
         if( pucDerObject != NULL )
         {
-            testParam.pMemoryFree( pucDerObject );
+            FRTest_MemoryFree( pucDerObject );
             pucDerObject = NULL;
         }
     }
@@ -2387,7 +2383,7 @@ static void prvTestEcSign( provisionMethod_t testProvisionMethod )
     /* Reconstruct public key from EC Params. */
     mbedtls_ecp_keypair * pxKeyPair;
 
-    pxKeyPair = testParam.pMemoryAlloc( sizeof( mbedtls_ecp_keypair ) );
+    pxKeyPair = FRTest_MemoryAlloc( sizeof( mbedtls_ecp_keypair ) );
 
     /* Initialize the info. */
     pxEcdsaContext->pk_info = &mbedtls_eckey_info;
@@ -2407,7 +2403,7 @@ static void prvTestEcSign( provisionMethod_t testProvisionMethod )
     TEST_ASSERT_EQUAL_MESSAGE( CKR_OK, xResult, "Failed to query for public key length" );
     TEST_ASSERT_NOT_EQUAL_MESSAGE( 0, xPubKeyQuery.ulValueLen, "The size of the public key was an unexpected value." );
 
-    pxPublicKey = testParam.pMemoryAlloc( xPubKeyQuery.ulValueLen );
+    pxPublicKey = FRTest_MemoryAlloc( xPubKeyQuery.ulValueLen );
     TEST_ASSERT_NOT_EQUAL_MESSAGE( NULL, pxPublicKey, "Failed to allocate space for public key." );
 
     xPubKeyQuery.pValue = pxPublicKey;
@@ -2445,7 +2441,7 @@ static void prvTestEcSign( provisionMethod_t testProvisionMethod )
         mbedtls_mpi_free( &xS );
     }
 
-    testParam.pMemoryFree( pxPublicKey );
+    FRTest_MemoryFree( pxPublicKey );
     mbedtls_pk_free( &xEcdsaContext );
 }
 
@@ -2837,8 +2833,6 @@ int RunPkcs11Test( void )
     int status = -1;
 
     #if ( CORE_PKCS11_TEST_ENABLED == 1 )
-        SetupPkcs11TestParam( &testParam );
-
         /* Initialize unity. */
         UnityFixture.Verbose = 1;
         UnityFixture.GroupFilter = 0;

@@ -27,37 +27,6 @@
 #ifndef CORE_PKCS11_TEST_H
 #define CORE_PKCS11_TEST_H
 
-/* Standard includes. */
-#include <stdint.h>
-#include <stdlib.h>
-
-/* Thread function includes. */
-#include "thread_function.h"
-
-/* Memory function includes. */
-#include "memory_function.h"
-
-/**
- * @brief A struct representing core pkcs11 test parameters.
- */
-typedef struct Pkcs11TestParam
-{
-    MemoryAlloc_t pMemoryAlloc;
-    MemoryFree_t pMemoryFree;
-    ThreadCreate_t pThreadCreate;
-    ThreadTimedJoin_t pThreadTimedJoin;
-    ThreadDelayFunc_t pThreadDelay;
-} Pkcs11TestParam_t;
-
-/**
- * @brief Customers need to implement this fuction by filling in parameters
- * in the provided Pkcs11TestParam_t.
- *
- * @param[in] pTestParam a pointer to Pkcs11TestParam_t struct to be filled out by
- * caller.
- */
-void SetupPkcs11TestParam( Pkcs11TestParam_t * pTestParam );
-
 /**
  * @brief Run corePKCS11 tests. This function should be called after calling `SetupPkcs11TestParam()`.
  *

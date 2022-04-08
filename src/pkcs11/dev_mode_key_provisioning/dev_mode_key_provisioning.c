@@ -41,7 +41,7 @@
 #include "dev_mode_key_provisioning.h"
 
 /* PKCS#11 test includes. */
-#include "core_pkcs11_test.h"
+#include "platform_function.h"
 #include "test_param_config.h"
 
 /* Utilities include. */
@@ -126,9 +126,6 @@ extern int convert_pem_to_der( const unsigned char * pucInput,
                                unsigned char * pucOutput,
                                size_t * pxOlen );
 
-/* PKCS11 test parameter for malloc and free function. */
-extern Pkcs11TestParam_t testParam;
-
 /*-----------------------------------------------------------*/
 
 /* Import the specified ECDSA private key into storage. */
@@ -149,7 +146,7 @@ static CK_RV prvProvisionPrivateECKey( CK_SESSION_HANDLE xSession,
 
     xResult = C_GetFunctionList( &pxFunctionList );
 
-    pxD = testParam.pMemoryAlloc( EC_D_LENGTH );
+    pxD = FRTest_MemoryAlloc( EC_D_LENGTH );
 
     if( ( pxD == NULL ) )
     {
@@ -209,7 +206,7 @@ static CK_RV prvProvisionPrivateECKey( CK_SESSION_HANDLE xSession,
 
     if( pxD != NULL )
     {
-        testParam.pMemoryFree( pxD );
+        FRTest_MemoryFree( pxD );
     }
 
     return xResult;
@@ -234,7 +231,7 @@ static CK_RV prvProvisionPrivateRSAKey( CK_SESSION_HANDLE xSession,
 
     xResult = C_GetFunctionList( &pxFunctionList );
 
-    pxRsaParams = testParam.pMemoryAlloc( sizeof( RsaParams_t ) );
+    pxRsaParams = FRTest_MemoryAlloc( sizeof( RsaParams_t ) );
 
     if( pxRsaParams == NULL )
     {
@@ -308,7 +305,7 @@ static CK_RV prvProvisionPrivateRSAKey( CK_SESSION_HANDLE xSession,
 
     if( NULL != pxRsaParams )
     {
-        testParam.pMemoryFree( pxRsaParams );
+        FRTest_MemoryFree( pxRsaParams );
     }
 
     return xResult;
@@ -680,7 +677,7 @@ CK_RV xProvisionCertificate( CK_SESSION_HANDLE xSession,
         /* Convert the certificate to DER format if it was in PEM. The DER key
          * should be about 3/4 the size of the PEM key, so mallocing the PEM key
          * size is sufficient. */
-        pucDerObject = testParam.pMemoryAlloc( xCertificateTemplate.xValue.ulValueLen );
+        pucDerObject = FRTest_MemoryAlloc( xCertificateTemplate.xValue.ulValueLen );
         xDerLen = xCertificateTemplate.xValue.ulValueLen;
 
         if( pucDerObject != NULL )
@@ -730,7 +727,7 @@ CK_RV xProvisionCertificate( CK_SESSION_HANDLE xSession,
 
     if( pucDerObject != NULL )
     {
-        testParam.pMemoryFree( pucDerObject );
+        FRTest_MemoryFree( pucDerObject );
     }
 
     return xResult;
