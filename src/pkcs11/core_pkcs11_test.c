@@ -191,7 +191,6 @@ Pkcs11TestParam_t testParam = { 0 };
  * These are used to reduce setup and tear down calls. */
 static CK_SESSION_HANDLE xGlobalSession = 0;
 static CK_FUNCTION_LIST_PTR pxGlobalFunctionList = NULL_PTR;
-static CredentialsProvisioned_t xCurrentCredentials = eStateUnknown;
 
 /* PKCS #11 Global Data Containers. */
 static CK_BYTE rsaHashedMessage[ pkcs11SHA256_DIGEST_LENGTH ] = { 0 };
@@ -460,9 +459,6 @@ static void prvProvisionRsaCredentialsWithKeyImport( CK_OBJECT_HANDLE_PTR pxPriv
 {
     CK_RV xResult;
 
-    prvDestroyTestCredentials();
-    xCurrentCredentials = eNone;
-
     /* Create a public key. */
     xResult = xProvisionPublicKey( xGlobalSession,
                                    ( uint8_t * ) cValidRSAPublicKey,
@@ -493,17 +489,16 @@ static void prvProvisionRsaCredentialsWithKeyImport( CK_OBJECT_HANDLE_PTR pxPriv
 
     TEST_ASSERT_EQUAL_MESSAGE( CKR_OK, xResult, "Failed to create RSA certificate." );
     TEST_ASSERT_NOT_EQUAL_MESSAGE( CK_INVALID_HANDLE, *pxCertificateHandle, "Invalid object handle returned for RSA certificate." );
-    xCurrentCredentials = eRsaTest;
 }
 
 /*-----------------------------------------------------------*/
 
-static void prvProvisionRsaTestCredentials( provisionMethod_t testProvisonMethod,
+static void prvProvisionRsaTestCredentials( provisionMethod_t testProvisionMethod,
                                             CK_OBJECT_HANDLE_PTR pxPrivateKeyHandle,
                                             CK_OBJECT_HANDLE_PTR pxCertificateHandle,
                                             CK_OBJECT_HANDLE_PTR pxPublicKeyHandle )
 {
-    if( testProvisonMethod == eProvisionImportPrivateKey )
+    if( testProvisionMethod == eProvisionImportPrivateKey )
     {
         prvProvisionRsaCredentialsWithKeyImport( pxPrivateKeyHandle, pxCertificateHandle, pxPublicKeyHandle );
     }
@@ -568,9 +563,6 @@ static void prvProvisionEcCredentialsWithKeyImport( CK_OBJECT_HANDLE_PTR pxPriva
 {
     CK_RV xResult;
 
-    prvDestroyTestCredentials();
-    xCurrentCredentials = eNone;
-
     xResult = xProvisionPublicKey( xGlobalSession,
                                    ( uint8_t * ) cValidECDSAPublicKey,
                                    sizeof( cValidECDSAPublicKey ),
@@ -595,8 +587,6 @@ static void prvProvisionEcCredentialsWithKeyImport( CK_OBJECT_HANDLE_PTR pxPriva
                                      pxCertificateHandle );
     TEST_ASSERT_EQUAL_MESSAGE( CKR_OK, xResult, "Failed to create EC certificate." );
     TEST_ASSERT_NOT_EQUAL_MESSAGE( 0, *pxCertificateHandle, "Invalid object handle returned for EC certificate." );
-
-    xCurrentCredentials = eEllipticCurveTest;
 }
 
 /*-----------------------------------------------------------*/
@@ -672,16 +662,16 @@ void prvProvisionEcCredentialsWithGenerateKeyPair( CK_OBJECT_HANDLE_PTR pxPrivat
 
 /*-----------------------------------------------------------*/
 
-static void prvProvisionEcTestCredentials( provisionMethod_t testProvisonMethod,
+static void prvProvisionEcTestCredentials( provisionMethod_t testProvisionMethod,
                                            CK_OBJECT_HANDLE_PTR pxPrivateKeyHandle,
                                            CK_OBJECT_HANDLE_PTR pxCertificateHandle,
                                            CK_OBJECT_HANDLE_PTR pxPublicKeyHandle )
 {
-    if( testProvisonMethod == eProvisionImportPrivateKey )
+    if( testProvisionMethod == eProvisionImportPrivateKey )
     {
         prvProvisionEcCredentialsWithKeyImport( pxPrivateKeyHandle, pxCertificateHandle, pxPublicKeyHandle );
     }
-    else if( testProvisonMethod == eProvisionGenerateKeyPair )
+    else if( testProvisionMethod == eProvisionGenerateKeyPair )
     {
         prvProvisionEcCredentialsWithGenerateKeyPair( pxPrivateKeyHandle, pxCertificateHandle, pxPublicKeyHandle );
     }
@@ -703,10 +693,16 @@ static void prvRsaObjectTestHelper( testFunctionPointer_t testFunction )
 
     for( provisionIndex = 0; provisionIndex < xNumTestRsaProvisionMethod; provisionIndex++ )
     {
-        prvProvisionRsaTestCredentials( pkcs11TestRsaProvisionMethod[ provisionIndex ],
-                                        &xPrivateKeyHandle,
-                                        &xCertificateHandle,
-                                        &xPublicKeyHandle );
+        if( pkcs11TestRsaProvisionMethod[ provisionIndex ] != eProvisionPreprovisioned )
+        {
+            /* Destory previous provisioned credentials. */
+            prvDestroyTestCredentials();
+
+            prvProvisionRsaTestCredentials( pkcs11TestRsaProvisionMethod[ provisionIndex ],
+                                            &xPrivateKeyHandle,
+                                            &xCertificateHandle,
+                                            &xPublicKeyHandle );
+        }
 
         testFunction( pkcs11TestRsaProvisionMethod[ provisionIndex ] );
     }
@@ -724,10 +720,16 @@ static void prvEcObjectTestHelper( testFunctionPointer_t testFunction )
 
     for( provisionIndex = 0; provisionIndex < xNumTestProvisionMethod; provisionIndex++ )
     {
-        prvProvisionEcTestCredentials( pkcs11TestProvisionMethod[ provisionIndex ],
-                                       &xPrivateKeyHandle,
-                                       &xCertificateHandle,
-                                       &xPublicKeyHandle );
+        if( pkcs11TestProvisionMethod[ provisionIndex ] != eProvisionPreprovisioned )
+        {
+            /* Destory previous provisioned credentials. */
+            prvDestroyTestCredentials();
+
+            prvProvisionEcTestCredentials( pkcs11TestProvisionMethod[ provisionIndex ],
+                                           &xPrivateKeyHandle,
+                                           &xCertificateHandle,
+                                           &xPublicKeyHandle );
+        }
 
         testFunction( pkcs11TestProvisionMethod[ provisionIndex ] );
     }
@@ -1582,12 +1584,9 @@ static void prvTestRsaGetAttributeValue( provisionMethod_t testProvisionMethod )
     CK_OBJECT_HANDLE xPrivateKeyHandle = CK_INVALID_HANDLE;
     CK_BYTE xCertificateValue[ CERTIFICATE_VALUE_LENGTH ];
     CK_BYTE xKeyComponent[ ( pkcs11RSA_2048_MODULUS_BITS / 8 ) + 1 ] = { 0 };
-
-    #if ( PKCS11_TEST_IMPORT_PRIVATE_KEY_SUPPORT == 1 )
-        uint8_t * pucDerObject = NULL;
-        size_t xDerLen = 0;
-        int32_t lConversionReturn = 0;
-    #endif
+    uint8_t * pucDerObject = NULL;
+    size_t xDerLen = 0;
+    int32_t lConversionReturn = 0;
 
     /* Get the certificate handle. */
     xResult = xFindObjectWithLabelAndClass( xGlobalSession,
@@ -1611,7 +1610,8 @@ static void prvTestRsaGetAttributeValue( provisionMethod_t testProvisionMethod )
     TEST_ASSERT_EQUAL_MESSAGE( CKR_OK, xResult, "Failed to get RSA certificate value" );
     TEST_ASSERT_EQUAL_MESSAGE( CERTIFICATE_VALUE_LENGTH, xTemplate.ulValueLen, "GetAttributeValue returned incorrect length of RSA certificate value" );
 
-    #if ( PKCS11_TEST_IMPORT_PRIVATE_KEY_SUPPORT == 1 )
+    if( testProvisionMethod == eProvisionImportPrivateKey )
+    {
         /* Verify the imported certificate. */
         pucDerObject = testParam.pMemoryAlloc( sizeof( cValidRSACertificate ) );
         TEST_ASSERT( pucDerObject != NULL );
@@ -1633,7 +1633,7 @@ static void prvTestRsaGetAttributeValue( provisionMethod_t testProvisionMethod )
             testParam.pMemoryFree( pucDerObject );
             pucDerObject = NULL;
         }
-    #endif /* if ( PKCS11_TEST_IMPORT_PRIVATE_KEY_SUPPORT == 1 ) */
+    }
 
     /* Get the private key handle. */
     xResult = xFindObjectWithLabelAndClass( xGlobalSession,
@@ -1839,10 +1839,6 @@ TEST( Full_PKCS11_RSA, AFQP_GenerateKeyPair )
     unsigned int ulExponentLength = 0;
     CK_BYTE xPaddedHash[ pkcs11RSA_2048_SIGNATURE_LENGTH ] = { 0 };
     mbedtls_rsa_context xRsaContext;
-
-    xResult = prvDestroyTestCredentials();
-    xCurrentCredentials = eNone;
-    TEST_ASSERT_EQUAL_MESSAGE( CKR_OK, xResult, "Failed to destroy credentials before RSA generate key pair test." );
 
     xResult = xProvisionGenerateKeyPairRSA( xGlobalSession,
                                             ( uint8_t * ) PKCS11_TEST_LABEL_DEVICE_PRIVATE_KEY_FOR_TLS,
@@ -2108,9 +2104,6 @@ TEST( Full_PKCS11_EC, AFQP_CreateObject )
         CK_OBJECT_HANDLE xJITPCertificateHandle;
     #endif /* if ( PKCS11_TEST_JITP_CODEVERIFY_ROOT_CERT_SUPPORTED == 1 ) */
 
-    /* Ignore result as this might fail if the credentials did not exist. */
-    prvDestroyTestCredentials();
-
     prvProvisionEcCredentialsWithKeyImport( &xPrivateKeyHandle,
                                             &xCertificateHandle,
                                             &xPublicKeyHandle );
@@ -2145,7 +2138,7 @@ TEST( Full_PKCS11_EC, AFQP_CreateObject )
 
 /*-----------------------------------------------------------*/
 
-static void prvTestEcFindObject( provisionMethod_t testProvisonMethod )
+static void prvTestEcFindObject( provisionMethod_t testProvisionMethod )
 {
     CK_OBJECT_HANDLE xPrivateKeyHandle = CK_INVALID_HANDLE;
     CK_OBJECT_HANDLE xCertificateHandle = CK_INVALID_HANDLE;
@@ -2163,7 +2156,7 @@ TEST( Full_PKCS11_EC, AFQP_FindObject )
 
 /*-----------------------------------------------------------*/
 
-static void prvTestEcGetAttributeValue( provisionMethod_t testProvisonMethod )
+static void prvTestEcGetAttributeValue( provisionMethod_t testProvisionMethod )
 {
     CK_RV xResult;
     CK_OBJECT_HANDLE xPrivateKey = CK_INVALID_HANDLE;
@@ -2288,7 +2281,7 @@ static void prvTestEcGetAttributeValue( provisionMethod_t testProvisonMethod )
     xResult = pxGlobalFunctionList->C_GetAttributeValue( xGlobalSession, xPublicKey, &xTemplate, 1 );
     TEST_ASSERT_EQUAL_MESSAGE( CKR_OK, xResult, "GetAttributeValue for EC point failed." );
 
-    if( testProvisonMethod == eProvisionImportPrivateKey )
+    if( testProvisionMethod == eProvisionImportPrivateKey )
     {
         /* The EC point can only be known for a public key that was previously created
          * therefore this check is only done for implementations that support importing
@@ -2305,7 +2298,7 @@ static void prvTestEcGetAttributeValue( provisionMethod_t testProvisonMethod )
     xResult = pxGlobalFunctionList->C_GetAttributeValue( xGlobalSession, xCertificate, &xTemplate, 1 );
     TEST_ASSERT_EQUAL_MESSAGE( CKR_OK, xResult, "GetAttributeValue for length of EC certificate class failed." );
 
-    if( testProvisonMethod != eProvisionPreprovisioned )
+    if( testProvisionMethod != eProvisionPreprovisioned )
     {
         TEST_ASSERT_EQUAL_MESSAGE( sizeof( CK_OBJECT_CLASS ), xTemplate.ulValueLen, "Incorrect object class length returned from GetAttributeValue." );
     }
@@ -2322,7 +2315,7 @@ static void prvTestEcGetAttributeValue( provisionMethod_t testProvisonMethod )
     xResult = pxGlobalFunctionList->C_GetAttributeValue( xGlobalSession, xCertificate, &xTemplate, 1 );
     TEST_ASSERT_EQUAL_MESSAGE( CKR_OK, xResult, "GetAttributeValue for length of certificate value failed." );
 
-    if( testProvisonMethod != eProvisionPreprovisioned )
+    if( testProvisionMethod != eProvisionPreprovisioned )
     {
         TEST_ASSERT_EQUAL_MESSAGE( sizeof( xCertificateValueExpected ), xTemplate.ulValueLen, "Incorrect certificate value length" );
     }
@@ -2331,7 +2324,7 @@ static void prvTestEcGetAttributeValue( provisionMethod_t testProvisonMethod )
     xResult = pxGlobalFunctionList->C_GetAttributeValue( xGlobalSession, xCertificate, &xTemplate, 1 );
     TEST_ASSERT_EQUAL_MESSAGE( CKR_OK, xResult, "GetAttributeValue for certificate value failed." );
 
-    if( testProvisonMethod != eProvisionPreprovisioned )
+    if( testProvisionMethod != eProvisionPreprovisioned )
     {
         TEST_ASSERT_EQUAL_INT8_ARRAY_MESSAGE( xCertificateValueExpected, xCertificateValue, sizeof( xCertificateValueExpected ), "Incorrect certificate value returned." );
     }
@@ -2346,7 +2339,7 @@ TEST( Full_PKCS11_EC, AFQP_GetAttributeValue )
 
 /*-----------------------------------------------------------*/
 
-static void prvTestEcSign( provisionMethod_t testProvisonMethod )
+static void prvTestEcSign( provisionMethod_t testProvisionMethod )
 {
     CK_RV xResult = CKR_OK;
     CK_OBJECT_HANDLE xPrivateKeyHandle = CK_INVALID_HANDLE;
@@ -2466,7 +2459,7 @@ TEST( Full_PKCS11_EC, AFQP_Sign )
 /*-----------------------------------------------------------*/
 
 
-static void prvTestEcVerify( provisionMethod_t testProvisonMethod )
+static void prvTestEcVerify( provisionMethod_t testProvisionMethod )
 {
     CK_RV xResult;
     CK_OBJECT_HANDLE xPrivateKeyHandle;
@@ -2500,7 +2493,8 @@ static void prvTestEcVerify( provisionMethod_t testProvisonMethod )
     xResult = pxGlobalFunctionList->C_Verify( xGlobalSession, xHashedMessage, pkcs11SHA256_DIGEST_LENGTH, xSignature, sizeof( xSignaturePKCS ) );
     TEST_ASSERT_EQUAL_MESSAGE( CKR_OK, xResult, "Verify failed." );
 
-    #if ( PKCS11_TEST_IMPORT_PRIVATE_KEY_SUPPORT == 1 )
+    if( testProvisionMethod == eProvisionImportPrivateKey )
+    {
         mbedtls_pk_context xPkContext;
         mbedtls_entropy_context xEntropyContext;
         mbedtls_ctr_drbg_context xDrbgContext;
@@ -2541,8 +2535,7 @@ static void prvTestEcVerify( provisionMethod_t testProvisonMethod )
 
         xResult = pxGlobalFunctionList->C_Verify( xGlobalSession, xHashedMessage, pkcs11SHA256_DIGEST_LENGTH, xSignaturePKCS, sizeof( xSignaturePKCS ) );
         TEST_ASSERT_EQUAL_MESSAGE( CKR_OK, xResult, "Verify failed." );
-    #endif /* if ( PKCS11_TEST_IMPORT_PRIVATE_KEY_SUPPORT == 1 ) */
-    /* Modify signature value and make sure verification fails. */
+    }
 }
 
 /*-----------------------------------------------------------*/
@@ -2554,7 +2547,7 @@ TEST( Full_PKCS11_EC, AFQP_Verify )
 
 /*-----------------------------------------------------------*/
 
-static void prvTestEcFindObjectMultiThread( provisionMethod_t testProvisonMethod )
+static void prvTestEcFindObjectMultiThread( provisionMethod_t testProvisionMethod )
 {
     CK_RV xResult;
     uint32_t xTaskNumber;
