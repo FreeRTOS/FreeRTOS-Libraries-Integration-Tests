@@ -294,7 +294,7 @@ extern int convert_pem_to_der( const unsigned char * pucInput,
 
 /* Test helper function to get the slot ID for testing. This function should be called
  * in the test cases only. The cryptoki must already be initialized and pxGlobalFunctionList
- * is provided. C_GetSlotList is verified in AFQP_GetSlotList. */
+ * is provided. C_GetSlotList is verified in PKCS11_GetSlotList. */
 static CK_SLOT_ID prvGetTestSlotId( void )
 {
     CK_RV xResult;
@@ -325,7 +325,7 @@ static CK_SLOT_ID prvGetTestSlotId( void )
 /*-----------------------------------------------------------*/
 
 /* Test helper function to get the function list. This function should be called in
- * test cases only. C_GetFunctionList is verified in AFQP_GetFunctionList test case. */
+ * test cases only. C_GetFunctionList is verified in PKCS11_GetFunctionList test case. */
 static CK_FUNCTION_LIST_PTR prvGetFunctionList( void )
 {
     CK_RV xResult;
@@ -763,16 +763,16 @@ TEST_TEAR_DOWN( Full_PKCS11_StartFinish )
 
 TEST_GROUP_RUNNER( Full_PKCS11_StartFinish )
 {
-    RUN_TEST_CASE( Full_PKCS11_StartFinish, AFQP_StartFinish_FirstTest );
-    RUN_TEST_CASE( Full_PKCS11_StartFinish, AFQP_GetFunctionList );
-    RUN_TEST_CASE( Full_PKCS11_StartFinish, AFQP_InitializeFinalize );
-    RUN_TEST_CASE( Full_PKCS11_StartFinish, AFQP_GetSlotList );
-    RUN_TEST_CASE( Full_PKCS11_StartFinish, AFQP_OpenSessionCloseSession );
+    RUN_TEST_CASE( Full_PKCS11_StartFinish, PKCS11_StartFinish_FirstTest );
+    RUN_TEST_CASE( Full_PKCS11_StartFinish, PKCS11_GetFunctionList );
+    RUN_TEST_CASE( Full_PKCS11_StartFinish, PKCS11_InitializeFinalize );
+    RUN_TEST_CASE( Full_PKCS11_StartFinish, PKCS11_GetSlotList );
+    RUN_TEST_CASE( Full_PKCS11_StartFinish, PKCS11_OpenSessionCloseSession );
 }
 
 /*-----------------------------------------------------------*/
 
-TEST( Full_PKCS11_StartFinish, AFQP_StartFinish_FirstTest )
+TEST( Full_PKCS11_StartFinish, PKCS11_StartFinish_FirstTest )
 {
     CK_RV xResult;
 
@@ -794,7 +794,7 @@ TEST( Full_PKCS11_StartFinish, AFQP_StartFinish_FirstTest )
 
 /* C_GetFunctionList is the only Cryptoki function which an application may
  * call before calling C_Initialize. It is tested as first test. */
-TEST( Full_PKCS11_StartFinish, AFQP_GetFunctionList )
+TEST( Full_PKCS11_StartFinish, PKCS11_GetFunctionList )
 {
     CK_FUNCTION_LIST_PTR pxFunctionList = NULL;
     CK_RV xResult;
@@ -817,7 +817,7 @@ TEST( Full_PKCS11_StartFinish, AFQP_GetFunctionList )
  * that an application is finished with the Cryptoki library. They are required by
  * other PKCS11 APIs. This test validate the implementaion of C_Initialize and C_Finalize
  * with valid/invalid parameters and function call order. */
-TEST( Full_PKCS11_StartFinish, AFQP_InitializeFinalize )
+TEST( Full_PKCS11_StartFinish, PKCS11_InitializeFinalize )
 {
     CK_FUNCTION_LIST_PTR pxFunctionList = NULL;
     CK_RV xResult;
@@ -853,7 +853,7 @@ TEST( Full_PKCS11_StartFinish, AFQP_InitializeFinalize )
 
 /*-----------------------------------------------------------*/
 
-TEST( Full_PKCS11_StartFinish, AFQP_GetSlotList )
+TEST( Full_PKCS11_StartFinish, PKCS11_GetSlotList )
 {
     CK_RV xResult;
     CK_SLOT_ID * pxSlotId = NULL;
@@ -906,7 +906,7 @@ TEST( Full_PKCS11_StartFinish, AFQP_GetSlotList )
 
 /*-----------------------------------------------------------*/
 
-TEST( Full_PKCS11_StartFinish, AFQP_OpenSessionCloseSession )
+TEST( Full_PKCS11_StartFinish, PKCS11_OpenSessionCloseSession )
 {
     CK_SLOT_ID_PTR pxSlotId = NULL;
     CK_SLOT_ID xSlotId = 0;
@@ -989,12 +989,12 @@ TEST_GROUP_RUNNER( Full_PKCS11_Capabilities )
     /* Reset the cryptoki to uninitialize state. */
     prvBeforeRunningTests();
 
-    RUN_TEST_CASE( Full_PKCS11_Capabilities, AFQP_Capabilities );
+    RUN_TEST_CASE( Full_PKCS11_Capabilities, PKCS11_Capabilities );
 }
 
 /*-----------------------------------------------------------*/
 
-TEST( Full_PKCS11_Capabilities, AFQP_Capabilities )
+TEST( Full_PKCS11_Capabilities, PKCS11_Capabilities )
 {
     CK_RV xResult = 0;
     CK_SLOT_ID xSlotId;
@@ -1106,15 +1106,15 @@ TEST_GROUP_RUNNER( Full_PKCS11_NoObject )
     /* Reset the cryptoki to uninitialize state. */
     prvBeforeRunningTests();
 
-    RUN_TEST_CASE( Full_PKCS11_NoObject, AFQP_Digest );
-    RUN_TEST_CASE( Full_PKCS11_NoObject, AFQP_Digest_ErrorConditions );
-    RUN_TEST_CASE( Full_PKCS11_NoObject, AFQP_GenerateRandom );
-    RUN_TEST_CASE( Full_PKCS11_NoObject, AFQP_GenerateRandomMultiThread );
+    RUN_TEST_CASE( Full_PKCS11_NoObject, PKCS11_Digest );
+    RUN_TEST_CASE( Full_PKCS11_NoObject, PKCS11_Digest_ErrorConditions );
+    RUN_TEST_CASE( Full_PKCS11_NoObject, PKCS11_GenerateRandom );
+    RUN_TEST_CASE( Full_PKCS11_NoObject, PKCS11_GenerateRandomMultiThread );
 }
 
 /*-----------------------------------------------------------*/
 
-TEST( Full_PKCS11_NoObject, AFQP_Digest )
+TEST( Full_PKCS11_NoObject, PKCS11_Digest )
 {
     CK_RV xResult = 0;
 
@@ -1145,7 +1145,7 @@ TEST( Full_PKCS11_NoObject, AFQP_Digest )
 
 /*-----------------------------------------------------------*/
 
-TEST( Full_PKCS11_NoObject, AFQP_Digest_ErrorConditions )
+TEST( Full_PKCS11_NoObject, PKCS11_Digest_ErrorConditions )
 {
     CK_RV xResult = 0;
     CK_MECHANISM xDigestMechanism;
@@ -1207,7 +1207,7 @@ TEST( Full_PKCS11_NoObject, AFQP_Digest_ErrorConditions )
 
 /*-----------------------------------------------------------*/
 
-TEST( Full_PKCS11_NoObject, AFQP_GenerateRandom )
+TEST( Full_PKCS11_NoObject, PKCS11_GenerateRandom )
 {
     CK_RV xResult = 0;
     uint32_t xSameSession = 0;
@@ -1315,7 +1315,7 @@ static void prvGenerateRandomMultiThreadTask( void * pvParameters )
 
 /*-----------------------------------------------------------*/
 
-TEST( Full_PKCS11_NoObject, AFQP_GenerateRandomMultiThread )
+TEST( Full_PKCS11_NoObject, PKCS11_GenerateRandomMultiThread )
 {
     uint32_t xTaskNumber;
     CK_SESSION_HANDLE xSessionHandle[ PKCS11_TEST_MULTI_THREAD_TASK_COUNT ];
@@ -1371,33 +1371,33 @@ TEST_GROUP_RUNNER( Full_PKCS11_RSA )
         prvBeforeRunningTests();
 
         #if ( PKCS11_TEST_IMPORT_PRIVATE_KEY_SUPPORT == 1 )
-            RUN_TEST_CASE( Full_PKCS11_RSA, AFQP_CreateObject );
+            RUN_TEST_CASE( Full_PKCS11_RSA, PKCS11_CreateObject );
         #endif
 
         /* Generating RSA keys is not currently supported.
          #if ( PKCS11_TEST_GENERATE_KEYPAIR_SUPPORT == 1 )
-         *   RUN_TEST_CASE( Full_PKCS11_RSA, AFQP_GenerateKeyPair );
+         *   RUN_TEST_CASE( Full_PKCS11_RSA, PKCS11_GenerateKeyPair );
          #endif
          */
 
-        RUN_TEST_CASE( Full_PKCS11_RSA, AFQP_FindObject );
-        RUN_TEST_CASE( Full_PKCS11_RSA, AFQP_GetAttributeValue );
-        RUN_TEST_CASE( Full_PKCS11_RSA, AFQP_Sign );
+        RUN_TEST_CASE( Full_PKCS11_RSA, PKCS11_FindObject );
+        RUN_TEST_CASE( Full_PKCS11_RSA, PKCS11_GetAttributeValue );
+        RUN_TEST_CASE( Full_PKCS11_RSA, PKCS11_Sign );
 
         /* RSA multi-threaded test. */
-        RUN_TEST_CASE( Full_PKCS11_RSA, AFQP_FindObjectMultiThread );
-        RUN_TEST_CASE( Full_PKCS11_RSA, AFQP_GetAttributeValueMultiThread );
+        RUN_TEST_CASE( Full_PKCS11_RSA, PKCS11_FindObjectMultiThread );
+        RUN_TEST_CASE( Full_PKCS11_RSA, PKCS11_GetAttributeValueMultiThread );
 
         /* Always destroy objects last. */
         #if ( PKCS11_TEST_PREPROVISIONED_SUPPORT != 1 )
-            RUN_TEST_CASE( Full_PKCS11_RSA, AFQP_DestroyObject );
+            RUN_TEST_CASE( Full_PKCS11_RSA, PKCS11_DestroyObject );
         #endif
     #endif /* if ( PKCS11_TEST_RSA_KEY_SUPPORT == 1 ) */
 }
 
 /*-----------------------------------------------------------*/
 
-TEST( Full_PKCS11_RSA, AFQP_CreateObject )
+TEST( Full_PKCS11_RSA, PKCS11_CreateObject )
 {
     CK_RV xResult;
     CK_OBJECT_HANDLE xPrivateKeyHandle = CK_INVALID_HANDLE;
@@ -1456,14 +1456,14 @@ static void prvTestRsaFindObject( provisionMethod_t testProvisionMethod )
 
 /*-----------------------------------------------------------*/
 
-TEST( Full_PKCS11_RSA, AFQP_FindObject )
+TEST( Full_PKCS11_RSA, PKCS11_FindObject )
 {
     prvRsaObjectTestHelper( prvTestRsaFindObject );
 }
 
 /*-----------------------------------------------------------*/
 
-/* Thread function of AFQP_FindObjectMultiThread test cases for EC and RSA.
+/* Thread function of PKCS11_FindObjectMultiThread test cases for EC and RSA.
  * Repeatedly tries to find previously provisioned private key and certificate. */
 static void prvFindObjectMultiThreadTask( void * pvParameters )
 {
@@ -1579,7 +1579,7 @@ static void prvTestRsaFindObjectMultiThread( provisionMethod_t testProvisionMeth
 /*-----------------------------------------------------------*/
 
 /* Different session trying to find token objects. */
-TEST( Full_PKCS11_RSA, AFQP_FindObjectMultiThread )
+TEST( Full_PKCS11_RSA, PKCS11_FindObjectMultiThread )
 {
     prvRsaObjectTestHelper( prvTestRsaFindObjectMultiThread );
 }
@@ -1665,7 +1665,7 @@ static void prvTestRsaGetAttributeValue( provisionMethod_t testProvisionMethod )
 
 /*-----------------------------------------------------------*/
 
-TEST( Full_PKCS11_RSA, AFQP_GetAttributeValue )
+TEST( Full_PKCS11_RSA, PKCS11_GetAttributeValue )
 {
     prvRsaObjectTestHelper( prvTestRsaGetAttributeValue );
 }
@@ -1731,14 +1731,14 @@ static void prvTestRsaSign( provisionMethod_t testProvisionMethod )
 
 /*-----------------------------------------------------------*/
 
-TEST( Full_PKCS11_RSA, AFQP_Sign )
+TEST( Full_PKCS11_RSA, PKCS11_Sign )
 {
     prvRsaObjectTestHelper( prvTestRsaSign );
 }
 
 /*-----------------------------------------------------------*/
 
-/* Thread function of AFQP_GetAttributeValueMultiThread test case. */
+/* Thread function of PKCS11_GetAttributeValueMultiThread test case. */
 static void prvRSAGetAttributeValueMultiThreadTask( void * pvParameters )
 {
     MultithreadTaskParams_t * pxMultiTaskParam = pvParameters;
@@ -1827,14 +1827,14 @@ static void prvTestRsaGetAttributeValueMultiThread( provisionMethod_t testProvis
 /*-----------------------------------------------------------*/
 
 /* Same & different PKCS #11 sessions asking for attribute values of the same 2 objects. */
-TEST( Full_PKCS11_RSA, AFQP_GetAttributeValueMultiThread )
+TEST( Full_PKCS11_RSA, PKCS11_GetAttributeValueMultiThread )
 {
     prvRsaObjectTestHelper( prvTestRsaGetAttributeValueMultiThread );
 }
 
 /*-----------------------------------------------------------*/
 
-TEST( Full_PKCS11_RSA, AFQP_GenerateKeyPair )
+TEST( Full_PKCS11_RSA, PKCS11_GenerateKeyPair )
 {
     CK_RV xResult;
     CK_OBJECT_HANDLE xPrivateKeyHandle;
@@ -1928,7 +1928,7 @@ static void prvTestRsaDestroyObject( provisionMethod_t testProvisionMethod )
 
 /*-----------------------------------------------------------*/
 
-TEST( Full_PKCS11_RSA, AFQP_DestroyObject )
+TEST( Full_PKCS11_RSA, PKCS11_DestroyObject )
 {
     prvRsaObjectTestHelper( prvTestRsaDestroyObject );
 }
@@ -1970,24 +1970,24 @@ TEST_GROUP_RUNNER( Full_PKCS11_EC )
         prvBeforeRunningTests();
 
         #if ( PKCS11_TEST_GENERATE_KEYPAIR_SUPPORT == 1 )
-            RUN_TEST_CASE( Full_PKCS11_EC, AFQP_GenerateKeyPair );
+            RUN_TEST_CASE( Full_PKCS11_EC, PKCS11_GenerateKeyPair );
         #endif
 
         #if ( PKCS11_TEST_IMPORT_PRIVATE_KEY_SUPPORT == 1 )
-            RUN_TEST_CASE( Full_PKCS11_EC, AFQP_CreateObject );
+            RUN_TEST_CASE( Full_PKCS11_EC, PKCS11_CreateObject );
         #endif
 
-        RUN_TEST_CASE( Full_PKCS11_EC, AFQP_FindObject );
-        RUN_TEST_CASE( Full_PKCS11_EC, AFQP_GetAttributeValue );
-        RUN_TEST_CASE( Full_PKCS11_EC, AFQP_Sign );
-        RUN_TEST_CASE( Full_PKCS11_EC, AFQP_Verify );
+        RUN_TEST_CASE( Full_PKCS11_EC, PKCS11_FindObject );
+        RUN_TEST_CASE( Full_PKCS11_EC, PKCS11_GetAttributeValue );
+        RUN_TEST_CASE( Full_PKCS11_EC, PKCS11_Sign );
+        RUN_TEST_CASE( Full_PKCS11_EC, PKCS11_Verify );
 
-        RUN_TEST_CASE( Full_PKCS11_EC, AFQP_FindObjectMultiThread );
-        RUN_TEST_CASE( Full_PKCS11_EC, AFQP_GetAttributeValueMultiThread );
-        RUN_TEST_CASE( Full_PKCS11_EC, AFQP_SignVerifyMultiThread );
+        RUN_TEST_CASE( Full_PKCS11_EC, PKCS11_FindObjectMultiThread );
+        RUN_TEST_CASE( Full_PKCS11_EC, PKCS11_GetAttributeValueMultiThread );
+        RUN_TEST_CASE( Full_PKCS11_EC, PKCS11_SignVerifyMultiThread );
 
         #if ( PKCS11_TEST_PREPROVISIONED_SUPPORT != 1 )
-            RUN_TEST_CASE( Full_PKCS11_EC, AFQP_DestroyObject );
+            RUN_TEST_CASE( Full_PKCS11_EC, PKCS11_DestroyObject );
         #endif
     #endif /* if ( PKCS11_TEST_EC_KEY_SUPPORT == 1 ) */
 }
@@ -2003,7 +2003,7 @@ TEST_GROUP_RUNNER( Full_PKCS11_EC )
  * 6. Verifies the signature using the public key just created.
  * 7. Finds the public and private key using FindObject calls
  */
-TEST( Full_PKCS11_EC, AFQP_GenerateKeyPair )
+TEST( Full_PKCS11_EC, PKCS11_GenerateKeyPair )
 {
     CK_RV xResult;
     CK_OBJECT_HANDLE xPrivateKeyHandle = CK_INVALID_HANDLE;
@@ -2101,7 +2101,7 @@ TEST( Full_PKCS11_EC, AFQP_GenerateKeyPair )
 
 /*-----------------------------------------------------------*/
 
-TEST( Full_PKCS11_EC, AFQP_CreateObject )
+TEST( Full_PKCS11_EC, PKCS11_CreateObject )
 {
     CK_OBJECT_HANDLE xPrivateKeyHandle;
     CK_OBJECT_HANDLE xCertificateHandle;
@@ -2159,7 +2159,7 @@ static void prvTestEcFindObject( provisionMethod_t testProvisionMethod )
 
 /*-----------------------------------------------------------*/
 
-TEST( Full_PKCS11_EC, AFQP_FindObject )
+TEST( Full_PKCS11_EC, PKCS11_FindObject )
 {
     prvEcObjectTestHelper( prvTestEcFindObject );
 }
@@ -2342,7 +2342,7 @@ static void prvTestEcGetAttributeValue( provisionMethod_t testProvisionMethod )
 
 /*-----------------------------------------------------------*/
 
-TEST( Full_PKCS11_EC, AFQP_GetAttributeValue )
+TEST( Full_PKCS11_EC, PKCS11_GetAttributeValue )
 {
     prvEcObjectTestHelper( prvTestEcGetAttributeValue );
 }
@@ -2461,7 +2461,7 @@ static void prvTestEcSign( provisionMethod_t testProvisionMethod )
 
 /*-----------------------------------------------------------*/
 
-TEST( Full_PKCS11_EC, AFQP_Sign )
+TEST( Full_PKCS11_EC, PKCS11_Sign )
 {
     prvEcObjectTestHelper( prvTestEcSign );
 }
@@ -2550,7 +2550,7 @@ static void prvTestEcVerify( provisionMethod_t testProvisionMethod )
 
 /*-----------------------------------------------------------*/
 
-TEST( Full_PKCS11_EC, AFQP_Verify )
+TEST( Full_PKCS11_EC, PKCS11_Verify )
 {
     prvEcObjectTestHelper( prvTestEcVerify );
 }
@@ -2592,14 +2592,14 @@ static void prvTestEcFindObjectMultiThread( provisionMethod_t testProvisionMetho
 /*-----------------------------------------------------------*/
 
 /* Different session trying to find token objects. */
-TEST( Full_PKCS11_EC, AFQP_FindObjectMultiThread )
+TEST( Full_PKCS11_EC, PKCS11_FindObjectMultiThread )
 {
     prvEcObjectTestHelper( prvTestEcFindObjectMultiThread );
 }
 
 /*-----------------------------------------------------------*/
 
-/* Thread function of AFQP_GetAttributeValueMultiThread test case. */
+/* Thread function of PKCS11_GetAttributeValueMultiThread test case. */
 static void prvECGetAttributeValueMultiThreadTask( void * pvParameters )
 {
     MultithreadTaskParams_t * pxMultiTaskParam = pvParameters;
@@ -2709,14 +2709,14 @@ static void prvTestEcGetAttributeValueMultiThread( provisionMethod_t testProvisi
 /*-----------------------------------------------------------*/
 
 /* Same & different PKCS #11 sessions asking for attribute values of the same 2 objects. */
-TEST( Full_PKCS11_EC, AFQP_GetAttributeValueMultiThread )
+TEST( Full_PKCS11_EC, PKCS11_GetAttributeValueMultiThread )
 {
     prvEcObjectTestHelper( prvTestEcGetAttributeValueMultiThread );
 }
 
 /*-----------------------------------------------------------*/
 
-/* Thread function of AFQP_SignVerifyMultiThread test. */
+/* Thread function of PKCS11_SignVerifyMultiThread test. */
 static void prvECSignVerifyMultiThreadTask( void * pvParameters )
 {
     MultithreadTaskParams_t * pxMultiTaskParam = pvParameters;
@@ -2813,7 +2813,7 @@ static void prvTestEcSignVerifyMultiThread( provisionMethod_t testProvisionMetho
 
 /*-----------------------------------------------------------*/
 
-TEST( Full_PKCS11_EC, AFQP_SignVerifyMultiThread )
+TEST( Full_PKCS11_EC, PKCS11_SignVerifyMultiThread )
 {
     prvEcObjectTestHelper( prvTestEcSignVerifyMultiThread );
 }
@@ -2835,7 +2835,7 @@ static void prvTestEcDestroyObject( provisionMethod_t testProvisionMethod )
 
 /*-----------------------------------------------------------*/
 
-TEST( Full_PKCS11_EC, AFQP_DestroyObject )
+TEST( Full_PKCS11_EC, PKCS11_DestroyObject )
 {
     prvEcObjectTestHelper( prvTestEcDestroyObject );
 }
