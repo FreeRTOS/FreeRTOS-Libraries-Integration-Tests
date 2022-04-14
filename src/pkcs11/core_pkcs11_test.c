@@ -1371,33 +1371,33 @@ TEST_GROUP_RUNNER( Full_PKCS11_RSA )
         prvBeforeRunningTests();
 
         #if ( PKCS11_TEST_IMPORT_PRIVATE_KEY_SUPPORT == 1 )
-            RUN_TEST_CASE( Full_PKCS11_RSA, PKCS11_CreateObject );
+            RUN_TEST_CASE( Full_PKCS11_RSA, PKCS11_RSA_CreateObject );
         #endif
 
         /* Generating RSA keys is not currently supported.
          #if ( PKCS11_TEST_GENERATE_KEYPAIR_SUPPORT == 1 )
-         *   RUN_TEST_CASE( Full_PKCS11_RSA, PKCS11_GenerateKeyPair );
+         *   RUN_TEST_CASE( Full_PKCS11_RSA, PKCS11_RSA_GenerateKeyPair );
          #endif
          */
 
-        RUN_TEST_CASE( Full_PKCS11_RSA, PKCS11_FindObject );
-        RUN_TEST_CASE( Full_PKCS11_RSA, PKCS11_GetAttributeValue );
-        RUN_TEST_CASE( Full_PKCS11_RSA, PKCS11_Sign );
+        RUN_TEST_CASE( Full_PKCS11_RSA, PKCS11_RSA_FindObject );
+        RUN_TEST_CASE( Full_PKCS11_RSA, PKCS11_RSA_GetAttributeValue );
+        RUN_TEST_CASE( Full_PKCS11_RSA, PKCS11_RSA_Sign );
 
         /* RSA multi-threaded test. */
-        RUN_TEST_CASE( Full_PKCS11_RSA, PKCS11_FindObjectMultiThread );
-        RUN_TEST_CASE( Full_PKCS11_RSA, PKCS11_GetAttributeValueMultiThread );
+        RUN_TEST_CASE( Full_PKCS11_RSA, PKCS11_RSA_FindObjectMultiThread );
+        RUN_TEST_CASE( Full_PKCS11_RSA, PKCS11_RSA_GetAttributeValueMultiThread );
 
         /* Always destroy objects last. */
         #if ( PKCS11_TEST_PREPROVISIONED_SUPPORT != 1 )
-            RUN_TEST_CASE( Full_PKCS11_RSA, PKCS11_DestroyObject );
+            RUN_TEST_CASE( Full_PKCS11_RSA, PKCS11_RSA_DestroyObject );
         #endif
     #endif /* if ( PKCS11_TEST_RSA_KEY_SUPPORT == 1 ) */
 }
 
 /*-----------------------------------------------------------*/
 
-TEST( Full_PKCS11_RSA, PKCS11_CreateObject )
+TEST( Full_PKCS11_RSA, PKCS11_RSA_CreateObject )
 {
     CK_RV xResult;
     CK_OBJECT_HANDLE xPrivateKeyHandle = CK_INVALID_HANDLE;
@@ -1456,7 +1456,7 @@ static void prvTestRsaFindObject( provisionMethod_t testProvisionMethod )
 
 /*-----------------------------------------------------------*/
 
-TEST( Full_PKCS11_RSA, PKCS11_FindObject )
+TEST( Full_PKCS11_RSA, PKCS11_RSA_FindObject )
 {
     prvRsaObjectTestHelper( prvTestRsaFindObject );
 }
@@ -1579,7 +1579,7 @@ static void prvTestRsaFindObjectMultiThread( provisionMethod_t testProvisionMeth
 /*-----------------------------------------------------------*/
 
 /* Different session trying to find token objects. */
-TEST( Full_PKCS11_RSA, PKCS11_FindObjectMultiThread )
+TEST( Full_PKCS11_RSA, PKCS11_RSA_FindObjectMultiThread )
 {
     prvRsaObjectTestHelper( prvTestRsaFindObjectMultiThread );
 }
@@ -1665,7 +1665,7 @@ static void prvTestRsaGetAttributeValue( provisionMethod_t testProvisionMethod )
 
 /*-----------------------------------------------------------*/
 
-TEST( Full_PKCS11_RSA, PKCS11_GetAttributeValue )
+TEST( Full_PKCS11_RSA, PKCS11_RSA_GetAttributeValue )
 {
     prvRsaObjectTestHelper( prvTestRsaGetAttributeValue );
 }
@@ -1731,7 +1731,7 @@ static void prvTestRsaSign( provisionMethod_t testProvisionMethod )
 
 /*-----------------------------------------------------------*/
 
-TEST( Full_PKCS11_RSA, PKCS11_Sign )
+TEST( Full_PKCS11_RSA, PKCS11_RSA_Sign )
 {
     prvRsaObjectTestHelper( prvTestRsaSign );
 }
@@ -1827,14 +1827,14 @@ static void prvTestRsaGetAttributeValueMultiThread( provisionMethod_t testProvis
 /*-----------------------------------------------------------*/
 
 /* Same & different PKCS #11 sessions asking for attribute values of the same 2 objects. */
-TEST( Full_PKCS11_RSA, PKCS11_GetAttributeValueMultiThread )
+TEST( Full_PKCS11_RSA, PKCS11_RSA_GetAttributeValueMultiThread )
 {
     prvRsaObjectTestHelper( prvTestRsaGetAttributeValueMultiThread );
 }
 
 /*-----------------------------------------------------------*/
 
-TEST( Full_PKCS11_RSA, PKCS11_GenerateKeyPair )
+TEST( Full_PKCS11_RSA, PKCS11_RSA_GenerateKeyPair )
 {
     CK_RV xResult;
     CK_OBJECT_HANDLE xPrivateKeyHandle;
@@ -1928,7 +1928,7 @@ static void prvTestRsaDestroyObject( provisionMethod_t testProvisionMethod )
 
 /*-----------------------------------------------------------*/
 
-TEST( Full_PKCS11_RSA, PKCS11_DestroyObject )
+TEST( Full_PKCS11_RSA, PKCS11_RSA_DestroyObject )
 {
     prvRsaObjectTestHelper( prvTestRsaDestroyObject );
 }
@@ -1970,24 +1970,24 @@ TEST_GROUP_RUNNER( Full_PKCS11_EC )
         prvBeforeRunningTests();
 
         #if ( PKCS11_TEST_GENERATE_KEYPAIR_SUPPORT == 1 )
-            RUN_TEST_CASE( Full_PKCS11_EC, PKCS11_GenerateKeyPair );
+            RUN_TEST_CASE( Full_PKCS11_EC, PKCS11_EC_GenerateKeyPair );
         #endif
 
         #if ( PKCS11_TEST_IMPORT_PRIVATE_KEY_SUPPORT == 1 )
-            RUN_TEST_CASE( Full_PKCS11_EC, PKCS11_CreateObject );
+            RUN_TEST_CASE( Full_PKCS11_EC, PKCS11_EC_CreateObject );
         #endif
 
-        RUN_TEST_CASE( Full_PKCS11_EC, PKCS11_FindObject );
-        RUN_TEST_CASE( Full_PKCS11_EC, PKCS11_GetAttributeValue );
-        RUN_TEST_CASE( Full_PKCS11_EC, PKCS11_Sign );
-        RUN_TEST_CASE( Full_PKCS11_EC, PKCS11_Verify );
+        RUN_TEST_CASE( Full_PKCS11_EC, PKCS11_EC_FindObject );
+        RUN_TEST_CASE( Full_PKCS11_EC, PKCS11_EC_GetAttributeValue );
+        RUN_TEST_CASE( Full_PKCS11_EC, PKCS11_EC_Sign );
+        RUN_TEST_CASE( Full_PKCS11_EC, PKCS11_EC_Verify );
 
-        RUN_TEST_CASE( Full_PKCS11_EC, PKCS11_FindObjectMultiThread );
-        RUN_TEST_CASE( Full_PKCS11_EC, PKCS11_GetAttributeValueMultiThread );
-        RUN_TEST_CASE( Full_PKCS11_EC, PKCS11_SignVerifyMultiThread );
+        RUN_TEST_CASE( Full_PKCS11_EC, PKCS11_EC_FindObjectMultiThread );
+        RUN_TEST_CASE( Full_PKCS11_EC, PKCS11_EC_GetAttributeValueMultiThread );
+        RUN_TEST_CASE( Full_PKCS11_EC, PKCS11_EC_SignVerifyMultiThread );
 
         #if ( PKCS11_TEST_PREPROVISIONED_SUPPORT != 1 )
-            RUN_TEST_CASE( Full_PKCS11_EC, PKCS11_DestroyObject );
+            RUN_TEST_CASE( Full_PKCS11_EC, PKCS11_EC_DestroyObject );
         #endif
     #endif /* if ( PKCS11_TEST_EC_KEY_SUPPORT == 1 ) */
 }
@@ -2003,7 +2003,7 @@ TEST_GROUP_RUNNER( Full_PKCS11_EC )
  * 6. Verifies the signature using the public key just created.
  * 7. Finds the public and private key using FindObject calls
  */
-TEST( Full_PKCS11_EC, PKCS11_GenerateKeyPair )
+TEST( Full_PKCS11_EC, PKCS11_EC_GenerateKeyPair )
 {
     CK_RV xResult;
     CK_OBJECT_HANDLE xPrivateKeyHandle = CK_INVALID_HANDLE;
@@ -2101,7 +2101,7 @@ TEST( Full_PKCS11_EC, PKCS11_GenerateKeyPair )
 
 /*-----------------------------------------------------------*/
 
-TEST( Full_PKCS11_EC, PKCS11_CreateObject )
+TEST( Full_PKCS11_EC, PKCS11_EC_CreateObject )
 {
     CK_OBJECT_HANDLE xPrivateKeyHandle;
     CK_OBJECT_HANDLE xCertificateHandle;
@@ -2159,7 +2159,7 @@ static void prvTestEcFindObject( provisionMethod_t testProvisionMethod )
 
 /*-----------------------------------------------------------*/
 
-TEST( Full_PKCS11_EC, PKCS11_FindObject )
+TEST( Full_PKCS11_EC, PKCS11_EC_FindObject )
 {
     prvEcObjectTestHelper( prvTestEcFindObject );
 }
@@ -2342,7 +2342,7 @@ static void prvTestEcGetAttributeValue( provisionMethod_t testProvisionMethod )
 
 /*-----------------------------------------------------------*/
 
-TEST( Full_PKCS11_EC, PKCS11_GetAttributeValue )
+TEST( Full_PKCS11_EC, PKCS11_EC_GetAttributeValue )
 {
     prvEcObjectTestHelper( prvTestEcGetAttributeValue );
 }
@@ -2461,7 +2461,7 @@ static void prvTestEcSign( provisionMethod_t testProvisionMethod )
 
 /*-----------------------------------------------------------*/
 
-TEST( Full_PKCS11_EC, PKCS11_Sign )
+TEST( Full_PKCS11_EC, PKCS11_EC_Sign )
 {
     prvEcObjectTestHelper( prvTestEcSign );
 }
@@ -2550,7 +2550,7 @@ static void prvTestEcVerify( provisionMethod_t testProvisionMethod )
 
 /*-----------------------------------------------------------*/
 
-TEST( Full_PKCS11_EC, PKCS11_Verify )
+TEST( Full_PKCS11_EC, PKCS11_EC_Verify )
 {
     prvEcObjectTestHelper( prvTestEcVerify );
 }
@@ -2592,7 +2592,7 @@ static void prvTestEcFindObjectMultiThread( provisionMethod_t testProvisionMetho
 /*-----------------------------------------------------------*/
 
 /* Different session trying to find token objects. */
-TEST( Full_PKCS11_EC, PKCS11_FindObjectMultiThread )
+TEST( Full_PKCS11_EC, PKCS11_EC_FindObjectMultiThread )
 {
     prvEcObjectTestHelper( prvTestEcFindObjectMultiThread );
 }
@@ -2709,7 +2709,7 @@ static void prvTestEcGetAttributeValueMultiThread( provisionMethod_t testProvisi
 /*-----------------------------------------------------------*/
 
 /* Same & different PKCS #11 sessions asking for attribute values of the same 2 objects. */
-TEST( Full_PKCS11_EC, PKCS11_GetAttributeValueMultiThread )
+TEST( Full_PKCS11_EC, PKCS11_EC_GetAttributeValueMultiThread )
 {
     prvEcObjectTestHelper( prvTestEcGetAttributeValueMultiThread );
 }
@@ -2813,7 +2813,7 @@ static void prvTestEcSignVerifyMultiThread( provisionMethod_t testProvisionMetho
 
 /*-----------------------------------------------------------*/
 
-TEST( Full_PKCS11_EC, PKCS11_SignVerifyMultiThread )
+TEST( Full_PKCS11_EC, PKCS11_EC_SignVerifyMultiThread )
 {
     prvEcObjectTestHelper( prvTestEcSignVerifyMultiThread );
 }
@@ -2835,7 +2835,7 @@ static void prvTestEcDestroyObject( provisionMethod_t testProvisionMethod )
 
 /*-----------------------------------------------------------*/
 
-TEST( Full_PKCS11_EC, PKCS11_DestroyObject )
+TEST( Full_PKCS11_EC, PKCS11_EC_DestroyObject )
 {
     prvEcObjectTestHelper( prvTestEcDestroyObject );
 }
