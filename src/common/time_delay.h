@@ -20,36 +20,16 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-/**
- * @file test_execution_config_template.h
- * @brief This is a template to setup the execution configurations for LTS qualification test.
- */
+#ifndef _TIME_DELAY_H_
+#define _TIME_DELAY_H_
 
-#ifndef TEST_EXECUTION_CONFIG_H
-#define TEST_EXECUTION_CONFIG_H
+#include <stdint.h>
 
 /**
- * @brief Configuration to enable the MQTT test.
+ * @brief Delay function to wait for a specific amount of time.
  *
- * #define MQTT_TEST_ENABLED                 (0)
+ * @param[in] delayMs Delay in milliseconds.
  */
+typedef void (* TimeDelayFunc_t)( uint32_t delayMs );
 
-/**
- * @brief Configuration to enable the transport interface test.
- *
- * #define TRANSPORT_INTERFACE_TEST_ENABLED  (0)
- */
-
-/** 
- * @brief Configuration to enable the OTA PAL test.
- *
- * #define OTA_PAL_TEST_ENABLED  (0)
- */
-
-/**
- * @brief Configuration to enable the corePKCS11 test.
- *
- * #define CORE_PKCS11_TEST_ENABLED  (0)
- */
-
-#endif /* TEST_EXECUTION_CONFIG_H */
+#endif /* _TIME_DELAY_H_ */

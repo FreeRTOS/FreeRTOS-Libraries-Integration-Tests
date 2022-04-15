@@ -27,12 +27,16 @@
 #include "test_execution_config.h"
 #include "platform_function.h"
 
+#if ( TRANSPORT_INTERFACE_TEST_ENABLED == 1 )
+    #include "transport_interface_test.h"
+#endif
+
 #if ( MQTT_TEST_ENABLED == 1 )
     #include "mqtt_test.h"
 #endif
 
-#if ( TRANSPORT_INTERFACE_TEST_ENABLED == 1 )
-    #include "transport_interface_test.h"
+#if ( OTA_PAL_TEST_ENABLED == 1 )
+    #include "ota_pal_test.h"
 #endif
 
 #if ( CORE_PKCS11_TEST_ENABLED == 1 )
@@ -54,6 +58,10 @@ void RunQualificationTest( void )
 
     #if ( MQTT_TEST_ENABLED == 1 )
         RunMqttTest();
+    #endif
+
+    #if ( OTA_PAL_TEST_ENABLED == 1 )
+        RunOtaPalTest();
     #endif
 
     #if ( CORE_PKCS11_TEST_ENABLED == 1 )
