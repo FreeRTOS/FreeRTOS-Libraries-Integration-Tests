@@ -74,7 +74,7 @@ func secureEcho(certPath string, keyPath string, port string, verbose bool) {
 	tlsConfig := tls.Config{Certificates: []tls.Certificate{servertCert},
 		MinVersion: tls.VersionTLS12,
 		RootCAs:    serverCAPool,
-		ClientAuth: tls.RequireAndVerifyClientCert,
+		ClientAuth: tls.RequireAnyClientCert,
 		ClientCAs:  serverCAPool,
 		// Cipher suites supported by AWS IoT Core. Note this is the intersection of the set
 		// of cipher suites supported by GO and by AWS IoT Core.
