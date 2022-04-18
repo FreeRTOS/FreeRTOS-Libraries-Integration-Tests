@@ -21,20 +21,20 @@
  */
 
 /**
- * @file test_execution_config.h
- * @brief This setup the execution configurations for LTS qualification test.
+ * @file test_execution_config_template.h
+ * @brief This is a template to setup the execution configurations for LTS qualification test.
  */
 
 #ifndef TEST_EXECUTION_CONFIG_H
 #define TEST_EXECUTION_CONFIG_H
 
-/** 
+/**
  * @brief Configuration to enable the MQTT test.
  *
  * #define MQTT_TEST_ENABLED                 (0)
  */
 
-/** 
+/**
  * @brief Configuration to enable the transport interface test.
  *
  * #define TRANSPORT_INTERFACE_TEST_ENABLED  (0)
@@ -44,6 +44,12 @@
  * @brief Configuration to enable the OTA PAL test.
  *
  * #define OTA_PAL_TEST_ENABLED  (0)
+ */
+
+/**
+ * @brief Configuration to enable the corePKCS11 test.
+ *
+ * #define CORE_PKCS11_TEST_ENABLED  (0)
  */
 
 #endif /* TEST_EXECUTION_CONFIG_H */

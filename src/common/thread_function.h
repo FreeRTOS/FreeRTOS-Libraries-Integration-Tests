@@ -51,14 +51,14 @@ typedef ThreadHandle_t ( * ThreadCreate_t )( ThreadFunction_t threadFunc,
                                              void * pParam );
 
 /**
- * @brief Timed waiting function to wait for the created thread exit.
+ * @brief Timed thread join function to wait for the created thread exit.
  *
  * @param[in] threadHandle The handle of the created thread to be waited.
  * @param[in] timeoutMs The timeout value of to wait for the created thread exit.
  *
  * @return 0 if the thread exits within timeoutMs. Other value will be regarded as error.
  */
-typedef int ( * ThreadTimedWait_t )( ThreadHandle_t threadHandle,
+typedef int ( * ThreadTimedJoin_t )( ThreadHandle_t threadHandle,
                                      uint32_t timeoutMs );
 
 /**

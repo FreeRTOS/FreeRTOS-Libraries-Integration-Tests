@@ -39,6 +39,10 @@
     #include "ota_pal_test.h"
 #endif
 
+#if ( CORE_PKCS11_TEST_ENABLED == 1 )
+    #include "core_pkcs11_test.h"
+#endif
+
 #ifndef TEST_START_DELAY_MS
     #define TEST_START_DELAY_MS  5000
 #endif
@@ -58,6 +62,10 @@ void RunQualificationTest( void )
 
     #if ( OTA_PAL_TEST_ENABLED == 1 )
         RunOtaPalTest();
+    #endif
+
+    #if ( CORE_PKCS11_TEST_ENABLED == 1 )
+        RunPkcs11Test();
     #endif
 }
 
