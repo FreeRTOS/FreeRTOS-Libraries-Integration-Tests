@@ -49,12 +49,13 @@ type Argument struct {
 	Verbose    bool   `json:"verbose"`
 	Logging    bool   `json:"logging"`
 	Secure     bool   `json:"secure-connection"`
+	CertVerify bool   `json:"cert-verify"`
 	ServerPort string `json:"server-port"`
 	ServerCert string `json:"server-certificate-location"`
 	ServerKey  string `json:"server-key-location"`
 }
 
-func secureEcho(certPath string, keyPath string, port string, verbose bool) {
+func secureEcho(certPath string, keyPath string, port string, certVerify bool, verbose bool) {
 
 	// load certificates
 	servertCert, err := tls.LoadX509KeyPair(certPath, keyPath)
@@ -70,11 +71,18 @@ func secureEcho(certPath string, keyPath string, port string, verbose bool) {
 	serverCAPool := x509.NewCertPool()
 	serverCAPool.AppendCertsFromPEM(serverCA)
 
+    var clientAuth tls.ClientAuthType 
+    if certVerify {
+        clientAuth = tls.RequireAndVerifyClientCert
+    } else {
+        clientAuth = tls.RequireAnyClientCert
+    }
+
 	//Configure TLS
 	tlsConfig := tls.Config{Certificates: []tls.Certificate{servertCert},
 		MinVersion: tls.VersionTLS12,
 		RootCAs:    serverCAPool,
-		ClientAuth: tls.RequireAnyClientCert,
+        ClientAuth: clientAuth,
 		ClientCAs:  serverCAPool,
 		// Cipher suites supported by AWS IoT Core. Note this is the intersection of the set
 		// of cipher suites supported by GO and by AWS IoT Core.
@@ -173,7 +181,7 @@ func readWrite(connection net.Conn, verbose bool) {
 func startup(config Argument) {
 	log.Println("Starting TCP Echo application...")
 	if config.Secure {
-		secureEcho(config.ServerCert, config.ServerKey, config.ServerPort, config.Verbose)
+		secureEcho(config.ServerCert, config.ServerKey, config.ServerPort, config.CertVerify, config.Verbose)
 	}
 	echoServerThread(config.ServerPort, nil, config.Verbose)
 }
