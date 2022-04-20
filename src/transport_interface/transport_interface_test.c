@@ -38,9 +38,6 @@
 #include "test_execution_config.h"
 #include "test_param_config.h"
 
-/* Include for platform functions */
-#include "platform_function.h"
-
 /* Include for Unity framework. */
 #include "unity.h"
 #include "unity_fixture.h"
@@ -149,7 +146,7 @@ typedef struct threadParameter
     #ifndef ECHO_SERVER_ENDPOINT
         #error "Please define ECHO_SERVER_ENDPOINT"
     #endif
-    
+
     #ifndef ECHO_SERVER_PORT
         #error "Please define ECHO_SERVER_PORT"
     #endif
@@ -705,7 +702,7 @@ TEST( Full_TransportInterfaceTest, Transport_SendRecvCompareMultithreaded )
 {
     NetworkConnectStatus_t networkConnectResult = NETWORK_CONNECT_SUCCESS;
     int timedWaitResult = 0;
-    ThreadHandle_t threadHandle[ TRANSPORT_TEST_MULTI_THREAD_TASK_COUNT ];
+    FRTestThreadHandle_t threadHandle[ TRANSPORT_TEST_MULTI_THREAD_TASK_COUNT ];
     uint32_t threadIndex = 0;
 
     /* The primary thread parameter already setup in the test setup function. */
@@ -724,16 +721,16 @@ TEST( Full_TransportInterfaceTest, Transport_SendRecvCompareMultithreaded )
     for( threadIndex = 0; threadIndex < TRANSPORT_TEST_MULTI_THREAD_TASK_COUNT; threadIndex++ )
     {
         threadParameter[ threadIndex ].stopFlag = false;
-        threadHandle[ threadIndex ] = testParam.pThreadCreate( prvSendRecvCompareFunc,
-                                                               &threadParameter[ threadIndex ] );
+        threadHandle[ threadIndex ] = FRTest_ThreadCreate( prvSendRecvCompareFunc,
+                                                           &threadParameter[ threadIndex ] );
         TEST_ASSERT_MESSAGE( threadHandle != NULL, "Create thread failed." );
     }
 
     /* Waiting for all test threads complete. */
     for( threadIndex = 0; threadIndex < TRANSPORT_TEST_MULTI_THREAD_TASK_COUNT; threadIndex++ )
     {
-        timedWaitResult = testParam.pThreadTimedWait( threadHandle[ threadIndex ],
-                                                      TRANSPORT_TEST_WAIT_THREAD_TIMEOUT_MS );
+        timedWaitResult = FRTest_ThreadTimedJoin( threadHandle[ threadIndex ],
+                                                  TRANSPORT_TEST_WAIT_THREAD_TIMEOUT_MS );
 
         if( timedWaitResult != 0 )
         {
@@ -834,18 +831,18 @@ TEST( Full_TransportInterfaceTest, TransportRecv_RemoteDisconnect )
  */
 TEST( Full_TransportInterfaceTest, TransportRecv_NoDataToReceive )
 {
-    ThreadHandle_t threadHandle;
+    FRTestThreadHandle_t threadHandle;
     int timedWaitResult = 0;
 
     /* Create testing threads. */
     threadParameter[ TRANSPORT_TEST_INDEX ].stopFlag = false;
-    threadHandle = testParam.pThreadCreate( prvNoDataToReceiveFunc,
-                                            &threadParameter[ TRANSPORT_TEST_INDEX ] );
+    threadHandle = FRTest_ThreadCreate( prvNoDataToReceiveFunc,
+                                        &threadParameter[ TRANSPORT_TEST_INDEX ] );
     TEST_ASSERT_MESSAGE( threadHandle != NULL, "Create thread failed." );
 
     /* Waiting for the test thread complete. */
-    timedWaitResult = testParam.pThreadTimedWait( threadHandle,
-                                                  TRANSPORT_TEST_WAIT_THREAD_RECEIVE_TIMEOUT_MS );
+    timedWaitResult = FRTest_ThreadTimedJoin( threadHandle,
+                                              TRANSPORT_TEST_WAIT_THREAD_RECEIVE_TIMEOUT_MS );
 
     if( timedWaitResult != 0 )
     {
@@ -867,18 +864,18 @@ TEST( Full_TransportInterfaceTest, TransportRecv_NoDataToReceive )
  */
 TEST( Full_TransportInterfaceTest, TransportRecv_ReturnZeroRetry )
 {
-    ThreadHandle_t threadHandle;
+    FRTestThreadHandle_t threadHandle;
     int timedWaitResult = 0;
 
     /* Create testing threads. */
     threadParameter[ TRANSPORT_TEST_INDEX ].stopFlag = false;
-    threadHandle = testParam.pThreadCreate( prvRetunZeroRetryFunc,
-                                            &threadParameter[ TRANSPORT_TEST_INDEX ] );
+    threadHandle = FRTest_ThreadCreate( prvRetunZeroRetryFunc,
+                                        &threadParameter[ TRANSPORT_TEST_INDEX ] );
     TEST_ASSERT_MESSAGE( threadHandle != NULL, "Create thread failed." );
 
     /* Waiting for the test thread complete. */
-    timedWaitResult = testParam.pThreadTimedWait( threadHandle,
-                                                  TRANSPORT_TEST_WAIT_THREAD_RECEIVE_TIMEOUT_MS );
+    timedWaitResult = FRTest_ThreadTimedJoin( threadHandle,
+                                              TRANSPORT_TEST_WAIT_THREAD_RECEIVE_TIMEOUT_MS );
 
     if( timedWaitResult != 0 )
     {

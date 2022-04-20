@@ -30,14 +30,11 @@
 /* Standard header includes. */
 #include <stdint.h>
 
+/* Include for platform functions */
+#include "platform_function.h"
+
 /* Include for network connection. */
 #include "network_connection.h"
-
-/* Include for thread function. */
-#include "thread_function.h"
-
-/* Include for time delay function. */
-#include "time_delay.h"
 
 /* Include for transport interface. */
 #include "transport_interface.h"
@@ -50,8 +47,6 @@ typedef struct TransportTestParam
     TransportInterface_t * pTransport;          /**< @brief Transport interface structure to test. */
     NetworkConnectFunc_t pNetworkConnect;       /**< @brief Network connect function pointer. */
     NetworkDisconnectFunc_t pNetworkDisconnect; /**< @brief Network disconnect function pointer. */
-    ThreadCreate_t pThreadCreate;               /**< @brief Test thread create function. */
-    ThreadTimedWait_t pThreadTimedWait;         /**< @brief Test thread timed wait function. */
     void * pNetworkCredentials;                 /**< @brief Network credentials for network connection. */
     void * pNetworkContext;                     /**< @brief Primary network context. */
     void * pSecondNetworkContext;               /**< @brief Secondary network context. */
