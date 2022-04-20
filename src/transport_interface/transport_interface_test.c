@@ -25,6 +25,7 @@
  * @brief Integration tests for the transport interface test implementation.
  */
 
+#include "test_execution_config.h"
 #if ( TRANSPORT_INTERFACE_TEST_ENABLED == 1 )
 
 /* Standard header includes. */
@@ -35,7 +36,6 @@
 #include "transport_interface_test.h"
 
 /* Include for test parameter and execution configs. */
-#include "test_execution_config.h"
 #include "test_param_config.h"
 
 /* Include for Unity framework. */

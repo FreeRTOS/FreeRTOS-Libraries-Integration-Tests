@@ -25,6 +25,7 @@
  * @brief Integration tests for the corePKCS11 implementation.
  */
 
+#include "test_execution_config.h"
 #if ( CORE_PKCS11_TEST_ENABLED == 1 )
 
 /* Standard includes. */
@@ -58,7 +59,6 @@
 #include "ecdsa_test_credentials.h"
 
 /* Test configuration includes. */
-#include "test_execution_config.h"
 #include "test_param_config.h"
 
 /*-----------------------------------------------------------*/

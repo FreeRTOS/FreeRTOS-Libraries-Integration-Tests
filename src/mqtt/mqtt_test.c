@@ -24,6 +24,8 @@
  * @file mqtt_test.c
  * @brief Implements test functions for MQTT test.
  */
+
+#include "test_execution_config.h"
 #if ( MQTT_TEST_ENABLED == 1 )
 
 #include <assert.h>
@@ -39,7 +41,6 @@
 #include "unity_fixture.h"
 
 #include "mqtt_test.h"
-#include "test_execution_config.h"
 #include "test_param_config.h"
 #include "platform_function.h"
 
