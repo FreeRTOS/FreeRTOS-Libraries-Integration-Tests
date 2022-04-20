@@ -3,6 +3,8 @@
  * @brief Various tests for validating an implementation to the OTA PAL.
  */
 
+#if ( OTA_PAL_TEST_ENABLED == 1 )
+
 /* Standard includes. */
 #include <stdint.h>
 #include <stdbool.h>
@@ -651,23 +653,23 @@ TEST( Full_OTA_PAL, otaPal_GetPlatformImageState_InvalidImageStateFromFileCloseF
 int RunOtaPalTest( void )
 {
     int status = -1;
-    #if ( OTA_PAL_TEST_ENABLED == 1 )
-        SetupOtaPalTestParam( &testParam );
+    SetupOtaPalTestParam( &testParam );
 
-        /* Initialize unity. */
-        UnityFixture.Verbose = 1;
-        UnityFixture.GroupFilter = 0;
-        UnityFixture.NameFilter = 0;
-        UnityFixture.RepeatCount = 1;
+    /* Initialize unity. */
+    UnityFixture.Verbose = 1;
+    UnityFixture.GroupFilter = 0;
+    UnityFixture.NameFilter = 0;
+    UnityFixture.RepeatCount = 1;
 
-        UNITY_BEGIN();
+    UNITY_BEGIN();
 
-        /* Run the test group. */
-        RUN_TEST_GROUP( Full_OTA_PAL );
+    /* Run the test group. */
+    RUN_TEST_GROUP( Full_OTA_PAL );
 
-        status = UNITY_END();
-    #endif /* if ( OTA_TEST_ENABLED == 1 ) */
+    status = UNITY_END();
     return status;
 }
 
 /*-----------------------------------------------------------*/
+
+#endif /* if ( OTA_TEST_ENABLED == 1 ) */

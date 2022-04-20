@@ -25,8 +25,11 @@
  * @brief Integration tests for the transport interface test implementation.
  */
 
+#if ( TRANSPORT_INTERFACE_TEST_ENABLED == 1 )
+
 /* Standard header includes. */
 #include <string.h>
+#include <stdbool.h>
 
 /* Include for init and de-init functions. */
 #include "transport_interface_test.h"
@@ -921,27 +924,27 @@ int RunTransportInterfaceTest( void )
 {
     int status = -1;
 
-    #if ( TRANSPORT_INTERFACE_TEST_ENABLED == 1 )
-        /* Assign the TransportInterface_t pointer used in test cases. */
-        SetupTransportTestParam( &testParam );
-        threadParameter[ 0 ].pNetworkContext = testParam.pNetworkContext;
-        threadParameter[ 1 ].pNetworkContext = testParam.pSecondNetworkContext;
-        testHostInfo.pHostName = ECHO_SERVER_ENDPOINT;
-        testHostInfo.port = ECHO_SERVER_PORT;
+    /* Assign the TransportInterface_t pointer used in test cases. */
+    SetupTransportTestParam( &testParam );
+    threadParameter[ 0 ].pNetworkContext = testParam.pNetworkContext;
+    threadParameter[ 1 ].pNetworkContext = testParam.pSecondNetworkContext;
+    testHostInfo.pHostName = ECHO_SERVER_ENDPOINT;
+    testHostInfo.port = ECHO_SERVER_PORT;
 
-        /* Initialize unity. */
-        UnityFixture.Verbose = 1;
-        UnityFixture.GroupFilter = 0;
-        UnityFixture.NameFilter = 0;
-        UnityFixture.RepeatCount = 1;
-        UNITY_BEGIN();
+    /* Initialize unity. */
+    UnityFixture.Verbose = 1;
+    UnityFixture.GroupFilter = 0;
+    UnityFixture.NameFilter = 0;
+    UnityFixture.RepeatCount = 1;
+    UNITY_BEGIN();
 
-        /* Run the test group. */
-        RUN_TEST_GROUP( Full_TransportInterfaceTest );
+    /* Run the test group. */
+    RUN_TEST_GROUP( Full_TransportInterfaceTest );
 
-        status = UNITY_END();
-    #endif /* if ( TRANSPORT_INTERFACE_TEST_ENABLED == 1 ) */
+    status = UNITY_END();
     return status;
 }
 
 /*-----------------------------------------------------------*/
+
+#endif /* if ( TRANSPORT_INTERFACE_TEST_ENABLED == 1 ) */

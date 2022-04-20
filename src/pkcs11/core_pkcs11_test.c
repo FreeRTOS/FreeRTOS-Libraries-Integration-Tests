@@ -24,6 +24,9 @@
  * @file core_pkcs11_test.c
  * @brief Integration tests for the corePKCS11 implementation.
  */
+
+#if ( CORE_PKCS11_TEST_ENABLED == 1 )
+
 /* Standard includes. */
 #include <stdlib.h>
 #include <string.h>
@@ -2846,33 +2849,33 @@ int RunPkcs11Test( void )
 {
     int status = -1;
 
-    #if ( CORE_PKCS11_TEST_ENABLED == 1 )
-        /* Initialize unity. */
-        UnityFixture.Verbose = 1;
-        UnityFixture.GroupFilter = 0;
-        UnityFixture.NameFilter = 0;
-        UnityFixture.RepeatCount = 1;
-        UNITY_BEGIN();
+    /* Initialize unity. */
+    UnityFixture.Verbose = 1;
+    UnityFixture.GroupFilter = 0;
+    UnityFixture.NameFilter = 0;
+    UnityFixture.RepeatCount = 1;
+    UNITY_BEGIN();
 
-        /* Basic general purpose and slot token management tests. */
-        RUN_TEST_GROUP( Full_PKCS11_StartFinish );
+    /* Basic general purpose and slot token management tests. */
+    RUN_TEST_GROUP( Full_PKCS11_StartFinish );
 
-        /* Cryptoki capabilities test. */
-        RUN_TEST_GROUP( Full_PKCS11_Capabilities );
+    /* Cryptoki capabilities test. */
+    RUN_TEST_GROUP( Full_PKCS11_Capabilities );
 
-        /* Digest and random number generate test. */
-        RUN_TEST_GROUP( Full_PKCS11_NoObject );
+    /* Digest and random number generate test. */
+    RUN_TEST_GROUP( Full_PKCS11_NoObject );
 
-        /* RSA key function test. */
-        RUN_TEST_GROUP( Full_PKCS11_RSA );
+    /* RSA key function test. */
+    RUN_TEST_GROUP( Full_PKCS11_RSA );
 
-        /* EC key function test. */
-        RUN_TEST_GROUP( Full_PKCS11_EC );
+    /* EC key function test. */
+    RUN_TEST_GROUP( Full_PKCS11_EC );
 
-        status = UNITY_END();
-    #endif /* if ( CORE_PKCS11_TEST_ENABLED == 1 ) */
+    status = UNITY_END();
 
     return status;
 }
 
 /*-----------------------------------------------------------*/
+
+#endif /* if ( CORE_PKCS11_TEST_ENABLED == 1 ) */

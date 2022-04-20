@@ -24,6 +24,8 @@
  * @file mqtt_test.c
  * @brief Implements test functions for MQTT test.
  */
+#if ( MQTT_TEST_ENABLED == 1 )
+
 #include <assert.h>
 #include <stdlib.h>
 #include <string.h>
@@ -1236,23 +1238,23 @@ int RunMqttTest( void )
 {
     int status = -1;
 
-    #if ( MQTT_TEST_ENABLED == 1 )
-        /* Calls user-implemented SetupMqttTestParam to fill in testParam */
-        SetupMqttTestParam( &testParam );
-        testHostInfo.pHostName = MQTT_SERVER_ENDPOINT;
-        testHostInfo.port = MQTT_SERVER_PORT;
+    /* Calls user-implemented SetupMqttTestParam to fill in testParam */
+    SetupMqttTestParam( &testParam );
+    testHostInfo.pHostName = MQTT_SERVER_ENDPOINT;
+    testHostInfo.port = MQTT_SERVER_PORT;
 
-        /* Initialize unity. */
-        UnityFixture.Verbose = 1;
-        UnityFixture.GroupFilter = 0;
-        UnityFixture.NameFilter = 0;
-        UnityFixture.RepeatCount = 1;
+    /* Initialize unity. */
+    UnityFixture.Verbose = 1;
+    UnityFixture.GroupFilter = 0;
+    UnityFixture.NameFilter = 0;
+    UnityFixture.RepeatCount = 1;
 
-        UNITY_BEGIN();
+    UNITY_BEGIN();
 
-        RUN_TEST_GROUP( MqttTest );
+    RUN_TEST_GROUP( MqttTest );
 
-        status = UNITY_END();
-    #endif /* if ( MQTT_TEST_ENABLED == 1 ) */
+    status = UNITY_END();
     return status;
 }
+
+#endif /* if ( MQTT_TEST_ENABLED == 1 ) */
