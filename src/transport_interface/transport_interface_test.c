@@ -74,7 +74,7 @@
 /**
  * @brief Transport Interface send receive retry count.
  */
-#define TRANSPORT_TEST_SEND_RECEIVE_RETRY_COUNT    ( 10U )
+#define TRANSPORT_TEST_SEND_RECEIVE_RETRY_COUNT    ( 50U )
 
 /**
  * @brief Transport Interface delay in milliseconds.
@@ -82,7 +82,7 @@
  * The Delay time for the transport interface test to wait for the data echo-ed
  * back from transport network.
  */
-#define TRANSPORT_TEST_DELAY_MS                    ( 150U )
+#define TRANSPORT_TEST_DELAY_MS                    ( 200U )
 
 /**
  * @brief Echo server disconnect command.
@@ -455,11 +455,14 @@ TEST_SETUP( Full_TransportInterfaceTest )
     uint8_t * pTransportTestBuffer = threadParameter[ TRANSPORT_TEST_INDEX ].transportTestBuffer;
     NetworkContext_t * pNetworkContext = threadParameter[ TRANSPORT_TEST_INDEX ].pNetworkContext;
 
-    /* Ensure the tranpsort interface is valid. */
+    /* Ensure the test parameter is valid. testParam.pNetworkCredentials is not checked here. */
     TEST_ASSERT_NOT_NULL_MESSAGE( testParam.pTransport, "testParam.pTransport should not be NULL." );
-    TEST_ASSERT_NOT_NULL_MESSAGE( testParam.pNetworkContext, "testParam.pNetworkContext should not be NULL." );
     TEST_ASSERT_NOT_NULL_MESSAGE( testParam.pTransport->send, "testParam.pTransport->send should not be NULL." );
     TEST_ASSERT_NOT_NULL_MESSAGE( testParam.pTransport->recv, "testParam.pTransport->recv should not be NULL." );
+    TEST_ASSERT_NOT_NULL_MESSAGE( testParam.pNetworkContext, "testParam.pNetworkContext should not be NULL." );
+    TEST_ASSERT_NOT_NULL_MESSAGE( testParam.pSecondNetworkContext, "testParam.pSecondNetworkContext should not be NULL." );
+    TEST_ASSERT_NOT_NULL_MESSAGE( testParam.pNetworkConnect, "testParam.pNetworkConnect should not be NULL." );
+    TEST_ASSERT_NOT_NULL_MESSAGE( testParam.pNetworkDisconnect, "testParam.pNetworkDisconnect should not be NULL." );
 
     /* Setup the trasnport structure to use the primary network context. */
     pTestTransport = testParam.pTransport;
@@ -762,12 +765,12 @@ TEST( Full_TransportInterfaceTest, Transport_SendRecvCompareMultithreaded )
 TEST( Full_TransportInterfaceTest, TransportSend_RemoteDisconnect )
 {
     int32_t transportResult = 0;
-
+    NetworkContext_t * pNetworkContext = threadParameter[ TRANSPORT_TEST_INDEX ].pNetworkContext;
     uint8_t * pTrasnportTestBufferStart =
         &( threadParameter[ TRANSPORT_TEST_INDEX ].transportTestBuffer[ TRANSPORT_TEST_BUFFER_PREFIX_GUARD_LENGTH ] );
 
     /* Send the disconnect command to remote server. */
-    transportResult = pTestTransport->send( pTestTransport->pNetworkContext,
+    transportResult = pTestTransport->send( pNetworkContext,
                                             TRANSPORT_TEST_DISCONNECT_COMMAND,
                                             strlen( TRANSPORT_TEST_DISCONNECT_COMMAND ) );
     TEST_ASSERT_EQUAL_INT32_MESSAGE( strlen( TRANSPORT_TEST_DISCONNECT_COMMAND ), transportResult,
@@ -777,7 +780,7 @@ TEST( Full_TransportInterfaceTest, TransportSend_RemoteDisconnect )
     FRTest_TimeDelay( TRANSPORT_TEST_NETWORK_DELAY_MS );
 
     /* Negative value should be returned if a network disconnection has occurred. */
-    transportResult = pTestTransport->send( pTestTransport->pNetworkContext,
+    transportResult = pTestTransport->send( pNetworkContext,
                                             pTrasnportTestBufferStart,
                                             TRANSPORT_TEST_BUFFER_WRITABLE_LENGTH );
     TEST_ASSERT_LESS_THAN_INT32_MESSAGE( 0, transportResult,
@@ -792,12 +795,12 @@ TEST( Full_TransportInterfaceTest, TransportSend_RemoteDisconnect )
 TEST( Full_TransportInterfaceTest, TransportRecv_RemoteDisconnect )
 {
     int32_t transportResult = 0;
-
+    NetworkContext_t * pNetworkContext = threadParameter[ TRANSPORT_TEST_INDEX ].pNetworkContext;
     uint8_t * pTrasnportTestBufferStart =
         &( threadParameter[ TRANSPORT_TEST_INDEX ].transportTestBuffer[ TRANSPORT_TEST_BUFFER_PREFIX_GUARD_LENGTH ] );
 
     /* Send the disconnect command to remote server. */
-    transportResult = pTestTransport->send( pTestTransport->pNetworkContext,
+    transportResult = pTestTransport->send( pNetworkContext,
                                             TRANSPORT_TEST_DISCONNECT_COMMAND,
                                             strlen( TRANSPORT_TEST_DISCONNECT_COMMAND ) );
     TEST_ASSERT_EQUAL_INT32_MESSAGE( strlen( TRANSPORT_TEST_DISCONNECT_COMMAND ), transportResult,
@@ -807,7 +810,7 @@ TEST( Full_TransportInterfaceTest, TransportRecv_RemoteDisconnect )
     FRTest_TimeDelay( TRANSPORT_TEST_NETWORK_DELAY_MS );
 
     /* Negative value should be returned if a network disconnection has occurred. */
-    transportResult = pTestTransport->recv( pTestTransport->pNetworkContext,
+    transportResult = pTestTransport->recv( pNetworkContext,
                                             pTrasnportTestBufferStart,
                                             TRANSPORT_TEST_BUFFER_WRITABLE_LENGTH );
     TEST_ASSERT_LESS_THAN_INT32_MESSAGE( 0, transportResult,
