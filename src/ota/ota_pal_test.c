@@ -3,6 +3,7 @@
  * @brief Various tests for validating an implementation to the OTA PAL.
  */
 
+#include "test_execution_config.h"
 #if ( OTA_PAL_TEST_ENABLED == 1 )
 
 /* Standard includes. */
@@ -21,7 +22,6 @@
 #include "ota_pal.h"
 
 #include "ota_pal_test.h"
-#include "test_execution_config.h"
 #include "test_param_config.h"
 
 #ifndef OTA_PAL_TEST_CERT_TYPE
