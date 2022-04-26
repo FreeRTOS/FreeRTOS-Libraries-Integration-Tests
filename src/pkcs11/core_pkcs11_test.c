@@ -43,14 +43,17 @@
 #include "unity_fixture.h"
 #include "unity.h"
 
+/**
+ *  @brief Declaring MBEDTLS_ALLOW_PRIVATE_ACCESS allows access to mbedtls "private" fields.
+ */
+#define MBEDTLS_ALLOW_PRIVATE_ACCESS
+
 /* mbedTLS includes. */
 #include "mbedtls/sha256.h"
 #include "mbedtls/pk.h"
-#include "mbedtls/pk_internal.h"
 #include "mbedtls/oid.h"
 #include "mbedtls/entropy.h"
 #include "mbedtls/ctr_drbg.h"
-#include "mbedtls/entropy_poll.h"
 #include "mbedtls/x509_crt.h"
 
 /* corePKCS11 test includes. */
@@ -1687,6 +1690,11 @@ static void prvTestRsaSign( provisionMethod_t testProvisionMethod )
     CK_ULONG xSignatureLength;
     CK_BYTE xHashPlusOid[ pkcs11RSA_SIGNATURE_INPUT_LENGTH ];
 
+    #if MBEDTLS_VERSION_NUMBER >= 0x03000000
+        mbedtls_entropy_context xEntropyContext;
+        mbedtls_ctr_drbg_context xDrbgContext;
+    #endif
+
     prvFindObjectTest( &xPrivateKeyHandle, &xCertificateHandle, &xPublicKeyHandle );
 
     xResult = vAppendSHA256AlgorithmIdentifierSequence( xHashedMessage, xHashPlusOid );
@@ -1719,13 +1727,36 @@ static void prvTestRsaSign( provisionMethod_t testProvisionMethod )
 
     if( TEST_PROTECT() )
     {
-        lMbedTLSResult = mbedtls_pk_parse_key( ( mbedtls_pk_context * ) &xMbedPkContext,
-                                               ( const unsigned char * ) cValidRSAPrivateKey,
-                                               sizeof( cValidRSAPrivateKey ),
-                                               NULL,
-                                               0 );
+        #if MBEDTLS_VERSION_NUMBER < 0x03000000
+            lMbedTLSResult = mbedtls_pk_parse_key( ( mbedtls_pk_context * ) &xMbedPkContext,
+                                                   ( const unsigned char * ) cValidRSAPrivateKey,
+                                                   sizeof( cValidRSAPrivateKey ),
+                                                   NULL,
+                                                   0 );
+            lMbedTLSResult = mbedtls_rsa_pkcs1_verify( xMbedPkContext.pk_ctx, NULL, NULL,
+                MBEDTLS_RSA_PUBLIC, MBEDTLS_MD_SHA256, 32, xHashedMessage, xSignature );
 
-        lMbedTLSResult = mbedtls_rsa_pkcs1_verify( xMbedPkContext.pk_ctx, NULL, NULL, MBEDTLS_RSA_PUBLIC, MBEDTLS_MD_SHA256, 32, xHashedMessage, xSignature );
+        #else
+            /* Initialize the RNG. */
+            mbedtls_entropy_init( &xEntropyContext );
+            mbedtls_ctr_drbg_init( &xDrbgContext );
+            lMbedTLSResult = mbedtls_ctr_drbg_seed( &xDrbgContext, mbedtls_entropy_func, &xEntropyContext, NULL, 0 );
+            TEST_ASSERT_MESSAGE( ( 0 == lMbedTLSResult ), "Failed to initialize DRBG" );
+
+            lMbedTLSResult = mbedtls_pk_parse_key( ( mbedtls_pk_context * ) &xMbedPkContext,
+                                                   ( const unsigned char * ) cValidRSAPrivateKey,
+                                                   sizeof( cValidRSAPrivateKey ),
+                                                   NULL,
+                                                   0,
+                                                   mbedtls_ctr_drbg_random, &xDrbgContext );
+            lMbedTLSResult = mbedtls_rsa_pkcs1_verify( xMbedPkContext.pk_ctx, MBEDTLS_MD_SHA256,
+                32, xHashedMessage, xSignature );
+
+            /* Free the RNG. */
+            mbedtls_ctr_drbg_free( &xDrbgContext );
+            mbedtls_entropy_free( &xEntropyContext );
+        #endif /* MBEDTLS_VERSION_NUMBER < 0x03000000 */
+
         TEST_ASSERT_MESSAGE( ( 0 == lMbedTLSResult ), "mbedTLS failed to parse valid RSA key (verification)" );
     }
 
@@ -1892,7 +1923,11 @@ TEST( Full_PKCS11_RSA, PKCS11_RSA_GenerateKeyPair )
     TEST_ASSERT_MESSAGE( ( CKR_OK == xResult ), "Failed to RSA Sign." );
 
     /* Verify the signature with mbedTLS. Set up the RSA public key. */
-    mbedtls_rsa_init( &xRsaContext, MBEDTLS_RSA_PKCS_V15, 0 );
+    #if MBEDTLS_VERSION_NUMBER < 0x03000000
+        mbedtls_rsa_init( &xRsaContext, MBEDTLS_RSA_PKCS_V15, 0 );
+    #else
+        mbedtls_rsa_init( &xRsaContext );
+    #endif /* MBEDTLS_VERSION_NUMBER < 0x03000000 */
 
     if( TEST_PROTECT() )
     {
@@ -1903,7 +1938,11 @@ TEST( Full_PKCS11_RSA, PKCS11_RSA_GenerateKeyPair )
         xRsaContext.len = pkcs11RSA_2048_SIGNATURE_LENGTH;
         xResult = mbedtls_rsa_check_pubkey( &xRsaContext );
         TEST_ASSERT_EQUAL( 0, xResult );
-        xResult = mbedtls_rsa_pkcs1_verify( &xRsaContext, NULL, NULL, MBEDTLS_RSA_PUBLIC, MBEDTLS_MD_SHA256, 32, xHashedMessage, xSignature );
+        #if MBEDTLS_VERSION_NUMBER < 0x03000000
+            xResult = mbedtls_rsa_pkcs1_verify( &xRsaContext, NULL, NULL, MBEDTLS_RSA_PUBLIC, MBEDTLS_MD_SHA256, 32, xHashedMessage, xSignature );
+        #else
+            xResult = mbedtls_rsa_pkcs1_verify( &xRsaContext, MBEDTLS_MD_SHA256, 32, xHashedMessage, xSignature );
+        #endif /* MBEDTLS_VERSION_NUMBER < 0x03000000 */
         TEST_ASSERT_MESSAGE( ( 0 == xResult ), "mbedTLS failed to parse valid RSA key (verification)" );
 
         /* Verify the signature with the generated public key. */
@@ -2403,7 +2442,7 @@ static void prvTestEcSign( provisionMethod_t testProvisionMethod )
     pxKeyPair = FRTest_MemoryAlloc( sizeof( mbedtls_ecp_keypair ) );
 
     /* Initialize the info. */
-    pxEcdsaContext->pk_info = &mbedtls_eckey_info;
+    pxEcdsaContext->pk_info = mbedtls_pk_info_from_type( MBEDTLS_PK_ECKEY );
     mbedtls_ecp_keypair_init( pxKeyPair );
     mbedtls_ecp_group_init( &pxKeyPair->grp );
 
@@ -2513,22 +2552,39 @@ static void prvTestEcVerify( provisionMethod_t testProvisionMethod )
         mbedtls_ctr_drbg_context xDrbgContext;
         int lMbedResult;
 
-        /* Initialize the private key. */
-        mbedtls_pk_init( &xPkContext );
-        lMbedResult = mbedtls_pk_parse_key( &xPkContext,
-                                            ( const unsigned char * ) cValidECDSAPrivateKey,
-                                            sizeof( cValidECDSAPrivateKey ),
-                                            NULL,
-                                            0 );
-        TEST_ASSERT_MESSAGE( ( 0 == lMbedResult ), "Failed to parse valid ECDSA key." );
         /* Initialize the RNG. */
         mbedtls_entropy_init( &xEntropyContext );
         mbedtls_ctr_drbg_init( &xDrbgContext );
         lMbedResult = mbedtls_ctr_drbg_seed( &xDrbgContext, mbedtls_entropy_func, &xEntropyContext, NULL, 0 );
         TEST_ASSERT_MESSAGE( ( 0 == lMbedResult ), "Failed to initialize DRBG" );
 
-        lMbedResult = mbedtls_pk_sign( &xPkContext, MBEDTLS_MD_SHA256, xHashedMessage, sizeof( xHashedMessage ), xSignature, &xSignatureLength, mbedtls_ctr_drbg_random, &xDrbgContext );
-        TEST_ASSERT_MESSAGE( ( 0 == lMbedResult ), "Failed to perform ECDSA signature." );
+        /* Initialize the private key. */
+        mbedtls_pk_init( &xPkContext );
+        #if MBEDTLS_VERSION_NUMBER < 0x03000000
+            lMbedResult = mbedtls_pk_parse_key( &xPkContext,
+                                                ( const unsigned char * ) cValidECDSAPrivateKey,
+                                                sizeof( cValidECDSAPrivateKey ),
+                                                NULL,
+                                                0 );
+            TEST_ASSERT_MESSAGE( ( 0 == lMbedResult ), "Failed to parse valid ECDSA key." );
+
+            lMbedResult = mbedtls_pk_sign( &xPkContext, MBEDTLS_MD_SHA256, xHashedMessage, sizeof( xHashedMessage ),
+                xSignature, &xSignatureLength, mbedtls_ctr_drbg_random, &xDrbgContext );
+            TEST_ASSERT_MESSAGE( ( 0 == lMbedResult ), "Failed to perform ECDSA signature." );
+
+        #else
+            lMbedResult = mbedtls_pk_parse_key( &xPkContext,
+                                                ( const unsigned char * ) cValidECDSAPrivateKey,
+                                                sizeof( cValidECDSAPrivateKey ),
+                                                NULL,
+                                                0,
+                                                mbedtls_ctr_drbg_random, &xDrbgContext );
+            TEST_ASSERT_MESSAGE( ( 0 == lMbedResult ), "Failed to parse valid ECDSA key." );
+
+            lMbedResult = mbedtls_pk_sign( &xPkContext, MBEDTLS_MD_SHA256, xHashedMessage, sizeof( xHashedMessage ),
+                xSignature, sizeof( xSignature), &xSignatureLength, mbedtls_ctr_drbg_random, &xDrbgContext );
+            TEST_ASSERT_MESSAGE( ( 0 == lMbedResult ), "Failed to perform ECDSA signature." );
+        #endif /* MBEDTLS_VERSION_NUMBER < 0x03000000 */
 
         mbedtls_pk_free( &xPkContext );
         mbedtls_ctr_drbg_free( &xDrbgContext );
