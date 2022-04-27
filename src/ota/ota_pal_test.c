@@ -113,10 +113,9 @@ TEST_GROUP_RUNNER( Full_OTA_PAL )
     RUN_TEST_CASE( Full_OTA_PAL, otaPal_WriteBlock_WriteManyBlocks );
 
     /******** otaPal_SetPlatformImageState Tests ******/
-    RUN_TEST_CASE( Full_OTA_PAL, otaPal_SetPlatformImageState_SelfTestImageState );
+    RUN_TEST_CASE( Full_OTA_PAL, otaPal_SetPlatformImageState_AcceptedStateWithoutClose );
     RUN_TEST_CASE( Full_OTA_PAL, otaPal_SetPlatformImageState_InvalidImageState );
     RUN_TEST_CASE( Full_OTA_PAL, otaPal_SetPlatformImageState_UnknownImageState );
-    RUN_TEST_CASE( Full_OTA_PAL, otaPal_SetPlatformImageState_RejectImageState );
 
     /* Setting the image with the accepted state is not supported because that
      * requires an image that was written, verified, and rebooted. */
@@ -420,16 +419,20 @@ TEST( Full_OTA_PAL, otaPal_WriteBlock_WriteManyBlocks )
 
         for( lIndex = 0; lIndex < testotapalNUM_WRITE_BLOCKS; lIndex++ )
         {
-            bytesWritten = otaPal_WriteBlock( &xOtaFile, lIndex * sizeof( ucDummyData ), ucDummyData, sizeof( ucDummyData ) );
+            uint32_t writeOffset = lIndex * sizeof( ucDummyData );
+            /* Align the writeOff with page size */
+            writeOffset = writeOffset + testParam.pageSize - ( writeOffset % testParam.pageSize );
+            bytesWritten = otaPal_WriteBlock( &xOtaFile, writeOffset, ucDummyData, sizeof( ucDummyData ) );
             TEST_ASSERT_EQUAL_INT( sizeof( ucDummyData ), bytesWritten );
         }
     }
 }
 
 /**
- * @brief Set the platform state to self-test and verify success.
+ * @brief Set the platform state to accepted before closing the file.
+ * This should result in otaPal_SetPlatformImageState returning OtaPalCommitFailed.
  */
-TEST( Full_OTA_PAL, otaPal_SetPlatformImageState_SelfTestImageState )
+TEST( Full_OTA_PAL, otaPal_SetPlatformImageState_AcceptedStateWithoutClose )
 {
     OtaPalStatus_t xOtaStatus;
     OtaImageState_t eImageState = OtaImageStateUnknown;
@@ -453,15 +456,9 @@ TEST( Full_OTA_PAL, otaPal_SetPlatformImageState_SelfTestImageState )
         TEST_ASSERT_EQUAL( sizeof( ucDummyData ), bytesWritten );
 
         /* Set the image state. */
-        eImageState = OtaImageStateTesting;
+        eImageState = OtaImageStateAccepted;
         xOtaStatus = otaPal_SetPlatformImageState( &xOtaFile, eImageState );
-        TEST_ASSERT_EQUAL_INT( OtaPalSuccess, OTA_PAL_MAIN_ERR( xOtaStatus ) );
-
-        /* Verify that image state was saved correctly. */
-
-        /* [**]All platforms need a reboot of a successfully close image in order to return
-         * OtaPalImageStatePendingCommit from otaPal_GetPlatformImageState(). So this cannot be tested.
-         */
+        TEST_ASSERT_EQUAL_INT( OtaPalCommitFailed, OTA_PAL_MAIN_ERR( xOtaStatus ) );
     }
 }
 
@@ -529,42 +526,6 @@ TEST( Full_OTA_PAL, otaPal_SetPlatformImageState_UnknownImageState )
         eImageState = OtaImageStateUnknown;
         xOtaStatus = otaPal_SetPlatformImageState( &xOtaFile, eImageState );
         TEST_ASSERT_EQUAL( OtaPalBadImageState, OTA_PAL_MAIN_ERR( xOtaStatus ) );
-    }
-}
-
-/**
- * @brief Set platform image state to rejected and verify success.
- * We cannot test a reject failed without mocking the underlying non volatile memory.
- */
-TEST( Full_OTA_PAL, otaPal_SetPlatformImageState_RejectImageState )
-{
-    OtaPalStatus_t xOtaStatus;
-    OtaImageState_t eImageState = OtaImageStateUnknown;
-    int16_t bytesWritten;
-
-    /* Create a local file again using the PAL. */
-    xOtaFile.pFilePath = ( uint8_t * ) OTA_PAL_FIRMWARE_FILE;
-    xOtaFile.fileSize = sizeof( ucDummyData );
-
-    xOtaStatus = otaPal_CreateFileForRx( &xOtaFile );
-    TEST_ASSERT_EQUAL( OtaPalSuccess, OTA_PAL_MAIN_ERR( xOtaStatus ) );
-
-    /* We still want to close the file if the test fails. */
-    if( TEST_PROTECT() )
-    {
-        /* Write data to the file. */
-        bytesWritten = otaPal_WriteBlock( &xOtaFile,
-                                           0,
-                                           ucDummyData,
-                                           sizeof( ucDummyData ) );
-        TEST_ASSERT_EQUAL( sizeof( ucDummyData ), bytesWritten );
-
-        eImageState = OtaImageStateRejected;
-        xOtaStatus = otaPal_SetPlatformImageState( &xOtaFile, eImageState );
-        TEST_ASSERT_EQUAL_INT( OtaPalSuccess, OTA_PAL_MAIN_ERR( xOtaStatus ) );
-        eImageState = OtaImageStateUnknown;
-        eImageState = otaPal_GetPlatformImageState( &xOtaFile );
-        TEST_ASSERT_EQUAL( OtaImageStateRejected, eImageState);
     }
 }
 
