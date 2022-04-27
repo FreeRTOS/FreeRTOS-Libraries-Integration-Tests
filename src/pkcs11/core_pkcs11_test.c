@@ -672,7 +672,7 @@ void prvProvisionEcCredentialsWithGenerateKeyPair( CK_OBJECT_HANDLE_PTR pxPrivat
                                          ( uint8_t * ) PKCS11_TEST_LABEL_DEVICE_CERTIFICATE_FOR_TLS,
                                          pxCertificateHandle );
         TEST_ASSERT_MESSAGE( ( CKR_OK == xResult ), "Failed to create EC certificate." );
-        TEST_ASSERT_MESSAGE( ( 0 != ( *pxPrivateKeyHandle ) ), "Invalid object handle returned for EC certificate." );
+        TEST_ASSERT_MESSAGE( ( 0 != ( *pxCertificateHandle ) ), "Invalid object handle returned for EC certificate." );
     }
 }
 
@@ -2415,6 +2415,18 @@ static void prvTestEcSign( provisionMethod_t testProvisionMethod )
     CK_ULONG xSignatureLength;
     int lMbedTLSResult;
 
+    mbedtls_mpi xR;
+    mbedtls_mpi xS;
+
+    mbedtls_pk_context xEcdsaContext;
+    mbedtls_pk_context * pxEcdsaContext = &xEcdsaContext;
+    CK_ATTRIBUTE xPubKeyQuery = { CKA_EC_POINT, NULL, 0 };
+    CK_BYTE * pxPublicKey = NULL;
+
+    /* Reconstruct public key from EC Params. */
+    mbedtls_ecp_keypair xKeyPair;
+    mbedtls_ecp_keypair * pxKeyPair = &xKeyPair;
+
     /* Find objects that were previously created. This test case should be run if
      * there are objects that exists under known labels. This test case is not
      * responsible for creating the objects used for signing. */
@@ -2438,61 +2450,48 @@ static void prvTestEcSign( provisionMethod_t testProvisionMethod )
     TEST_ASSERT_MESSAGE( ( CKR_OK == xResult ), "Failed to ECDSA Sign." );
     TEST_ASSERT_MESSAGE( ( pkcs11ECDSA_P256_SIGNATURE_LENGTH == xSignatureLength ), "ECDSA Sign should return needed signature buffer length when pucSignature is NULL." );
 
-    /* Now extract the EC public key point so we can reconstruct it in mbed TLS. */
-    mbedtls_pk_context xEcdsaContext;
-    mbedtls_pk_context * pxEcdsaContext = &xEcdsaContext;
-    CK_ATTRIBUTE xPubKeyQuery = { CKA_EC_POINT, NULL, 0 };
-    CK_BYTE * pxPublicKey = NULL;
+    mbedtls_mpi_init( &xR );
+    mbedtls_mpi_init( &xS );
 
     mbedtls_pk_init( pxEcdsaContext );
-
-    /* Reconstruct public key from EC Params. */
-    mbedtls_ecp_keypair * pxKeyPair;
-
-    pxKeyPair = FRTest_MemoryAlloc( sizeof( mbedtls_ecp_keypair ) );
 
     /* Initialize the info. */
     pxEcdsaContext->pk_info = mbedtls_pk_info_from_type( MBEDTLS_PK_ECKEY );
     mbedtls_ecp_keypair_init( pxKeyPair );
     mbedtls_ecp_group_init( &pxKeyPair->grp );
 
-    /* Might want to make the ECP group configurable in the future. */
-    lMbedTLSResult = mbedtls_ecp_group_load( &pxKeyPair->grp,
-                                             MBEDTLS_ECP_DP_SECP256R1 );
-    TEST_ASSERT_MESSAGE( ( 0 == lMbedTLSResult ), "Failed to load EC group." );
-
-    /* Initialize the context. */
-    pxEcdsaContext->pk_ctx = pxKeyPair;
-
-    /* Get EC point from PKCS #11 stack. */
-    xResult = pxGlobalFunctionList->C_GetAttributeValue( xGlobalSession, xPublicKeyHandle, &xPubKeyQuery, 1 );
-    TEST_ASSERT_MESSAGE( ( CKR_OK == xResult ), "Failed to query for public key length" );
-    TEST_ASSERT_MESSAGE( ( 0 != xPubKeyQuery.ulValueLen ), "The size of the public key was an unexpected value." );
-
-    pxPublicKey = FRTest_MemoryAlloc( xPubKeyQuery.ulValueLen );
-    TEST_ASSERT_MESSAGE( ( NULL != pxPublicKey ), "Failed to allocate space for public key." );
-
-    xPubKeyQuery.pValue = pxPublicKey;
-    xResult = pxGlobalFunctionList->C_GetAttributeValue( xGlobalSession, xPublicKeyHandle, &xPubKeyQuery, 1 );
-    TEST_ASSERT_MESSAGE( ( CKR_OK == xResult ), "Failed to query for public key length" );
-    TEST_ASSERT_MESSAGE( ( 0 != xPubKeyQuery.ulValueLen ), "The size of the public key was an unexpected value." );
-
-    /* Strip the ANS.1 Encoding of type and length. Otherwise mbed TLS won't be
-     * able to parse the binary EC point. */
-    lMbedTLSResult = mbedtls_ecp_point_read_binary( &pxKeyPair->grp,
-                                                    &pxKeyPair->Q,
-                                                    ( uint8_t * ) ( xPubKeyQuery.pValue ) + 2,
-                                                    xPubKeyQuery.ulValueLen - 2 );
-    TEST_ASSERT_MESSAGE( ( 0 == lMbedTLSResult ), "mbedTLS failed to read binary point." );
-
     if( TEST_PROTECT() )
     {
-        mbedtls_ecp_keypair * pxEcdsaContext = ( mbedtls_ecp_keypair * ) xEcdsaContext.pk_ctx;
+        /* Might want to make the ECP group configurable in the future. */
+        lMbedTLSResult = mbedtls_ecp_group_load( &pxKeyPair->grp,
+                                                 MBEDTLS_ECP_DP_SECP256R1 );
+        TEST_ASSERT_MESSAGE( ( 0 == lMbedTLSResult ), "Failed to load EC group." );
+
+        /* Initialize the context. */
+        pxEcdsaContext->pk_ctx = pxKeyPair;
+
+        /* Get EC point from PKCS #11 stack. */
+        xResult = pxGlobalFunctionList->C_GetAttributeValue( xGlobalSession, xPublicKeyHandle, &xPubKeyQuery, 1 );
+        TEST_ASSERT_MESSAGE( ( CKR_OK == xResult ), "Failed to query for public key length" );
+        TEST_ASSERT_MESSAGE( ( 0 != xPubKeyQuery.ulValueLen ), "The size of the public key was an unexpected value." );
+
+        pxPublicKey = FRTest_MemoryAlloc( xPubKeyQuery.ulValueLen );
+        TEST_ASSERT_MESSAGE( ( NULL != pxPublicKey ), "Failed to allocate space for public key." );
+
+        xPubKeyQuery.pValue = pxPublicKey;
+        xResult = pxGlobalFunctionList->C_GetAttributeValue( xGlobalSession, xPublicKeyHandle, &xPubKeyQuery, 1 );
+        TEST_ASSERT_MESSAGE( ( CKR_OK == xResult ), "Failed to query for public key length" );
+        TEST_ASSERT_MESSAGE( ( 0 != xPubKeyQuery.ulValueLen ), "The size of the public key was an unexpected value." );
+
+        /* Strip the ANS.1 Encoding of type and length. Otherwise mbed TLS won't be
+         * able to parse the binary EC point. */
+        lMbedTLSResult = mbedtls_ecp_point_read_binary( &pxKeyPair->grp,
+                                                        &pxKeyPair->Q,
+                                                        ( uint8_t * ) ( xPubKeyQuery.pValue ) + 2,
+                                                        xPubKeyQuery.ulValueLen - 2 );
+        TEST_ASSERT_MESSAGE( ( 0 == lMbedTLSResult ), "mbedTLS failed to read binary point." );
+
         /* An ECDSA signature is comprised of 2 components - R & S. */
-        mbedtls_mpi xR;
-        mbedtls_mpi xS;
-        mbedtls_mpi_init( &xR );
-        mbedtls_mpi_init( &xS );
 
         lMbedTLSResult = mbedtls_mpi_read_binary( &xR, &xSignature[ 0 ], 32 );
         TEST_ASSERT_MESSAGE( ( 0 == lMbedTLSResult ), "mbedTLS failed to read R binary in ECDSA signature." );
@@ -2500,15 +2499,20 @@ static void prvTestEcSign( provisionMethod_t testProvisionMethod )
         lMbedTLSResult = mbedtls_mpi_read_binary( &xS, &xSignature[ 32 ], 32 );
         TEST_ASSERT_MESSAGE( ( 0 == lMbedTLSResult ), "mbedTLS failed to read S binary in ECDSA signature." );
 
-        lMbedTLSResult = mbedtls_ecdsa_verify( &pxEcdsaContext->grp, xHashedMessage, sizeof( xHashedMessage ), &pxEcdsaContext->Q, &xR, &xS );
+        lMbedTLSResult = mbedtls_ecdsa_verify( &pxKeyPair->grp, xHashedMessage, sizeof( xHashedMessage ), &pxKeyPair->Q, &xR, &xS );
         TEST_ASSERT_MESSAGE( ( 0 == lMbedTLSResult ), "mbedTLS failed to verify signature." );
-
-        mbedtls_mpi_free( &xR );
-        mbedtls_mpi_free( &xS );
     }
 
-    FRTest_MemoryFree( pxPublicKey );
+    mbedtls_mpi_free( &xR );
+    mbedtls_mpi_free( &xS );
+
+    pxEcdsaContext->pk_ctx = NULL;
     mbedtls_pk_free( &xEcdsaContext );
+
+    if( pxPublicKey != NULL )
+    {
+        FRTest_MemoryFree( pxPublicKey );
+    }
 }
 
 /*-----------------------------------------------------------*/
