@@ -719,6 +719,11 @@ static void prvRsaObjectTestHelper( testFunctionPointer_t testFunction )
 
             testFunction( pkcs11TestRsaProvisionMethod[ provisionIndex ] );
         }
+        else
+        {
+            /* Break the provision loop if test failed. */
+            break;
+        }
     }
 }
 
@@ -748,6 +753,11 @@ static void prvEcObjectTestHelper( testFunctionPointer_t testFunction )
             }
 
             testFunction( pkcs11TestProvisionMethod[ provisionIndex ] );
+        }
+        else
+        {
+            /* Break the provision loop if test failed. */
+            break;
         }
     }
 }
@@ -856,9 +866,11 @@ TEST( Full_PKCS11_StartFinish, PKCS11_InitializeFinalize )
         xResult = pxFunctionList->C_Finalize( NULL );
         TEST_ASSERT_MESSAGE( ( CKR_CRYPTOKI_NOT_INITIALIZED == xResult ), "Second PKCS #11 finalization failed." );
     }
-
-    /* Run the finalize again in case test abort. */
-    ( void ) pxFunctionList->C_Finalize( NULL );
+    else
+    {
+        /* Run the finalize again in case test abort. */
+        ( void ) pxFunctionList->C_Finalize( NULL );
+    }
 }
 
 /*-----------------------------------------------------------*/
@@ -907,10 +919,14 @@ TEST( Full_PKCS11_StartFinish, PKCS11_GetSlotList )
         xResult = pxGlobalFunctionList->C_Finalize( NULL );
         TEST_ASSERT_MESSAGE( ( CKR_OK == xResult ), "Finalize failed." );
     }
+    else
+    {
+        /* Run the finalize again in case test abort. */
+        ( void ) pxGlobalFunctionList->C_Finalize( NULL );
+    }
 
-    /* Free previous allocated memory and finalize the PKCS11 here in case exit in TEST_PROTECT block. */
+    /* Free previous allocated memory. */
     FRTest_MemoryFree( pxSlotId );
-    ( void ) pxGlobalFunctionList->C_Finalize( NULL );
 }
 
 /*-----------------------------------------------------------*/
@@ -957,8 +973,11 @@ TEST( Full_PKCS11_StartFinish, PKCS11_OpenSessionCloseSession )
         TEST_ASSERT_MESSAGE( ( CKR_CRYPTOKI_NOT_INITIALIZED == xResult ),
                              "Negative Test: Opened a session before initializing module." );
     }
-
-    ( void ) pxGlobalFunctionList->C_Finalize( NULL );
+    else
+    {
+        /* Run the finalize again in case test abort. */
+        ( void ) pxGlobalFunctionList->C_Finalize( NULL );
+    }
 }
 
 /*--------------------------------------------------------*/
