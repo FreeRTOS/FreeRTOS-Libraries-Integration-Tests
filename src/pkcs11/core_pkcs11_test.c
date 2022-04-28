@@ -208,11 +208,6 @@ typedef void ( * testFunctionPointer_t )( provisionMethod_t testProvisionMethod 
 static CK_SESSION_HANDLE xGlobalSession = 0;
 static CK_FUNCTION_LIST_PTR pxGlobalFunctionList = NULL_PTR;
 
-/* PKCS #11 Global Data Containers. */
-static CK_BYTE rsaHashedMessage[ pkcs11SHA256_DIGEST_LENGTH ] = { 0 };
-static CK_BYTE ecdsaSignature[ pkcs11RSA_2048_SIGNATURE_LENGTH ] = { 0x00 };
-static CK_BYTE ecdsaHashedMessage[ pkcs11SHA256_DIGEST_LENGTH ] = { 0xab };
-
 /* Digest test input data. */
 static CK_BYTE x896BitInput[] = "abcdefghbcdefghicdefghijdefghijkefghijklfghijklmghijklmnhijklmnoijklmnopjklmnopqklmnopqrlmnopqrsmnopqrstnopqrstu";
 
@@ -702,25 +697,28 @@ static void prvProvisionEcTestCredentials( provisionMethod_t testProvisionMethod
 /* RSA object test helper to run the test function with all enabled provisioning method. */
 static void prvRsaObjectTestHelper( testFunctionPointer_t testFunction )
 {
-    uint32_t provisionIndex;
+    volatile uint32_t provisionIndex;
     CK_OBJECT_HANDLE xPrivateKeyHandle = CK_INVALID_HANDLE;
     CK_OBJECT_HANDLE xCertificateHandle = CK_INVALID_HANDLE;
     CK_OBJECT_HANDLE xPublicKeyHandle = CK_INVALID_HANDLE;
 
     for( provisionIndex = 0; provisionIndex < xNumTestRsaProvisionMethod; provisionIndex++ )
     {
-        if( pkcs11TestRsaProvisionMethod[ provisionIndex ] != eProvisionPreprovisioned )
+        if( TEST_PROTECT() )
         {
-            /* Destory previous provisioned credentials. */
-            prvDestroyTestCredentials();
+            if( pkcs11TestRsaProvisionMethod[ provisionIndex ] != eProvisionPreprovisioned )
+            {
+                /* Destory previous provisioned credentials. */
+                prvDestroyTestCredentials();
 
-            prvProvisionRsaTestCredentials( pkcs11TestRsaProvisionMethod[ provisionIndex ],
-                                            &xPrivateKeyHandle,
-                                            &xCertificateHandle,
-                                            &xPublicKeyHandle );
+                prvProvisionRsaTestCredentials( pkcs11TestRsaProvisionMethod[ provisionIndex ],
+                                                &xPrivateKeyHandle,
+                                                &xCertificateHandle,
+                                                &xPublicKeyHandle );
+            }
+
+            testFunction( pkcs11TestRsaProvisionMethod[ provisionIndex ] );
         }
-
-        testFunction( pkcs11TestRsaProvisionMethod[ provisionIndex ] );
     }
 }
 
@@ -729,25 +727,28 @@ static void prvRsaObjectTestHelper( testFunctionPointer_t testFunction )
 /* EC object test helper to run the test function with all enabled provisioning method. */
 static void prvEcObjectTestHelper( testFunctionPointer_t testFunction )
 {
-    uint32_t provisionIndex;
+    volatile uint32_t provisionIndex;
     CK_OBJECT_HANDLE xPrivateKeyHandle = CK_INVALID_HANDLE;
     CK_OBJECT_HANDLE xCertificateHandle = CK_INVALID_HANDLE;
     CK_OBJECT_HANDLE xPublicKeyHandle = CK_INVALID_HANDLE;
 
     for( provisionIndex = 0; provisionIndex < xNumTestProvisionMethod; provisionIndex++ )
     {
-        if( pkcs11TestProvisionMethod[ provisionIndex ] != eProvisionPreprovisioned )
+        if( TEST_PROTECT() )
         {
-            /* Destory previous provisioned credentials. */
-            prvDestroyTestCredentials();
+            if( pkcs11TestProvisionMethod[ provisionIndex ] != eProvisionPreprovisioned )
+            {
+                /* Destory previous provisioned credentials. */
+                prvDestroyTestCredentials();
 
-            prvProvisionEcTestCredentials( pkcs11TestProvisionMethod[ provisionIndex ],
-                                           &xPrivateKeyHandle,
-                                           &xCertificateHandle,
-                                           &xPublicKeyHandle );
+                prvProvisionEcTestCredentials( pkcs11TestProvisionMethod[ provisionIndex ],
+                                               &xPrivateKeyHandle,
+                                               &xCertificateHandle,
+                                               &xPublicKeyHandle );
+            }
+
+            testFunction( pkcs11TestProvisionMethod[ provisionIndex ] );
         }
-
-        testFunction( pkcs11TestProvisionMethod[ provisionIndex ] );
     }
 }
 
@@ -845,16 +846,19 @@ TEST( Full_PKCS11_StartFinish, PKCS11_InitializeFinalize )
         /* C_Finalize should fail if pReserved isn't NULL. */
         xResult = pxFunctionList->C_Finalize( ( CK_VOID_PTR ) 0x1234 );
         TEST_ASSERT_MESSAGE( ( CKR_ARGUMENTS_BAD == xResult ), "Negative Test: Finalize with invalid argument." );
+
+        /* C_Finalize with pReserved is NULL should return CKR_OK if C_Initalize is called successfully before. */
+        xResult = pxFunctionList->C_Finalize( NULL );
+        TEST_ASSERT_MESSAGE( ( CKR_OK == xResult ), "Finalize failed." );
+
+        /* Call C_Finalize a second time. Since C_Finalize may be called multiple times,
+         * it is important that the PKCS #11 module is tolerant of multiple calls. */
+        xResult = pxFunctionList->C_Finalize( NULL );
+        TEST_ASSERT_MESSAGE( ( CKR_CRYPTOKI_NOT_INITIALIZED == xResult ), "Second PKCS #11 finalization failed." );
     }
 
-    /* C_Finalize with pReserved is NULL should return CKR_OK if C_Initalize is called successfully before. */
-    xResult = pxFunctionList->C_Finalize( NULL );
-    TEST_ASSERT_MESSAGE( ( CKR_OK == xResult ), "Finalize failed." );
-
-    /* Call C_Finalize a second time. Since C_Finalize may be called multiple times,
-     * it is important that the PKCS #11 module is tolerant of multiple calls. */
-    xResult = pxFunctionList->C_Finalize( NULL );
-    TEST_ASSERT_MESSAGE( ( CKR_CRYPTOKI_NOT_INITIALIZED == xResult ), "Second PKCS #11 finalization failed." );
+    /* Run the finalize again in case test abort. */
+    ( void ) pxFunctionList->C_Finalize( NULL );
 }
 
 /*-----------------------------------------------------------*/
@@ -872,18 +876,18 @@ TEST( Full_PKCS11_StartFinish, PKCS11_GetSlotList )
     xResult = xInitializePKCS11();
     TEST_ASSERT_MESSAGE( ( CKR_OK == xResult ), "Failed to initialize PKCS #11 module." );
 
+    /* Happy path test. */
+    /* When a NULL slot pointer is passed in, the number of slots should be updated. */
+    xResult = pxGlobalFunctionList->C_GetSlotList( CK_TRUE, NULL, &xSlotCount );
+    TEST_ASSERT_MESSAGE( ( CKR_OK == xResult ), "Failed to get slot count." );
+    TEST_ASSERT_GREATER_THAN_MESSAGE( 0, xSlotCount, "Slot count incorrectly updated." );
+
+    /* Allocate memory to receive the list of slots, plus one extra. */
+    pxSlotId = FRTest_MemoryAlloc( sizeof( CK_SLOT_ID ) * ( xSlotCount + 1 ) );
+    TEST_ASSERT_MESSAGE( ( NULL != pxSlotId ), "Failed malloc memory for slot list." );
+
     if( TEST_PROTECT() )
     {
-        /* Happy path test. */
-        /* When a NULL slot pointer is passed in, the number of slots should be updated. */
-        xResult = pxGlobalFunctionList->C_GetSlotList( CK_TRUE, NULL, &xSlotCount );
-        TEST_ASSERT_MESSAGE( ( CKR_OK == xResult ), "Failed to get slot count." );
-        TEST_ASSERT_GREATER_THAN_MESSAGE( 0, xSlotCount, "Slot count incorrectly updated." );
-
-        /* Allocate memory to receive the list of slots, plus one extra. */
-        pxSlotId = FRTest_MemoryAlloc( sizeof( CK_SLOT_ID ) * ( xSlotCount + 1 ) );
-        TEST_ASSERT_MESSAGE( ( NULL != pxSlotId ), "Failed malloc memory for slot list." );
-
         /* Call C_GetSlotList again to receive all slots with tokens present. */
         xResult = pxGlobalFunctionList->C_GetSlotList( CK_TRUE, pxSlotId, &xSlotCount );
         TEST_ASSERT_MESSAGE( ( CKR_OK == xResult ), "Failed to get slot count." );
@@ -899,26 +903,22 @@ TEST( Full_PKCS11_StartFinish, PKCS11_GetSlotList )
         xSlotCount = 0;
         xResult = pxGlobalFunctionList->C_GetSlotList( CK_TRUE, pxSlotId, &xSlotCount );
         TEST_ASSERT_MESSAGE( ( CKR_BUFFER_TOO_SMALL == xResult ), "Negative Test: Improper handling of too-small slot buffer." );
+
+        xResult = pxGlobalFunctionList->C_Finalize( NULL );
+        TEST_ASSERT_MESSAGE( ( CKR_OK == xResult ), "Finalize failed." );
     }
 
-    if( pxSlotId != NULL )
-    {
-        FRTest_MemoryFree( pxSlotId );
-    }
-
-    xResult = pxGlobalFunctionList->C_Finalize( NULL );
-    TEST_ASSERT_MESSAGE( ( CKR_OK == xResult ), "Finalize failed." );
+    /* Free previous allocated memory and finalize the PKCS11 here in case exit in TEST_PROTECT block. */
+    FRTest_MemoryFree( pxSlotId );
+    ( void ) pxGlobalFunctionList->C_Finalize( NULL );
 }
 
 /*-----------------------------------------------------------*/
 
 TEST( Full_PKCS11_StartFinish, PKCS11_OpenSessionCloseSession )
 {
-    CK_SLOT_ID_PTR pxSlotId = NULL;
     CK_SLOT_ID xSlotId = 0;
-    CK_ULONG xSlotCount = 0;
     CK_SESSION_HANDLE xSession = 0;
-    CK_BBOOL xSessionOpen = CK_FALSE;
     CK_RV xResult = CKR_OK;
 
     /* Get function list. */
@@ -940,26 +940,25 @@ TEST( Full_PKCS11_StartFinish, PKCS11_OpenSessionCloseSession )
                                                        NULL,               /* Callback function. */
                                                        &xSession );
         TEST_ASSERT_MESSAGE( ( CKR_OK == xResult ), "Failed to open session." );
-        xSessionOpen = CK_TRUE;
-    }
 
-    if( xSessionOpen == CK_TRUE )
-    {
         xResult = pxGlobalFunctionList->C_CloseSession( xSession );
         TEST_ASSERT_MESSAGE( ( CKR_OK == xResult ), "Failed to close session." );
+
+        xResult = pxGlobalFunctionList->C_Finalize( NULL );
+        TEST_ASSERT_MESSAGE( ( CKR_OK == xResult ), "Finalize failed." );
+
+        /* Negative tests. */
+        /* Try to open a session without having initialized the module. */
+        xResult = pxGlobalFunctionList->C_OpenSession( xSlotId,
+                                                       CKF_SERIAL_SESSION, /* This flag is mandatory for PKCS #11 legacy reasons. */
+                                                       NULL,               /* Application defined pointer. */
+                                                       NULL,               /* Callback function. */
+                                                       &xSession );
+        TEST_ASSERT_MESSAGE( ( CKR_CRYPTOKI_NOT_INITIALIZED == xResult ),
+                             "Negative Test: Opened a session before initializing module." );
     }
 
-    pxGlobalFunctionList->C_Finalize( NULL );
-
-    /* Negative tests. */
-    /* Try to open a session without having initialized the module. */
-    xResult = pxGlobalFunctionList->C_OpenSession( xSlotId,
-                                                   CKF_SERIAL_SESSION, /* This flag is mandatory for PKCS #11 legacy reasons. */
-                                                   NULL,               /* Application defined pointer. */
-                                                   NULL,               /* Callback function. */
-                                                   &xSession );
-    TEST_ASSERT_MESSAGE( ( CKR_CRYPTOKI_NOT_INITIALIZED == xResult ),
-                         "Negative Test: Opened a session before initializing module." );
+    ( void ) pxGlobalFunctionList->C_Finalize( NULL );
 }
 
 /*--------------------------------------------------------*/
@@ -1005,7 +1004,6 @@ TEST( Full_PKCS11_Capabilities, PKCS11_Capabilities )
     CK_RV xResult = 0;
     CK_SLOT_ID xSlotId;
     CK_MECHANISM_INFO MechanismInfo = { 0 };
-    CK_BBOOL xSupportsKeyGen = CK_FALSE;
 
     /* Determine the number of slots. */
     xSlotId = prvGetTestSlotId();
@@ -1061,7 +1059,6 @@ TEST( Full_PKCS11_Capabilities, PKCS11_Capabilities )
             TEST_ASSERT_TRUE( MechanismInfo.ulMaxKeySize >= pkcs11ECDSA_P256_KEY_BITS &&
                               MechanismInfo.ulMinKeySize <= pkcs11ECDSA_P256_KEY_BITS );
 
-            xSupportsKeyGen = CK_TRUE;
             TEST_PRINTF( "%s", "The PKCS #11 module supports elliptic-curve key generation." );
         }
     #endif /* if ( PKCS11_TEST_PREPROVISIONED_SUPPORT != 1 ) */
@@ -1405,12 +1402,12 @@ TEST_GROUP_RUNNER( Full_PKCS11_RSA )
 
 TEST( Full_PKCS11_RSA, PKCS11_RSA_CreateObject )
 {
-    CK_RV xResult;
     CK_OBJECT_HANDLE xPrivateKeyHandle = CK_INVALID_HANDLE;
     CK_OBJECT_HANDLE xPublicKeyHandle = CK_INVALID_HANDLE;
     CK_OBJECT_HANDLE xCertificateHandle = CK_INVALID_HANDLE;
 
     #if ( PKCS11_TEST_JITP_CODEVERIFY_ROOT_CERT_SUPPORTED == 1 )
+        CK_RV xResult;
         CK_OBJECT_HANDLE xRootCertificateHandle = CK_INVALID_HANDLE;
         CK_OBJECT_HANDLE xCodeSignPublicKeyHandle = CK_INVALID_HANDLE;
         CK_OBJECT_HANDLE xJITPCertificateHandle = CK_INVALID_HANDLE;
@@ -1602,7 +1599,8 @@ static void prvTestRsaGetAttributeValue( provisionMethod_t testProvisionMethod )
     CK_BYTE xKeyComponent[ ( pkcs11RSA_2048_MODULUS_BITS / 8 ) + 1 ] = { 0 };
     uint8_t * pucDerObject = NULL;
     size_t xDerLen = 0;
-    int32_t lConversionReturn = 0;
+    int32_t lConversionReturn = 1;  /* Initialized to non-zero value. */
+    int32_t lImportKeyCompare = 1;  /* Initialized to non-zero value. */
 
     /* Get the certificate handle. */
     xResult = xFindObjectWithLabelAndClass( xGlobalSession,
@@ -1630,24 +1628,26 @@ static void prvTestRsaGetAttributeValue( provisionMethod_t testProvisionMethod )
     {
         /* Verify the imported certificate. */
         pucDerObject = FRTest_MemoryAlloc( sizeof( cValidRSACertificate ) );
-        TEST_ASSERT( pucDerObject != NULL );
+        TEST_ASSERT_MESSAGE( pucDerObject != NULL, "Allocate memory for RSA certificate failed." );
         xDerLen = sizeof( cValidRSACertificate );
 
-        if( TEST_PROTECT() )
+        lConversionReturn = convert_pem_to_der( ( const unsigned char * ) cValidRSACertificate,
+                                                sizeof( cValidRSACertificate ),
+                                                pucDerObject,
+                                                &xDerLen );
+
+        if( lConversionReturn == 0 )
         {
-            lConversionReturn = convert_pem_to_der( ( const unsigned char * ) cValidRSACertificate,
-                                                    sizeof( cValidRSACertificate ),
-                                                    pucDerObject,
-                                                    &xDerLen );
-            TEST_ASSERT( lConversionReturn == 0 );
-            TEST_ASSERT_EQUAL_HEX8_ARRAY_MESSAGE( xTemplate.pValue, pucDerObject,
-                                                  xTemplate.ulValueLen, "Compare certificate failed." );
+            lImportKeyCompare = memcmp( xTemplate.pValue, pucDerObject, xTemplate.ulValueLen );
         }
 
-        if( pucDerObject != NULL )
+        /* Free the allocated memory and compare. */
+        FRTest_MemoryFree( pucDerObject );
+        pucDerObject = NULL;
+
+        if( ( lConversionReturn != 0 ) || ( lImportKeyCompare != 0 ) )
         {
-            FRTest_MemoryFree( pucDerObject );
-            pucDerObject = NULL;
+            TEST_FAIL_MESSAGE( "Compare imported RSA certificate failed." );
         }
     }
 
@@ -1690,6 +1690,10 @@ static void prvTestRsaSign( provisionMethod_t testProvisionMethod )
     CK_ULONG xSignatureLength;
     CK_BYTE xHashPlusOid[ pkcs11RSA_SIGNATURE_INPUT_LENGTH ];
 
+    /* Verify the signature with mbedTLS */
+    mbedtls_pk_context xMbedPkContext;
+    int lMbedTLSResult;
+
     #if MBEDTLS_VERSION_NUMBER >= 0x03000000
         mbedtls_entropy_context xEntropyContext;
         mbedtls_ctr_drbg_context xDrbgContext;
@@ -1718,10 +1722,6 @@ static void prvTestRsaSign( provisionMethod_t testProvisionMethod )
     xResult = pxGlobalFunctionList->C_Sign( xGlobalSession, xHashPlusOid, sizeof( xHashPlusOid ), NULL, &xSignatureLength );
     TEST_ASSERT_MESSAGE( ( CKR_OK == xResult ), "Failed to RSA Sign." );
     TEST_ASSERT_MESSAGE( ( pkcs11RSA_2048_SIGNATURE_LENGTH == xSignatureLength ), "RSA Sign should return needed signature buffer length when pucSignature is NULL." );
-
-    /* Verify the signature with mbedTLS */
-    mbedtls_pk_context xMbedPkContext;
-    int lMbedTLSResult;
 
     mbedtls_pk_init( &xMbedPkContext );
 
@@ -1787,7 +1787,6 @@ static void prvRSAGetAttributeValueMultiThreadTask( void * pvParameters )
 {
     MultithreadTaskParams_t * pxMultiTaskParam = pvParameters;
     GetAttributeValueMultiThread_t * pxAttributeStruct = pxMultiTaskParam->pvTaskData;
-    CK_RV xResult;
     CK_ATTRIBUTE xTemplate;
     CK_OBJECT_HANDLE xCertificateHandle = pxAttributeStruct->xCertificate;
     CK_OBJECT_HANDLE xPrivateKeyHandle = pxAttributeStruct->xPrivateKey;
@@ -1804,30 +1803,27 @@ static void prvRSAGetAttributeValueMultiThreadTask( void * pvParameters )
             xTemplate.type = CKA_VALUE;
             xTemplate.pValue = NULL;
             xTemplate.ulValueLen = 0;
-            xResult = pxGlobalFunctionList->C_GetAttributeValue( xSession, xCertificateHandle, &xTemplate, 1 );
+            pxMultiTaskParam->xTestResult = pxGlobalFunctionList->C_GetAttributeValue( xSession, xCertificateHandle, &xTemplate, 1 );
             TEST_ASSERT_MESSAGE( ( CERTIFICATE_VALUE_LENGTH == xTemplate.ulValueLen ), "GetAttributeValue returned incorrect length of RSA certificate value" );
 
             /* Get the certificate value. */
             xTemplate.pValue = xCertificateValue;
-            xResult = pxGlobalFunctionList->C_GetAttributeValue( xSession, xCertificateHandle, &xTemplate, 1 );
-            TEST_ASSERT_MESSAGE( ( CKR_OK == xResult ), "Failed to get RSA certificate value" );
+            pxMultiTaskParam->xTestResult = pxGlobalFunctionList->C_GetAttributeValue( xSession, xCertificateHandle, &xTemplate, 1 );
+            TEST_ASSERT_MESSAGE( ( CKR_OK == pxMultiTaskParam->xTestResult ), "Failed to get RSA certificate value" );
             TEST_ASSERT_MESSAGE( ( CERTIFICATE_VALUE_LENGTH == xTemplate.ulValueLen ), "GetAttributeValue returned incorrect length of RSA certificate value" );
 
             /* Check that the private key cannot be retrieved. */
             xTemplate.type = CKA_PRIVATE_EXPONENT;
             xTemplate.pValue = xKeyComponent;
             xTemplate.ulValueLen = sizeof( xKeyComponent );
-            xResult = pxGlobalFunctionList->C_GetAttributeValue( xSession, xPrivateKeyHandle, &xTemplate, 1 );
-            TEST_ASSERT_MESSAGE( ( CKR_ATTRIBUTE_SENSITIVE == xResult ), "Incorrect error code retrieved when trying to obtain private key." );
+            pxMultiTaskParam->xTestResult = pxGlobalFunctionList->C_GetAttributeValue( xSession, xPrivateKeyHandle, &xTemplate, 1 );
+            TEST_ASSERT_MESSAGE( ( CKR_ATTRIBUTE_SENSITIVE == pxMultiTaskParam->xTestResult ), "Incorrect error code retrieved when trying to obtain private key." );
             TEST_ASSERT_EACH_EQUAL_INT8_MESSAGE( 0, xKeyComponent, sizeof( xKeyComponent ), "Private key bytes returned when they should not be." );
 
             /* Reset the test result after retrieve private key attribute test. */
-            xResult = 0;
+            pxMultiTaskParam->xTestResult = 0;
         }
     }
-
-    /* Report the result of the loop. */
-    pxMultiTaskParam->xTestResult = xResult;
 }
 
 /*-----------------------------------------------------------*/
@@ -2450,18 +2446,26 @@ static void prvTestEcSign( provisionMethod_t testProvisionMethod )
     TEST_ASSERT_MESSAGE( ( CKR_OK == xResult ), "Failed to ECDSA Sign." );
     TEST_ASSERT_MESSAGE( ( pkcs11ECDSA_P256_SIGNATURE_LENGTH == xSignatureLength ), "ECDSA Sign should return needed signature buffer length when pucSignature is NULL." );
 
-    mbedtls_mpi_init( &xR );
-    mbedtls_mpi_init( &xS );
+    /* Get EC point from PKCS #11 stack. */
+    xResult = pxGlobalFunctionList->C_GetAttributeValue( xGlobalSession, xPublicKeyHandle, &xPubKeyQuery, 1 );
+    TEST_ASSERT_MESSAGE( ( CKR_OK == xResult ), "Failed to query for public key length" );
+    TEST_ASSERT_MESSAGE( ( 0 != xPubKeyQuery.ulValueLen ), "The size of the public key was an unexpected value." );
 
-    mbedtls_pk_init( pxEcdsaContext );
-
-    /* Initialize the info. */
-    pxEcdsaContext->pk_info = mbedtls_pk_info_from_type( MBEDTLS_PK_ECKEY );
-    mbedtls_ecp_keypair_init( pxKeyPair );
-    mbedtls_ecp_group_init( &pxKeyPair->grp );
+    pxPublicKey = FRTest_MemoryAlloc( xPubKeyQuery.ulValueLen );
+    TEST_ASSERT_MESSAGE( ( NULL != pxPublicKey ), "Failed to allocate space for public key." );
 
     if( TEST_PROTECT() )
     {
+        mbedtls_mpi_init( &xR );
+        mbedtls_mpi_init( &xS );
+
+        mbedtls_pk_init( pxEcdsaContext );
+
+        /* Initialize the info. */
+        pxEcdsaContext->pk_info = mbedtls_pk_info_from_type( MBEDTLS_PK_ECKEY );
+        mbedtls_ecp_keypair_init( pxKeyPair );
+        mbedtls_ecp_group_init( &pxKeyPair->grp );
+
         /* Might want to make the ECP group configurable in the future. */
         lMbedTLSResult = mbedtls_ecp_group_load( &pxKeyPair->grp,
                                                  MBEDTLS_ECP_DP_SECP256R1 );
@@ -2469,14 +2473,6 @@ static void prvTestEcSign( provisionMethod_t testProvisionMethod )
 
         /* Initialize the context. */
         pxEcdsaContext->pk_ctx = pxKeyPair;
-
-        /* Get EC point from PKCS #11 stack. */
-        xResult = pxGlobalFunctionList->C_GetAttributeValue( xGlobalSession, xPublicKeyHandle, &xPubKeyQuery, 1 );
-        TEST_ASSERT_MESSAGE( ( CKR_OK == xResult ), "Failed to query for public key length" );
-        TEST_ASSERT_MESSAGE( ( 0 != xPubKeyQuery.ulValueLen ), "The size of the public key was an unexpected value." );
-
-        pxPublicKey = FRTest_MemoryAlloc( xPubKeyQuery.ulValueLen );
-        TEST_ASSERT_MESSAGE( ( NULL != pxPublicKey ), "Failed to allocate space for public key." );
 
         xPubKeyQuery.pValue = pxPublicKey;
         xResult = pxGlobalFunctionList->C_GetAttributeValue( xGlobalSession, xPublicKeyHandle, &xPubKeyQuery, 1 );
@@ -2536,6 +2532,11 @@ static void prvTestEcVerify( provisionMethod_t testProvisionMethod )
     CK_BYTE xSignaturePKCS[ 64 ] = { 0 };
     size_t xSignatureLength = pkcs11ECDSA_P256_SIGNATURE_LENGTH;
 
+    mbedtls_pk_context xPkContext;
+    mbedtls_entropy_context xEntropyContext;
+    mbedtls_ctr_drbg_context xDrbgContext;
+    int lMbedResult;
+
     /* TODO: Consider switching this out for a C_GenerateRandom dependent function for ports not implementing mbedTLS. */
 
     /* Find objects that were previously created. This test case should be run if
@@ -2560,11 +2561,6 @@ static void prvTestEcVerify( provisionMethod_t testProvisionMethod )
 
     if( testProvisionMethod == eProvisionImportPrivateKey )
     {
-        mbedtls_pk_context xPkContext;
-        mbedtls_entropy_context xEntropyContext;
-        mbedtls_ctr_drbg_context xDrbgContext;
-        int lMbedResult;
-
         /* Initialize the RNG. */
         mbedtls_entropy_init( &xEntropyContext );
         mbedtls_ctr_drbg_init( &xDrbgContext );
@@ -2602,26 +2598,26 @@ static void prvTestEcVerify( provisionMethod_t testProvisionMethod )
                     xSignature, sizeof( xSignature), &xSignatureLength, mbedtls_ctr_drbg_random, &xDrbgContext );
                 TEST_ASSERT_MESSAGE( ( 0 == lMbedResult ), "Failed to perform ECDSA signature." );
             #endif /* MBEDTLS_VERSION_NUMBER < 0x03000000 */
+
+            /* Reconstruct the signature in PKCS #11 format. */
+            lMbedResult = PKI_mbedTLSSignatureToPkcs11Signature( xSignaturePKCS,
+                                                                 xSignature );
+            TEST_ASSERT_MESSAGE( ( 0 == lMbedResult ), "Null buffers." );
+
+            /* Verify with PKCS #11. */
+            xMechanism.mechanism = CKM_ECDSA;
+            xMechanism.pParameter = NULL;
+            xMechanism.ulParameterLen = 0;
+            xResult = pxGlobalFunctionList->C_VerifyInit( xGlobalSession, &xMechanism, xPublicKeyHandle );
+            TEST_ASSERT_MESSAGE( ( CKR_OK == xResult ), "VerifyInit failed." );
+
+            xResult = pxGlobalFunctionList->C_Verify( xGlobalSession, xHashedMessage, pkcs11SHA256_DIGEST_LENGTH, xSignaturePKCS, sizeof( xSignaturePKCS ) );
+            TEST_ASSERT_MESSAGE( ( CKR_OK == xResult ), "Verify failed." );
         }
 
         mbedtls_pk_free( &xPkContext );
         mbedtls_ctr_drbg_free( &xDrbgContext );
         mbedtls_entropy_free( &xEntropyContext );
-
-        /* Reconstruct the signature in PKCS #11 format. */
-        lMbedResult = PKI_mbedTLSSignatureToPkcs11Signature( xSignaturePKCS,
-                                                             xSignature );
-        TEST_ASSERT_MESSAGE( ( 0 == lMbedResult ), "Null buffers." );
-
-        /* Verify with PKCS #11. */
-        xMechanism.mechanism = CKM_ECDSA;
-        xMechanism.pParameter = NULL;
-        xMechanism.ulParameterLen = 0;
-        xResult = pxGlobalFunctionList->C_VerifyInit( xGlobalSession, &xMechanism, xPublicKeyHandle );
-        TEST_ASSERT_MESSAGE( ( CKR_OK == xResult ), "VerifyInit failed." );
-
-        xResult = pxGlobalFunctionList->C_Verify( xGlobalSession, xHashedMessage, pkcs11SHA256_DIGEST_LENGTH, xSignaturePKCS, sizeof( xSignaturePKCS ) );
-        TEST_ASSERT_MESSAGE( ( CKR_OK == xResult ), "Verify failed." );
     }
 }
 
