@@ -904,7 +904,7 @@ TEST( Full_TransportInterfaceTest, Transport_SendRecvCompareMultithreaded )
         }
     }
 
-    /* The primary thread network context will be closed in the test tesr down function. */
+    /* The primary thread network context will be closed in the test tear down function. */
     for( threadIndex = 1; threadIndex < TRANSPORT_TEST_MULTI_THREAD_TASK_COUNT; threadIndex++ )
     {
         testParam.pNetworkDisconnect( threadParameter[ threadIndex ].pNetworkContext );
