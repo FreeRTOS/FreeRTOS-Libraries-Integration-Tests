@@ -492,13 +492,25 @@ static void prvRetunZeroRetryFunc( void * pParam )
     prvInitializeTestData( pTrasnportTestBufferStart, TRANSPORT_TEST_BUFFER_WRITABLE_LENGTH );
 
     /* Send the test data to the server. */
-    pThreadParameter->xResult = prvTransportSendData( pTestTransport, pNetworkContext, pTrasnportTestBufferStart, TRANSPORT_TEST_BUFFER_WRITABLE_LENGTH );
+    if( pThreadParameter->xResult == true )
+    {
+        pThreadParameter->xResult = prvTransportSendData( pTestTransport, pNetworkContext,
+            pTrasnportTestBufferStart, TRANSPORT_TEST_BUFFER_WRITABLE_LENGTH );
+    }
 
     /* Receive the test data from server. */
-    pThreadParameter->xResult = prvTransportRecvData( pTestTransport, pNetworkContext, pTrasnportTestBufferStart, TRANSPORT_TEST_BUFFER_WRITABLE_LENGTH );
+    if( pThreadParameter->xResult == true )
+    {
+        pThreadParameter->xResult = prvTransportRecvData( pTestTransport, pNetworkContext,
+            pTrasnportTestBufferStart, TRANSPORT_TEST_BUFFER_WRITABLE_LENGTH );
+    }
 
     /* Compare the test data received from server. */
-    pThreadParameter->xResult = prvVerifyTestData( pTrasnportTestBufferStart, TRANSPORT_TEST_BUFFER_WRITABLE_LENGTH, TRANSPORT_TEST_BUFFER_WRITABLE_LENGTH );
+    if( pThreadParameter->xResult == true )
+    {
+        pThreadParameter->xResult = prvVerifyTestData( pTrasnportTestBufferStart,
+            TRANSPORT_TEST_BUFFER_WRITABLE_LENGTH, TRANSPORT_TEST_BUFFER_WRITABLE_LENGTH );
+    }
 }
 
 /*-----------------------------------------------------------*/
