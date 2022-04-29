@@ -139,7 +139,7 @@
 /**
  * @brief Print debug error message when test fail in multi-threaded test.
  *
- * User UnityPrint for older version of Unity.
+ * Use UnityPrint for older version of Unity.
  */
 #ifndef TEST_MESSAGE
     #define TEST_MESSAGE( x )    UnityPrint( x )
