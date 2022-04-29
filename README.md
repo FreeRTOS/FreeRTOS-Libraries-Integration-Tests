@@ -11,7 +11,9 @@ as part of the [AWS Device Qualification for FreeRTOS](https://docs.aws.amazon.c
 ### Tests
 There are two test groups in this repository:
 1. Transport Interface Test validates the implementation of transport interface. The implementation can be plain text or TLS.
-2. MQTT Test validates the integration with coreMQTT library.
+2. PKCS11 Test validates the implementation of PKCS11 interface required by [corePKCS11](https://docs.aws.amazon.com/freertos/latest/portingguide/afr-porting-pkcs.html).
+3. OTA Test validates the implementation of Physical Abstract Layer for [Over-the-Air Updates](https://docs.aws.amazon.com/freertos/latest/portingguide/afr-porting-ota.html).
+4. MQTT Test validates the integration with coreMQTT library.
 
 
 ### Folder Structure
