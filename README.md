@@ -1,4 +1,4 @@
-## Labs-FreeRTOS-Libraries-Integration-Tests
+## FreeRTOS-Libraries-Integration-Tests
 
 ### Overview
 This repository contains tests that verify an integration of FreeRTOS IoT libraries
@@ -9,8 +9,8 @@ The tests are used by [AWS IoT Device Tester](https://docs.aws.amazon.com/freert
 as part of the [AWS Device Qualification for FreeRTOS](https://docs.aws.amazon.com/freertos/latest/qualificationguide/afr-qualification.html).
 
 ### Tests
-There are two test groups in this repository:
-1. Transport Interface Test validates the implementation of transport interface. The implementation can be plain text or TLS.
+The following test groups are included in this repository:
+1. Transport Interface Test validates the implementation of transport interface. The implementation can be plain text or TLS. See [transport interface tests](/src/transport_interface) for details.
 2. PKCS11 Test validates the implementation of PKCS11 interface required by [corePKCS11](https://docs.aws.amazon.com/freertos/latest/portingguide/afr-porting-pkcs.html).
 3. OTA Test validates the implementation of Physical Abstract Layer for [Over-the-Air Updates](https://docs.aws.amazon.com/freertos/latest/portingguide/afr-porting-ota.html).
 4. MQTT Test validates the integration with coreMQTT library.
