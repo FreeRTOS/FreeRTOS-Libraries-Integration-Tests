@@ -5,8 +5,8 @@ This repository contains tests that verify an integration of FreeRTOS IoT librar
 running on a specific microcontroller-based development board for robustness and
 compatibility with AWS’s published best practices for AWS IoT Core connectivity.
 Refer to [FreeRTOS Porting Guide](https://docs.aws.amazon.com/freertos/latest/portingguide/afr-porting.html) for how to port FreeRTOS libraries and test your project.
-The tests are used by [AWS IoT Device Tester](https://docs.aws.amazon.com/freertos/latest/userguide/device-tester-for-freertos-ug.html)
-as part of the [AWS Device Qualification for FreeRTOS](https://docs.aws.amazon.com/freertos/latest/qualificationguide/afr-qualification.html).
+The tests are used by [AWS IoT Device Tester](https://docs.aws.amazon.com/freertos/latest/userguide/device-tester-for-freertos-ug.html) (IDT)
+as part of the [AWS Device Qualification for FreeRTOS](https://docs.aws.amazon.com/freertos/latest/qualificationguide/afr-qualification.html). The tests can also be run locally from your IDE to verify your project, but a test report from IDT is required for AWS Device Qualification.
 
 ### Tests
 The following test groups are included in this repository:
