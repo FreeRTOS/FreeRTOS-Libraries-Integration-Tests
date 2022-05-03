@@ -45,7 +45,7 @@ The transport interface tests verify the implementation by running various test 
 |TransportRecv_NoDataToReceive	|Test transport interface receive function return value when no data to receive	|0 should be returned	|
 |TransportRecv_ReturnZeroRetry	|Test transport interface receive function return zero due to no data to receive. Send data to echo server then retry the receive function. Transport receive function should be able to receive data from echo server and return positive value.	|Postive value should be returned after retry transport receive	|
 
-Assert may be used to check invalid parameters. In that case, you may need to replace
+Assert may be used to check invalid parameters. In that case, you need to replace
 the assert macro to return negative value in your transport interface implementation
 to ensure invalid parameter error can be catched by assert.<br><br>
 For example, if you are using FreeRTOS configASSERT macro to check invalid parameters,
@@ -71,12 +71,13 @@ A PC which can run Go language program and has network connectivity is required 
 Folder structure of the transport interface tests. The tree only lists the required files to run the transport interface test.
 
 ```
-.
+./FreeRTOS-Libraries-Integration-Tests
 ├── include
 │   ├── test_execution_config.h
 │   └── test_param_config.h
 └── src
     ├── common
+    │   ├── platform_function.h
     │   └── network_connection.h
     ├── qualification_test.c
     ├── qualification_test.h
@@ -90,11 +91,11 @@ Folder structure of the transport interface tests. The tree only lists the requi
 
 Developer implements the transport interface test application with the following steps:
 
-1. Add [Labs-FreeRTOS-Libraries-Integration-Tests](https://github.com/FreeRTOS/Labs-FreeRTOS-Libraries-Integration-Tests) as a submodule into your project. It doesn’t matter where the submodule is placed in the project, as long as it can be built.
+1. Add [FreeRTOS-Libraries-Integration-Tests](https://github.com/FreeRTOS/FreeRTOS-Libraries-Integration-Tests) as a submodule into your project. It doesn’t matter where the submodule is placed in the project, as long as it can be built.
 
-2. Copy config_template/test_execution_config_template.h and config_template/test_param_config_template.h to a project location in the build path, and rename them to test_execution_config.h and test_param_config.h.
+2. Copy **config_template/test_execution_config_template.h** and **config_template/test_param_config_template.h** to a project location in the build path, and rename them to **test_execution_config.h** and **test_param_config.h**.
 
-3. Include relevant files into the build system. If using CMake, qualification_test.cmake and src/transport_interface_tests.cmake can be used to include relevant files.
+3. Include relevant files into the build system. If using CMake, **qualification_test.cmake** and **src/transport_interface_tests.cmake** can be used to include relevant files.
 
 4. Implement the setup function, **SetupTransportTestParam**, for transport interface test to provide test parameters. The following are required test parameters:
 
@@ -107,9 +108,6 @@ typedef struct TransportTestParam
     TransportInterface_t * pTransport;            /**< @brief Transport interface structure to test. */
     NetworkConnectFunc_t pNetworkConnect;         /**< @brief Network connect function pointer. */
     NetworkDisconnectFunc_t pNetworkDisconnect;   /**< @brief Network disconnect function pointer. */
-    TransportTestDelayFunc_t pTransportTestDelay; /**< @brief Transport test delay function pointer. */
-    TestThreadCreate_t pTestThreadCreate;         /**< @brief Test thread create function. */
-    TestThreadTimedWait_t pTestThreadTimedWait;   /**< @brief Test thread timed wait function. */
     void * pNetworkCredentials;                   /**< @brief Network credentials for network connection. */
     void * pNetworkContext;                       /**< @brief Primary network context. */
     void * pSecondNetworkContext;                 /**< @brief Secondary network context. */
@@ -125,7 +123,51 @@ typedef struct TransportTestParam
 void SetupTransportTestParam( TransportTestParam_t * pTestParam );
 ```
 
-5. Enable the transport interface config, **TRANSPORT_INTERFACE_TEST_ENABLED**, in **test_execution_config.h**.
+5. Implement the platform functions used in transport interface test. The following are required platform functions:
+```C
+/**
+ * @brief Thread handle data structure definition.
+ */
+typedef void * FRTestThreadHandle_t;
+
+/**
+ * @brief Thread function to be executed in ThreadCreate_t function.
+ *
+ * @param[in] pParam The pParam parameter passed in ThreadCreate_t function.
+ */
+typedef void ( * FRTestThreadFunction_t )( void * pParam );
+
+/**
+ * @brief Delay function to wait for at least specified amount of time.
+ *
+ * @param[in] delayMs Delay in milliseconds.
+ */
+void FRTest_TimeDelay( uint32_t delayMs );
+
+/**
+ * @brief Thread create function for test application.
+ *
+ * @param[in] threadFunc The thread function to be executed in the created thread.
+ * @param[in] pParam The pParam parameter passed to the thread function pParam parameter.
+ *
+ * @return NULL if create thread failed. Otherwise, return the handle of the created thread.
+ */
+FRTestThreadHandle_t FRTest_ThreadCreate( FRTestThreadFunction_t threadFunc,
+                                          void * pParam );
+
+/**
+ * @brief Timed thread join function to wait for the created thread exit.
+ *
+ * @param[in] threadHandle The handle of the created thread to be waited.
+ * @param[in] timeoutMs The timeout value of to wait for the created thread exit.
+ *
+ * @return 0 if the thread exits within timeoutMs. Other value will be regarded as error.
+ */
+int FRTest_ThreadTimedJoin( FRTestThreadHandle_t threadHandle,
+                            uint32_t timeoutMs );
+```
+
+6. Enable the transport interface config, **TRANSPORT_INTERFACE_TEST_ENABLED**, in **test_execution_config.h**.
 
 ```C
 #define TRANSPORT_INTERFACE_TEST_ENABLED  ( 1 )     /* Set 1 to enable the transport interface test. */
@@ -139,12 +181,15 @@ The following is an example test application.
 #include "transport_interface.h"
 #include "transport_interface_tests.h"
 #include "qualification_test.h"
+#include "platform_function.h"
 
 static NetworkContext_t xNetworkContext = { 0 };
 static NetworkContext_t xSecondNetworkContext = { 0 };
 static TransportInterface_t xTransport = { 0 };
 
-static NetworkConnectStatus_t prvTransportNetworkConnect( void * pNetworkContext, TestHostInfo_t * pHostInfo, void * pNetworkCredentials )
+static NetworkConnectStatus_t prvTransportNetworkConnect( void * pNetworkContext,
+                                                          TestHostInfo_t * pHostInfo,
+                                                          void * pNetworkCredentials )
 {
     /* Connect the transport network. */
 }
@@ -154,17 +199,17 @@ static void prvTransportNetworkDisconnect( void * pNetworkContext )
     /* Disconnect the transport network. */
 }
 
-static void prvTransportTestDelay( uint32_t delayMs )
+void FRTest_TimeDelay( uint32_t delayMs )
 {
     /* Delay function to wait for the response from network. */
 }
 
-static TestThreadHandle_t prvThreadCreate( TestThreadFunction_t threadFunc, void * pParam )
+FRTestThreadHandle_t FRTest_ThreadCreate( FRTestThreadFunction_t threadFunc, void * pParam )
 {
     /* Thread create function for multithreaded test. */
 }
 
-static int prvThreadTimedWait( TestThreadHandle_t threadHandle, uint32_t timeoutMs )
+int FRTest_ThreadTimedJoin( FRTestThreadHandle_t threadHandle, uint32_t timeoutMs )
 {
     /* Thread timed wait function for multithreaded test. */
 }
@@ -183,10 +228,7 @@ void SetupTransportTestParam( TransportTestParam_t * pTestParam )
 
         pTestParam->pNetworkConnect = prvTransportNetworkConnect;
         pTestParam->pNetworkDisconnect = prvTransportNetworkDisconnect;
-        pTestParam->pTransportTestDelay = prvTransportTestDelay;
         pTestParam->pNetworkCredentials = /* YourNetworkCredentials. */;
-        pTestParam->pTestThreadCreate = prvThreadCreate;
-        pTestParam->pTestThreadTimedWait = prvThreadTimedWait;
     }
 }
 
@@ -214,6 +256,8 @@ The echo server needs a configuration file. The following is echo server configu
     * Enable this option to switch to using TLS for the echo server. Note you will have to complete the credential creation prerequisite.
 * **server-port**
     * Specify which port to open a socket on.
+* **cert-verify**
+    * Verify client certificate. To enable this configuration, client certificate must be signed by server credentials.
 * **server-certificate-location**
     * Relative or absolute path to the server certificate generated in the credential creation prerequisite.
 * **server-key-location**
@@ -228,6 +272,7 @@ To run the echo serve without TLS, the following configuraition file, "example_c
     "logging": false,
     "secure-connection": false,
     "server-port": "9000",
+    "cert-verify": false,
     "server-certificate-location": "",
     "server-key-location": ""
 }
@@ -245,15 +290,16 @@ go run echo_server.go -config=example_config.json
 ### 6.2. Start the echo server with TLS
 Developer’s can also setup the transport interface test over mutual authenticated TLS with this echo server tool. Echo server must setup with the **secure-connection** configuration and provide server certificate and key in the configuration file. TLS connection capability and client certificate will be verified by the echo server.
 
-This [document](https://github.com/FreeRTOS/Labs-FreeRTOS-Libraries-Integration-Tests/blob/main/tools/echo_server/README.md) describes how to create self-signed credentials for the echo server. The self-signed credentials is only for test transport interface test.
+This [document](https://github.com/FreeRTOS/FreeRTOS-Libraries-Integration-Tests/blob/main/tools/echo_server/README.md) describes how to create self-signed credentials for the echo server. The self-signed credentials is only for test transport interface test.
 
-To run the echo serve with TLS, the following configuraition file, "example_tls_config.json", can be referenced as an example to run the echo server. 
+To run the echo server with TLS, the following configuraition file, "example_tls_config.json", can be referenced as an example to run the echo server. This configuration assumes you are using self-signed credentials for testing.
 ```
 {
     "verbose": false,
     "logging": false,
     "secure-connection": true,
     "server-port": "9000",
+    "cert-verify": true,
     "server-certificate-location": "YourServerCertifcate",
     "server-key-location": "YourServerKey"
 }
@@ -272,6 +318,16 @@ Provide the **server-address** and **server-port** in **test_param_config.h**.
 #define ECHO_SERVER_PORT       ( server-port )
 ```
 To run the transport interface test with TLS, network credentials need to be assigned in the SetupTransportTestParam function.
+You need to make use of the following configurations in **test_param_config.h** for network credentials.
+```C
+ #define ECHO_SERVER_ROOT_CA "echo-server-root-ca"
+ #define TRANSPORT_CLIENT_CERTIFICATE "transport-client-certificate"
+
+ /* This configuration should only be used for testing purpose.
+  * For qualification, the key should be generated on-device. */
+ #define TRANSPORT_CLIENT_PRIVATE_KEY "transport-client-private-key"
+```
+
 ```C
 void SetupTransportTestParam( TransportTestParam_t * pTestParam )
 {
@@ -285,7 +341,7 @@ void SetupTransportTestParam( TransportTestParam_t * pTestParam )
     }
 }
 ```
-The pNetworkCredentials will be passed to the pNetworkConnect assigned in the same SetupTransportTestParam function.
+The pNetworkCredentials assigned in the same SetupTransportTestParam function will be passed to the pNetworkConnect.
 
 ### 6.4. Compile and run the transport interface test application
 Compile and run the test application in your development environment.<br>
@@ -299,10 +355,8 @@ TEST(Full_TransportInterfaceTest, TransportRecv_BufferNullPtr) PASS
 TEST(Full_TransportInterfaceTest, TransportRecv_ZeroByteToRecv) PASS
 TEST(Full_TransportInterfaceTest, Transport_SendOneByteRecvCompare) PASS
 TEST(Full_TransportInterfaceTest, Transport_SendRecvOneByteCompare) PASS
-TEST(Full_TransportInterfaceTest, Transport_SendRecvCompare) .................................
-.......................................................PASS
-TEST(Full_TransportInterfaceTest, Transport_SendRecvCompareMultithreaded) ....................
-....................................................................PASS
+TEST(Full_TransportInterfaceTest, Transport_SendRecvCompare) PASS
+TEST(Full_TransportInterfaceTest, Transport_SendRecvCompareMultithreaded) PASS
 TEST(Full_TransportInterfaceTest, TransportSend_RemoteDisconnect) PASS
 TEST(Full_TransportInterfaceTest, TransportRecv_RemoteDisconnect) PASS
 TEST(Full_TransportInterfaceTest, TransportRecv_NoDataToReceive) PASS
