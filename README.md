@@ -1,16 +1,17 @@
-## Labs-FreeRTOS-Libraries-Integration-Tests
+## FreeRTOS-Libraries-Integration-Tests
 
 ### Overview
 This repository contains tests that verify an integration of FreeRTOS IoT libraries
 running on a specific microcontroller-based development board for robustness and
 compatibility with AWS’s published best practices for AWS IoT Core connectivity.
 Refer to [FreeRTOS Porting Guide](https://docs.aws.amazon.com/freertos/latest/portingguide/afr-porting.html) for how to port FreeRTOS libraries and test your project.
-The tests are used by [AWS IoT Device Tester](https://docs.aws.amazon.com/freertos/latest/userguide/device-tester-for-freertos-ug.html)
-as part of the [AWS Device Qualification for FreeRTOS](https://docs.aws.amazon.com/freertos/latest/qualificationguide/afr-qualification.html).
+The tests are used by [AWS IoT Device Tester](https://docs.aws.amazon.com/freertos/latest/userguide/device-tester-for-freertos-ug.html) (IDT)
+as part of the [AWS Device Qualification for FreeRTOS](https://docs.aws.amazon.com/freertos/latest/qualificationguide/afr-qualification.html). The tests can also be run locally from your IDE to verify your project, but a test report from IDT is required for AWS Device Qualification.
 
 ### Tests
-There are four test groups in this repository:
-1. Transport Interface Test validates the implementation of transport interface. The implementation can be plain text or TLS.
+
+The following test groups are included in this repository:
+1. Transport Interface Test validates the implementation of transport interface. The implementation can be plain text or TLS. See [transport interface tests](/src/transport_interface) for details.
 2. PKCS11 Test validates the implementation of PKCS11 interface required by [corePKCS11](https://docs.aws.amazon.com/freertos/latest/portingguide/afr-porting-pkcs.html).
 3. OTA Test validates the implementation of Physical Abstract Layer for [Over-the-Air Updates](https://docs.aws.amazon.com/freertos/latest/portingguide/afr-porting-ota.html).
 4. MQTT Test validates the integration with coreMQTT library.
