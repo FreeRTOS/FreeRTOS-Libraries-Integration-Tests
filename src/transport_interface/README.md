@@ -51,7 +51,7 @@ to ensure invalid parameter error can be catched by assert.<br><br>
 For example, if you are using FreeRTOS configASSERT macro to check invalid parameters,
 you can replace the macro with the following code:
 ```
-#define configASSERT( x )   if( !( x ) ) { return NEGATIVE_VALUE_TO_INDICATE_ERROR; }
+#define configASSERT( x )   do{ if( !( x ) ) { return NEGATIVE_VALUE_TO_INDICATE_ERROR; } } while( 0 )
 ```
 
 ## 3. Prerequisites For Transport Interface Test
@@ -292,7 +292,7 @@ Developer’s can also setup the transport interface test over mutual authentica
 
 This [document](https://github.com/FreeRTOS/FreeRTOS-Libraries-Integration-Tests/blob/main/tools/echo_server/README.md) describes how to create self-signed credentials for the echo server. The self-signed credentials is only for test transport interface test.
 
-To run the echo server with TLS, the following configuraition file, "example_tls_config.json", can be referenced as an example to run the echo server. This configuration assumes you are using self-signed credentials for testing.
+To run the echo server with TLS, the following configuraition file, "example_tls_config.json", can be referenced as an example to run the echo server. This configuration assumes self-signed credentials are used for testing.
 ```
 {
     "verbose": false,
@@ -318,7 +318,7 @@ Provide the **server-address** and **server-port** in **test_param_config.h**.
 #define ECHO_SERVER_PORT       ( server-port )
 ```
 To run the transport interface test with TLS, network credentials need to be assigned in the SetupTransportTestParam function.
-You need to make use of the following configurations in **test_param_config.h** for network credentials.
+The following configurations in **test_param_config.h** need to be used in network credentials.
 ```C
  #define ECHO_SERVER_ROOT_CA "echo-server-root-ca"
  #define TRANSPORT_CLIENT_CERTIFICATE "transport-client-certificate"
@@ -326,20 +326,6 @@ You need to make use of the following configurations in **test_param_config.h** 
  /* This configuration should only be used for testing purpose.
   * For qualification, the key should be generated on-device. */
  #define TRANSPORT_CLIENT_PRIVATE_KEY "transport-client-private-key"
-```
-
-```C
-void SetupTransportTestParam( TransportTestParam_t * pTestParam )
-{
-    if( pTestParam != NULL )
-    {
-        ...
-        pTestParam->pNetworkConnect = /* YourNetworkConnectionFunction. */;
-        pTestParam->pNetworkDisconnect = /* YourNetworkDisonnectionFunction. */;
-        pTestParam->pNetworkCredentials = /* YourNetworkCredentials. */;
-        ...
-    }
-}
 ```
 The pNetworkCredentials assigned in the same SetupTransportTestParam function will be passed to the pNetworkConnect.
 
