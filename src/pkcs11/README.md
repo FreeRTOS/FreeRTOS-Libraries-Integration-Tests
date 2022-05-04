@@ -28,6 +28,8 @@ OTA | Verify, Digest, FindObject, GetAttributeValue
 
 The PKCS #11 test validates the PKCS #11 subset implementation. The test directly exercises the PKCS #11 implementation on the device under testing. User runs the PKCS #11 test by running a test application. The test application is usually implemented by calling the provided PKCS #11 test routine from the main function. By passing this test, the PKCS #11 subset implementation is validated to support required PKCS #11 functions by FreeRTOS.
 
+The PKCS #11 interface is defined in the open-standard documentation available here http://docs.oasis-open.org/pkcs11/pkcs11-base/v2.40/os/pkcs11-base-v2.40-os.html.
+
 ## 2. PKCS #11 Test Configurations
 
 The following table lists the required test configurations for PKCS #11 tests. These test configurations need to be defined in **test_param_config.h**.
