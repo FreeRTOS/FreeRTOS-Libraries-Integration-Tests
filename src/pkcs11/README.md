@@ -35,7 +35,7 @@ The PKCS #11 tests assume the tested platform already has the following componen
 * **The PKCS #11 APIs subset implementation**<br>
     The implementation should support the APIs list in this [section](#1-introduction).
 * **corePKCS11**<br>
-    The utilities in corePKCS #11 are used in PKCS #11 test. The software based mock implementation is up to developer's implementation choice.
+    The utilities in corePKCS #11 are used in PKCS #11 test. corePKCS11 library provides software based implementation. Developers can implement the required PKCS #11 APIs using hardware crypto features of their board. The PKCS #11 Test does not mandate specific implementation.
 * **MbedTLS**<br>
     MbedTLS is required to verify the result of the PKCS #11 implementation.
 * **Unity test framework**<br>
