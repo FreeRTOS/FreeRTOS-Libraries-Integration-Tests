@@ -129,12 +129,6 @@ int FRTest_ThreadTimedJoin( FRTestThreadHandle_t threadHandle, uint32_t timeoutM
 {
     /* Thread timed wait function for multithreaded test. */
 }
-
-void FRTest_TimeDelay( uint32_t delayMs )
-{
-    /* Delay function to wait for PKCS #11 result. */
-}
-
 void * FRTest_MemoryAlloc( size_t size )
 {
     /* Malloc function to allocate memory for test. */
