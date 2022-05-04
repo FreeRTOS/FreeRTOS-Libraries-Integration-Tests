@@ -82,7 +82,7 @@ You may need to run the test several times with different configurations if your
 
 
 >Note:
-Objects with label **PKCS11_TEST_LABEL_DEVICE_PRIVATE_KEY_FOR_TLS**, **PKCS11_TEST_LABEL_DEVICE_PUBLIC_KEY_FOR_TLS** and **PKCS11_TEST_LABEL_DEVICE_CERTIFICATE_FOR_TLS** will be erased during the test if any one of **PKCS11_TEST_GENERATE_KEYPAIR_SUPPORT** and **PKCS11_TEST_GENERATE_KEYPAIR_SUPPORT** is enabled.
+Objects with label **PKCS11_TEST_LABEL_DEVICE_PRIVATE_KEY_FOR_TLS**, **PKCS11_TEST_LABEL_DEVICE_PUBLIC_KEY_FOR_TLS** and **PKCS11_TEST_LABEL_DEVICE_CERTIFICATE_FOR_TLS** will be destroyed during the test if any one of **PKCS11_TEST_GENERATE_KEYPAIR_SUPPORT** and **PKCS11_TEST_GENERATE_KEYPAIR_SUPPORT** is enabled.
 
 ## 4. Source Code Organization
 The tree only lists the required files to run the PKCS #11 test.
