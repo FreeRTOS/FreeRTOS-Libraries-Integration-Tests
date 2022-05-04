@@ -281,4 +281,29 @@
  * #define PKCS11_TEST_LABEL_ROOT_CERTIFICATE    pkcs11configLABEL_ROOT_CERTIFICATE
  */
 
+/**
+ * @brief The IoT Thing name for the device for OTA test.
+ *
+ * #define OTA_IOT_THING_NAME  "PLACE_HOLDER"
+ */
+
+/**
+ * @brief Major version for OTA E2E test.
+ *
+ * #define OTA_APP_VERSION_MAJOR                            0
+ */
+
+/**
+ * @brief Major version for OTA E2E test.
+ *
+ * #define OTA_APP_VERSION_MINOR                            9
+ */
+
+/**
+ * @brief Major version for OTA E2E test.
+ *
+ * #define OTA_APP_VERSION_BUILD                            1
+ */
+
+
 #endif /* TEST_PARAM_CONFIG_H */
