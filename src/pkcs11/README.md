@@ -11,38 +11,22 @@
 </t>6.2 [Compile and run the PKCS11 test application](#62-compile-and-run-the-pkcs11-test-application)<br>
 
 ## 1. Introduction
-[PKCS #11 ](https://en.wikipedia.org/wiki/PKCS_11) is a standardize API to allow application software to use, create, modify and delete cryptographic objects. corePKCS11 defines a subset of PKCS#11 APIs to build FreeRTOS demos. The following table lists the PKCS#11 API subset and the targeting FreeRTOS demos.
+[PKCS #11 ](https://en.wikipedia.org/wiki/PKCS_11) is a standardize API to allow application software to use, create, modify and delete cryptographic objects. 
+The benefit of PKCS11 is that it allows the app to take advantage of offload crypto while mitigating the threats of private key cloning and theft.
 
+FreeRTOS uses a subset of PKCS11 APIs to keep lean. Implementers are free to integrate more than our required subset of PKCS #11, but it is optional to do so. 
 
-|PKCS#11 API	|Category	|Any	|Provisioning demo	|TLS	|FreeRTOS+TCP	|OTA	|
-|---	|---	|---	|---	|---	|---	|---	|
-|C_Initialize	|General Purpose Functions	|O	|	|	|	|	|
-|C_Finalize	|General Purpose Functions	|O	|	|	|	|	|
-|C_GetFunctionList	|General Purpose Functions	|O	|	|	|	|	|
-|C_GetSlotList	|Slot and token management functions	|O	|	|	|	|	|
-|C_GetMechanismInfo	|Slot and token management functions	|O	|	|	|	|	|
-|C_InitToken	|Slot and token management functions	|	|O	|	|	|	|
-|C_GetTokenInfo	|Slot and token management functions	|	|O	|	|	|	|
-|C_OpenSession	|Session management functions	|O	|	|	|	|	|
-|C_CloseSession	|Session management functions	|O	|	|	|	|	|
-|C_Login	|Session management functions	|O	|	|	|	|	|
-|C_CreateObject	|Object managements functions	|	|O	|	|	|	|
-|C_DestroyObject	|Object managements functions	|	|O	|	|	|	|
-|C_GetAttributeValue	|Object managements functions	|	|	|O	|	|O	|
-|C_FindObjectsInit	|Object managements functions	|	|	|O	|	|O	|
-|C_FindObjects	|Object managements functions	|	|	|O	|	|O	|
-|C_FindObjectsFinal	|Object managements functions	|	|	|O	|	|O	|
-|C_DigestInit	|Message digesting functions	|	|	|	|O	|O	|
-|C_DigestUpdate	|Message digesting functions	|	|	|	|O	|O	|
-|C_DigestFinal	|Message digesting functions	|	|	|	|O	|O	|
-|C_SignInit	|Signing and MACing functions	|	|	|O	|	|	|
-|C_Sign	|Signing and MACing functions	|	|	|O	|	|	|
-|C_VerifyInit	|Functions for verifying signatures and MACs	|	|	|	|	|O	|
-|C_Verify	|Functions for verifying signatures and MACs	|	|	|	|	|O	|
-|C_GenerateKeyPair	|Key management functions	|	|O	|	|	|	|
-|C_GenerateRandom	|Random number generation functions	|	|	|O	|O	|	|
+The PKCS #11 API functions required by FreeRTOS are described in the following table. 
 
-The PKCS11 tests help to verify the implementation of PKCS11 subset. The test directly exercises the PKCS11 implementation on the device under testing. User runs the PKCS11 test by running a test application. The test application is usually implemented by calling the provided PKCS11 test routine from the main function. By passing this test, the PKCS11 subset implementation is validated to run the targeting FreeRTOS demos.
+FreeRTOS Library | Required PKCS #11 API Family
+----------------------- | ----------------------------
+Any | Initialize, Finalize, Open/Close Session, GetSlotList, Login
+Provisioning Demo | GenerateKeyPair, CreateObject, DestroyObject, InitToken, GetTokenInfo
+TLS | Random, Sign, FindObject, GetAttributeValue
+FreeRTOS+TCP | Random, Digest
+OTA | Verify, Digest, FindObject, GetAttributeValue
+
+The PKCS11 test validates the PKCS11 subset implementation. The test directly exercises the PKCS11 implementation on the device under testing. User runs the PKCS11 test by running a test application. The test application is usually implemented by calling the provided PKCS11 test routine from the main function. By passing this test, the PKCS11 subset implementation is validated to support required PKCS11 functions by FreeRTOS.
 
 ## 2. PKCS11 Test Configurations
 
@@ -170,6 +154,30 @@ void yourMainFunction( void )
 ## 6. Run The PKCS11 Test
 ### 6.1 Setup the provisioning mechanism and key function
 Setup the provisioning mechanism and key function in **test_param_config.h** according to the device capability.
+The following is a sample test_param_config.h if corePKCS11 is used for the PKCS11 implementation.
+```C
+#include "core_pkcs11_config.h"
+
+/* Setup key function. */
+#define PKCS11_TEST_RSA_KEY_SUPPORT                        ( 1 )
+#define PKCS11_TEST_EC_KEY_SUPPORT                         ( 1 )
+
+/* Setup provisioning method. */
+#define PKCS11_TEST_IMPORT_PRIVATE_KEY_SUPPORT             ( 1 )
+#define PKCS11_TEST_GENERATE_KEYPAIR_SUPPORT               ( 1 )
+#define PKCS11_TEST_PREPROVISIONED_SUPPORT                 ( 0 )
+
+/* The device credential labels. */
+#define PKCS11_TEST_LABEL_DEVICE_PRIVATE_KEY_FOR_TLS       pkcs11configLABEL_DEVICE_PRIVATE_KEY_FOR_TLS
+#define PKCS11_TEST_LABEL_DEVICE_PUBLIC_KEY_FOR_TLS        pkcs11configLABEL_DEVICE_PUBLIC_KEY_FOR_TLS
+#define PKCS11_TEST_LABEL_DEVICE_CERTIFICATE_FOR_TLS       pkcs11configLABEL_DEVICE_CERTIFICATE_FOR_TLS
+
+/* JITP credential labels. */
+#define PKCS11_TEST_JITP_CODEVERIFY_ROOT_CERT_SUPPORTED    pkcs11configJITP_CODEVERIFY_ROOT_CERT_SUPPORTED
+#define PKCS11_TEST_LABEL_CODE_VERIFICATION_KEY            pkcs11configLABEL_CODE_VERIFICATION_KEY
+#define PKCS11_TEST_LABEL_JITP_CERTIFICATE                 pkcs11configLABEL_JITP_CERTIFICATE
+#define PKCS11_TEST_LABEL_ROOT_CERTIFICATE                 pkcs11configLABEL_ROOT_CERTIFICATE
+```
 
 ### 6.2 Compile and run the PKCS11 test application
 Compile and run the test application in your development environment.
