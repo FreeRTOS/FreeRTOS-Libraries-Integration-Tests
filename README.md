@@ -42,7 +42,7 @@ Refer to ReadMe in each subfolder for details of the test group, test cases and 
 2. Unity Test Framework is used to run the tests. See [Unity](https://github.com/ThrowTheSwitch/Unity) for integration guide.
 
 ### Getting Started
-Follow these steps to set up the tests:
+#### Follow these steps to set up the tests
 1. Take FreeRTOS-Libraries-Integration-Tests as a submodule in your project.
 2. Copy config_template/test_execution_config_template.h and config_template/test_param_config_template.h to a project location in the build path, and rename them to test_execution_config.h and test_param_config.h.
 3. Include relevant files into the build system. If using CMake, qualification_test.cmake and corresponding test cmake files in `src/` can be used to include relevant files.
@@ -50,13 +50,13 @@ Follow these steps to set up the tests:
 5. Implement test specific configurations. This is usually in the form of implementing a parameter setup function, which should fill out the struct of parameters passed into the function. Please refer to the documentation of specific tests.
 6. In your application, call `RunQualificationTest()` function to start qualification tests.
 
-For running the tests locally using your IDE:
+#### For running the tests locally using your IDE
 1. In test_param_config.h, fill out the parameters required by the test.
 2. In test_execution_config.h, set `<TEST_NAME>_TEST_ENABLED` to 1.
 3. Compile and run the test application in your development environment.
 
-For running tests using AWS IoT Device Tester for Device Qualification: 
-See [AWS Qualification Program for FreeRTOS](https://docs.aws.amazon.com/freertos/latest/qualificationguide/afr-qualification.html).
+#### For running the tests using AWS IoT Device Tester for Device Qualification 
+See [AWS Qualification Program for FreeRTOS](https://docs.aws.amazon.com/freertos/latest/qualificationguide/afr-qualification.html) for details.
 
 ### Contribution
 See [CONTRIBUTING](CONTRIBUTING.md) for more information.
