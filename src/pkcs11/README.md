@@ -54,11 +54,11 @@ The following table lists the required test configurations for PKCS #11 tests. T
 |PKCS11_TEST_PREPROVISIONED_SUPPORT	|The porting has pre-provisioned credentials. These test labels, PKCS11_TEST_LABEL_DEVICE_PRIVATE_KEY_FOR_TLS, PKCS11_TEST_LABEL_DEVICE_PUBLIC_KEY_FOR_TLS and PKCS11_TEST_LABEL_DEVICE_CERTIFICATE_FOR_TLS, are the labels of the pre-provisioned credentials. 	|
 |PKCS11_TEST_LABEL_DEVICE_PRIVATE_KEY_FOR_TLS	|The label of the private key used in the test.	|
 |PKCS11_TEST_LABEL_DEVICE_PUBLIC_KEY_FOR_TLS	|The label of the public key used in the test.	|
-|PKCS11_TEST_LABEL_DEVICE_CERTIFICATE_FOR_TLS	|The label of the certificate key used in the test.	|
+|PKCS11_TEST_LABEL_DEVICE_CERTIFICATE_FOR_TLS	|The label of the certificate used in the test.	|
 |PKCS11_TEST_JITP_CODEVERIFY_ROOT_CERT_SUPPORTED	|The porting supports storage for JITP. Set 1 to enable the JITP codeverify test.	|
 |PKCS11_TEST_LABEL_CODE_VERIFICATION_KEY	|The label of the code verification key used in JITP codeverify test.	|
 |PKCS11_TEST_LABEL_JITP_CERTIFICATE	|The label of the JITP certificate used in JITP codeverify test.	|
-|PKCS11_TEST_LABEL_ROOT_CERTIFICATE	|The label of the code verification key used in JITP codeverify test.	|
+|PKCS11_TEST_LABEL_ROOT_CERTIFICATE	|The label of the root certificate used in JITP codeverify test.	|
 
 
 FreeRTOS libraries and reference integrations needs at least one of the key function and one of the key provisioning mechanism supported by the PKCS #11 APIs. The test must enable at least one of the following configurations:
