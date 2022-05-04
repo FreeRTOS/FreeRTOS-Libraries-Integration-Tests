@@ -37,11 +37,11 @@ copied templates. If running the tests without IDT, users need to fill in config
 Refer to ReadMe in each subfolder for details of the test group, test cases and how to run these tests.
 3. `tools` contains utility tools for the tests, such as echo server for Transport Interface Test.
 
-### Prerequisites
+### Getting Started
+#### Prerequisites
 1. The tests are ran as an individual test task. You should have a working FreeRTOS project to add test task on.
 2. Unity Test Framework is used to run the tests. See [Unity](https://github.com/ThrowTheSwitch/Unity) for integration guide.
 
-### Getting Started
 #### Follow these steps to set up the tests
 1. Take FreeRTOS-Libraries-Integration-Tests as a submodule in your project.
 2. Copy config_template/test_execution_config_template.h and config_template/test_param_config_template.h to a project location in the build path, and rename them to test_execution_config.h and test_param_config.h.
