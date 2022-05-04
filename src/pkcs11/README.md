@@ -1,4 +1,5 @@
-PKCS11 Test
+# PKCS11 Test
+
 ## On this page:
 1. [Introduction](#1-introduction)
 2. [PKCS11 Test Configurations](#2-pkcs11-test-configurations)
@@ -6,14 +7,14 @@ PKCS11 Test
 4. [Source Code Organization](#4-source-code-organization)
 5. [Implement PKCS11 Test Application](#5-implement-pkcs11-test-application)
 6. [Run The PKCS11 Test](#6-run-the-pkcs11-test)<br>
-</t>6.1 [Setup the provisioning method and key mechanism](#61-setup-the-provisioning-method-and-key-mechanism)<br>
+</t>6.1 [Setup the provisioning mechanism and key function](#61-setup-the-provisioning-mechanism-and-key-function)<br>
 </t>6.2 [Compile and run the PKCS11 test application](#62-compile-and-run-the-pkcs11-test-application)<br>
 
 ## 1. Introduction
-[PKCS #11 ](https://en.wikipedia.org/wiki/PKCS_11) is a standardize API to allow application software to use, create, modify and delete cryptographic objects. corePKCS11 defines a subset of PKCS#11 APIs. This API subset is used to build the FreeRTOS demos to interact with AWS IoT core. The following table lists the PKCS#11 API subset and the targeting FreeRTOS demos.
+[PKCS #11 ](https://en.wikipedia.org/wiki/PKCS_11) is a standardize API to allow application software to use, create, modify and delete cryptographic objects. corePKCS11 defines a subset of PKCS#11 APIs to build FreeRTOS demos. The following table lists the PKCS#11 API subset and the targeting FreeRTOS demos.
 
 
-|PKCS#11 APIs	|Category	|Any	|Provisioning demo	|TLS	|FreeRTOS+TCP	|OTA	|
+|PKCS#11 API	|Category	|Any	|Provisioning demo	|TLS	|FreeRTOS+TCP	|OTA	|
 |---	|---	|---	|---	|---	|---	|---	|
 |C_Initialize	|General Purpose Functions	|O	|	|	|	|	|
 |C_Finalize	|General Purpose Functions	|O	|	|	|	|	|
@@ -74,7 +75,7 @@ FreeRTOS libraries and reference integrations needs at least one of the key func
     *  PKCS11_TEST_PREPROVISIONED_SUPPORT 
 
 
-Pre-provisioned device credential test can not be enabled with other provision method. It must be run in the following conditions:
+Pre-provisioned device credential test can not be enabled with other provisioning mechanisms. It must be run in the following conditions:
 
 * Enable **PKCS11_TEST_PREPROVISIONED_SUPPORT** and the other provisioning mechanisms must be disabled
 * Only one of the key function, **PKCS11_TEST_RSA_KEY_SUPPORT** or **PKCS11_TEST_EC_KEY_SUPPORT**, enabled
@@ -89,13 +90,13 @@ Objects with label **PKCS11_TEST_LABEL_DEVICE_PRIVATE_KEY_FOR_TLS**, **PKCS11_TE
 
 ## 3. Prerequisites For PKCS11 Test
 The PKCS11 tests assume the tested platform already has the following components integrated.
-* **corePKCS11**
-    The utilities in corePKCS11 are used in PKCS11 test. The software based mock implementation is up to developer's implementation choice.
-* **The PKCS11 APIs subset implementation**
+* **The PKCS11 APIs subset implementation**<br>
     The implementation should support the APIs list in this [section](#1-introduction).
-* **MbedTLS**
+* **corePKCS11**<br>
+    The utilities in corePKCS11 are used in PKCS11 test. The software based mock implementation is up to developer's implementation choice.
+* **MbedTLS**<br>
     MbedTLS is required to verify the result of the PKCS11 implementation.
-* **Unity test framework**
+* **Unity test framework**<br>
     PKCS11 test make use of the Unity test framework. Reference the [website](https://github.com/ThrowTheSwitch/Unity) for integration guide.
 
 ## 4. Source Code Organization
