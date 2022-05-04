@@ -2,8 +2,8 @@
 
 ## On this page:
 1. [Introduction](#1-introduction)
-2. [PKCS #11 Test Configurations](#2-pkcs-11-test-configurations)
-3. [Prerequisites For PKCS #11 Test](#3-prerequisites-for-pkcs-11-test)
+2. [Prerequisites For PKCS #11 Test](#2-prerequisites-for-pkcs-11-test)
+3. [PKCS #11 Test Configurations](#3-pkcs-11-test-configurations)
 4. [Source Code Organization](#4-source-code-organization)
 5. [Implement PKCS #11 Test Application](#5-implement-pkcs-11-test-application)
 6. [Run The PKCS #11 Test](#6-run-the-pkcs-11-test)<br>
@@ -14,7 +14,7 @@
 [PKCS #11 ](https://en.wikipedia.org/wiki/PKCS_11) is a standardize API to allow application software to use, create, modify and delete cryptographic objects. 
 The benefit of PKCS #11 is that it allows the app to take advantage of offload crypto while mitigating the threats of private key cloning and theft.
 
-FreeRTOS uses a subset of PKCS #11 APIs to keep lean. Implementers are free to integrate more than our required subset of PKCS #11, but it is optional to do so. 
+To keep as lean as possible, FreeRTOS uses a subset of PKCS #11 APIs. Implementers are free to integrate more than our required subset of PKCS #11, but it is optional to do so. 
 
 The PKCS #11 API functions required by FreeRTOS are described in the following table. 
 
@@ -30,7 +30,18 @@ The PKCS #11 test validates the PKCS #11 subset implementation. The test directl
 
 The PKCS #11 interface is defined in the open-standard documentation available here http://docs.oasis-open.org/pkcs11/pkcs11-base/v2.40/os/pkcs11-base-v2.40-os.html.
 
-## 2. PKCS #11 Test Configurations
+## 2. Prerequisites For PKCS #11 Test
+The PKCS #11 tests assume the tested platform already has the following components integrated.
+* **The PKCS #11 APIs subset implementation**<br>
+    The implementation should support the APIs list in this [section](#1-introduction).
+* **corePKCS11**<br>
+    The utilities in corePKCS #11 are used in PKCS #11 test. The software based mock implementation is up to developer's implementation choice.
+* **MbedTLS**<br>
+    MbedTLS is required to verify the result of the PKCS #11 implementation.
+* **Unity test framework**<br>
+    PKCS #11 test make use of the Unity test framework. Reference the [website](https://github.com/ThrowTheSwitch/Unity) for integration guide.
+
+## 3. PKCS #11 Test Configurations
 
 The following table lists the required test configurations for PKCS #11 tests. These test configurations need to be defined in **test_param_config.h**.
 
@@ -72,18 +83,6 @@ You may need to run the test several times with different configurations if your
 
 >Note:
 Objects with label **PKCS11_TEST_LABEL_DEVICE_PRIVATE_KEY_FOR_TLS**, **PKCS11_TEST_LABEL_DEVICE_PUBLIC_KEY_FOR_TLS** and **PKCS11_TEST_LABEL_DEVICE_CERTIFICATE_FOR_TLS** will be erased during the test if any one of **PKCS11_TEST_GENERATE_KEYPAIR_SUPPORT** and **PKCS11_TEST_GENERATE_KEYPAIR_SUPPORT** is enabled.
-
-
-## 3. Prerequisites For PKCS #11 Test
-The PKCS #11 tests assume the tested platform already has the following components integrated.
-* **The PKCS #11 APIs subset implementation**<br>
-    The implementation should support the APIs list in this [section](#1-introduction).
-* **corePKCS11**<br>
-    The utilities in corePKCS #11 are used in PKCS #11 test. The software based mock implementation is up to developer's implementation choice.
-* **MbedTLS**<br>
-    MbedTLS is required to verify the result of the PKCS #11 implementation.
-* **Unity test framework**<br>
-    PKCS #11 test make use of the Unity test framework. Reference the [website](https://github.com/ThrowTheSwitch/Unity) for integration guide.
 
 ## 4. Source Code Organization
 The tree only lists the required files to run the PKCS #11 test.
