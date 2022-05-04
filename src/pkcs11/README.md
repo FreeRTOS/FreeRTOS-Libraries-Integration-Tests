@@ -1,20 +1,20 @@
-# PKCS11 Test
+# PKCS #11 Test
 
 ## On this page:
 1. [Introduction](#1-introduction)
-2. [PKCS11 Test Configurations](#2-pkcs11-test-configurations)
-3. [Prerequisites For PKCS11 Test](#3-prerequisites-for-pkcs11-test)
+2. [PKCS #11 Test Configurations](#2-pkcs-11-test-configurations)
+3. [Prerequisites For PKCS #11 Test](#3-prerequisites-for-pkcs-11-test)
 4. [Source Code Organization](#4-source-code-organization)
-5. [Implement PKCS11 Test Application](#5-implement-pkcs11-test-application)
-6. [Run The PKCS11 Test](#6-run-the-pkcs11-test)<br>
+5. [Implement PKCS #11 Test Application](#5-implement-pkcs-11-test-application)
+6. [Run The PKCS #11 Test](#6-run-the-pkcs-11-test)<br>
 </t>6.1 [Setup the provisioning mechanism and key function](#61-setup-the-provisioning-mechanism-and-key-function)<br>
-</t>6.2 [Compile and run the PKCS11 test application](#62-compile-and-run-the-pkcs11-test-application)<br>
+</t>6.2 [Compile and run the PKCS #11 test application](#62-compile-and-run-the-pkcs-11-test-application)<br>
 
 ## 1. Introduction
 [PKCS #11 ](https://en.wikipedia.org/wiki/PKCS_11) is a standardize API to allow application software to use, create, modify and delete cryptographic objects. 
-The benefit of PKCS11 is that it allows the app to take advantage of offload crypto while mitigating the threats of private key cloning and theft.
+The benefit of PKCS #11 is that it allows the app to take advantage of offload crypto while mitigating the threats of private key cloning and theft.
 
-FreeRTOS uses a subset of PKCS11 APIs to keep lean. Implementers are free to integrate more than our required subset of PKCS #11, but it is optional to do so. 
+FreeRTOS uses a subset of PKCS #11 APIs to keep lean. Implementers are free to integrate more than our required subset of PKCS #11, but it is optional to do so. 
 
 The PKCS #11 API functions required by FreeRTOS are described in the following table. 
 
@@ -26,11 +26,11 @@ TLS | Random, Sign, FindObject, GetAttributeValue
 FreeRTOS+TCP | Random, Digest
 OTA | Verify, Digest, FindObject, GetAttributeValue
 
-The PKCS11 test validates the PKCS11 subset implementation. The test directly exercises the PKCS11 implementation on the device under testing. User runs the PKCS11 test by running a test application. The test application is usually implemented by calling the provided PKCS11 test routine from the main function. By passing this test, the PKCS11 subset implementation is validated to support required PKCS11 functions by FreeRTOS.
+The PKCS #11 test validates the PKCS #11 subset implementation. The test directly exercises the PKCS #11 implementation on the device under testing. User runs the PKCS #11 test by running a test application. The test application is usually implemented by calling the provided PKCS #11 test routine from the main function. By passing this test, the PKCS #11 subset implementation is validated to support required PKCS #11 functions by FreeRTOS.
 
-## 2. PKCS11 Test Configurations
+## 2. PKCS #11 Test Configurations
 
-The following table lists the required test configurations for PKCS11 tests. These test configurations need to be defined in **test_param_config.h**.
+The following table lists the required test configurations for PKCS #11 tests. These test configurations need to be defined in **test_param_config.h**.
 
 |Configuration	|Description	|
 |--- | --- |
@@ -48,7 +48,7 @@ The following table lists the required test configurations for PKCS11 tests. The
 |PKCS11_TEST_LABEL_ROOT_CERTIFICATE	|The label of the code verification key used in JITP codeverify test.	|
 
 
-FreeRTOS libraries and reference integrations needs at least one of the key function and one of the key provisioning mechanism supported by the PKCS11 APIs. The test must enable at least one of the following configurations:
+FreeRTOS libraries and reference integrations needs at least one of the key function and one of the key provisioning mechanism supported by the PKCS #11 APIs. The test must enable at least one of the following configurations:
 
 * At least one of the key function configurations:
     * PKCS11_TEST_RSA_KEY_SUPPORT 
@@ -63,7 +63,7 @@ Pre-provisioned device credential test can not be enabled with other provisionin
 
 * Enable **PKCS11_TEST_PREPROVISIONED_SUPPORT** and the other provisioning mechanisms must be disabled
 * Only one of the key function, **PKCS11_TEST_RSA_KEY_SUPPORT** or **PKCS11_TEST_EC_KEY_SUPPORT**, enabled
-* Setup the pre-provisioned key labels according to your key function, including **PKCS11_TEST_LABEL_DEVICE_PRIVATE_KEY_FOR_TLS**, **PKCS11_TEST_LABEL_DEVICE_PUBLIC_KEY_FOR_TLS** and **PKCS11_TEST_LABEL_DEVICE_CERTIFICATE_FOR_TLS**. These credentials must exist in the PKCS11 before running the test.
+* Setup the pre-provisioned key labels according to your key function, including **PKCS11_TEST_LABEL_DEVICE_PRIVATE_KEY_FOR_TLS**, **PKCS11_TEST_LABEL_DEVICE_PUBLIC_KEY_FOR_TLS** and **PKCS11_TEST_LABEL_DEVICE_CERTIFICATE_FOR_TLS**. These credentials must exist in the PKCS #11 before running the test.
 
 You may need to run the test several times with different configurations if your implementation support pre-provisioned credentials and other provisioning mechanisms.
 
@@ -72,19 +72,19 @@ You may need to run the test several times with different configurations if your
 Objects with label **PKCS11_TEST_LABEL_DEVICE_PRIVATE_KEY_FOR_TLS**, **PKCS11_TEST_LABEL_DEVICE_PUBLIC_KEY_FOR_TLS** and **PKCS11_TEST_LABEL_DEVICE_CERTIFICATE_FOR_TLS** will be erased during the test if any one of **PKCS11_TEST_GENERATE_KEYPAIR_SUPPORT** and **PKCS11_TEST_GENERATE_KEYPAIR_SUPPORT** is enabled.
 
 
-## 3. Prerequisites For PKCS11 Test
-The PKCS11 tests assume the tested platform already has the following components integrated.
-* **The PKCS11 APIs subset implementation**<br>
+## 3. Prerequisites For PKCS #11 Test
+The PKCS #11 tests assume the tested platform already has the following components integrated.
+* **The PKCS #11 APIs subset implementation**<br>
     The implementation should support the APIs list in this [section](#1-introduction).
 * **corePKCS11**<br>
-    The utilities in corePKCS11 are used in PKCS11 test. The software based mock implementation is up to developer's implementation choice.
+    The utilities in corePKCS #11 are used in PKCS #11 test. The software based mock implementation is up to developer's implementation choice.
 * **MbedTLS**<br>
-    MbedTLS is required to verify the result of the PKCS11 implementation.
+    MbedTLS is required to verify the result of the PKCS #11 implementation.
 * **Unity test framework**<br>
-    PKCS11 test make use of the Unity test framework. Reference the [website](https://github.com/ThrowTheSwitch/Unity) for integration guide.
+    PKCS #11 test make use of the Unity test framework. Reference the [website](https://github.com/ThrowTheSwitch/Unity) for integration guide.
 
 ## 4. Source Code Organization
-The tree only lists the required files to run the PKCS11 test.
+The tree only lists the required files to run the PKCS #11 test.
 ```
 ./FreeRTOS-Libraries-Integration-Tests/
 ├── config_template
@@ -105,12 +105,12 @@ The tree only lists the required files to run the PKCS11 test.
     └── qualification_test.h
 ```
 
-## 5. Implement PKCS11 Test Application
+## 5. Implement PKCS #11 Test Application
 1. Add [FreeRTOS-Libraries-Integration-Tests](https://github.com/FreeRTOS/FreeRTOS-Libraries-Integration-Tests) as a submodule into your project. It doesn’t matter where the submodule is placed in the project, as long as it can be built.
 2. Copy **config_template/test_execution_config_template.h** and **config_template/test_param_config_template.h** to a project location in the build path, and rename them to **test_execution_config.h** and **test_param_config.h**.
 3. Include relevant files into the build system. If using CMake, **qualification_test.cmake** and **src/pkcs11_test.cmake** can be used to include relevant files.
-4. Implement the [platform functions](https://github.com/FreeRTOS/FreeRTOS-Libraries-Integration-Tests/blob/main/src/common/platform_function.h) required by PKCS11 tests. 
-5. Enable the PKCS11 test config, **PKCS11_TEST_ENABLED**, in **test_execution_config.h**.
+4. Implement the [platform functions](https://github.com/FreeRTOS/FreeRTOS-Libraries-Integration-Tests/blob/main/src/common/platform_function.h) required by PKCS #11 tests. 
+5. Enable the PKCS #11 test config, **PKCS11_TEST_ENABLED**, in **test_execution_config.h**.
 6. Implement the main function and call the **RunQualificationTest**.
 
 The following is an example test application.
@@ -131,7 +131,7 @@ int FRTest_ThreadTimedJoin( FRTestThreadHandle_t threadHandle, uint32_t timeoutM
 
 void FRTest_TimeDelay( uint32_t delayMs )
 {
-    /* Delay function to wait for PKCS11 result. */
+    /* Delay function to wait for PKCS #11 result. */
 }
 
 void * FRTest_MemoryAlloc( size_t size )
@@ -151,10 +151,10 @@ void yourMainFunction( void )
 
 ```
 
-## 6. Run The PKCS11 Test
+## 6. Run The PKCS #11 Test
 ### 6.1 Setup the provisioning mechanism and key function
 Setup the provisioning mechanism and key function in **test_param_config.h** according to the device capability.
-The following is a sample test_param_config.h if corePKCS11 is used for the PKCS11 implementation.
+The following is a sample test_param_config.h if corePKCS11 is used for the PKCS #11 implementation.
 ```C
 #include "core_pkcs11_config.h"
 
@@ -179,7 +179,7 @@ The following is a sample test_param_config.h if corePKCS11 is used for the PKCS
 #define PKCS11_TEST_LABEL_ROOT_CERTIFICATE                 pkcs11configLABEL_ROOT_CERTIFICATE
 ```
 
-### 6.2 Compile and run the PKCS11 test application
+### 6.2 Compile and run the PKCS #11 test application
 Compile and run the test application in your development environment.
 The following is a sample test result log:
 ```
