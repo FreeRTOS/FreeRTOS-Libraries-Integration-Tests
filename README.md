@@ -42,6 +42,7 @@ Refer to ReadMe in each subfolder for details of the test group, test cases and 
 2. Unity Test Framework is used to run the tests. See [Unity](https://github.com/ThrowTheSwitch/Unity) for integration guide.
 
 ### Getting Started
+Follow these steps to set up the tests:
 1. Take FreeRTOS-Libraries-Integration-Tests as a submodule in your project.
 2. Copy config_template/test_execution_config_template.h and config_template/test_param_config_template.h to a project location in the build path, and rename them to test_execution_config.h and test_param_config.h.
 3. Include relevant files into the build system. If using CMake, qualification_test.cmake and corresponding test cmake files in `src/` can be used to include relevant files.
