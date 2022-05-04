@@ -47,15 +47,15 @@ The following table lists the required test configurations for PKCS #11 tests. T
 
 |Configuration	|Description	|
 |--- | --- |
-|PKCS11_TEST_RSA_KEY_SUPPORT	|The porting support RSA key functions.	|
-|PKCS11_TEST_EC_KEY_SUPPORT	|The porting support EC key functions.	|
-|PKCS11_TEST_IMPORT_PRIVATE_KEY_SUPPORT	|The porting support import private key. RSA and EC key import will be validated in the test if the corresponding key functions are enabled.	|
-|PKCS11_TEST_GENERATE_KEYPAIR_SUPPORT	|The porting support keypair generation. EC keypair generation will be validated in the test if the corresponding key functions are enabled.	|
+|PKCS11_TEST_RSA_KEY_SUPPORT	|The porting supports RSA key functions.	|
+|PKCS11_TEST_EC_KEY_SUPPORT	|The porting supports EC key functions.	|
+|PKCS11_TEST_IMPORT_PRIVATE_KEY_SUPPORT	|The porting supports import private key. RSA and EC key import will be validated in the test if the corresponding key functions are enabled.	|
+|PKCS11_TEST_GENERATE_KEYPAIR_SUPPORT	|The porting supports keypair generation. EC keypair generation will be validated in the test if the corresponding key functions are enabled.	|
 |PKCS11_TEST_PREPROVISIONED_SUPPORT	|The porting has pre-provisioned credentials. These test labels, PKCS11_TEST_LABEL_DEVICE_PRIVATE_KEY_FOR_TLS, PKCS11_TEST_LABEL_DEVICE_PUBLIC_KEY_FOR_TLS and PKCS11_TEST_LABEL_DEVICE_CERTIFICATE_FOR_TLS, are the labels of the pre-provisioned credentials. 	|
 |PKCS11_TEST_LABEL_DEVICE_PRIVATE_KEY_FOR_TLS	|The label of the private key used in the test.	|
 |PKCS11_TEST_LABEL_DEVICE_PUBLIC_KEY_FOR_TLS	|The label of the public key used in the test.	|
 |PKCS11_TEST_LABEL_DEVICE_CERTIFICATE_FOR_TLS	|The label of the certificate key used in the test.	|
-|PKCS11_TEST_JITP_CODEVERIFY_ROOT_CERT_SUPPORTED	|The porting support storage for JITP. Set 1 to enable the JITP codeverify test.	|
+|PKCS11_TEST_JITP_CODEVERIFY_ROOT_CERT_SUPPORTED	|The porting supports storage for JITP. Set 1 to enable the JITP codeverify test.	|
 |PKCS11_TEST_LABEL_CODE_VERIFICATION_KEY	|The label of the code verification key used in JITP codeverify test.	|
 |PKCS11_TEST_LABEL_JITP_CERTIFICATE	|The label of the JITP certificate used in JITP codeverify test.	|
 |PKCS11_TEST_LABEL_ROOT_CERTIFICATE	|The label of the code verification key used in JITP codeverify test.	|
