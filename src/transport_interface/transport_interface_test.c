@@ -111,6 +111,11 @@
 #define TRANSPORT_TEST_INDEX                       ( 0U )
 
 /**
+ * @brief The second thread parameter index used in multithreaded test.
+ */
+#define TRANSPORT_TEST_SECOND_INDEX                ( 1U )
+
+/**
  * @brief Timeout to wait thread function finish the test.
  */
 #ifndef TRANSPORT_TEST_WAIT_THREAD_TIMEOUT_MS
@@ -131,13 +136,24 @@
     #define TRANSPORT_TEST_PRINT_DEBUG_PROGRESS    ( 0 )
 #endif
 
+/**
+ * @brief Print debug error message when test fail in multi-threaded test.
+ *
+ * Use UnityPrint for older version of Unity.
+ */
+#ifndef TEST_MESSAGE
+    #define TEST_MESSAGE( x )    UnityPrint( x )
+#endif
+
 /*-----------------------------------------------------------*/
 
 typedef struct threadParameter
 {
     NetworkContext_t * pNetworkContext;
     uint8_t transportTestBuffer[ TRANSPORT_TEST_BUFFER_TOTAL_LENGTH ];
+    bool xNetworkConnected;
     bool stopFlag;
+    bool xResult;
 } threadParameter_t;
 
 /*-----------------------------------------------------------*/
@@ -203,26 +219,41 @@ static void prvInitializeTestData( uint8_t * pTransportTestBuffer,
  * The received data is verified with the pattern initialized in prvInitializeTestData.
  * The test buffer after testSize should remain unchanged.
  */
-static void prvVerifyTestData( uint8_t * pTransportTestBuffer,
+static bool prvVerifyTestData( uint8_t * pTransportTestBuffer,
                                uint32_t testSize,
                                uint32_t maxBufferSize )
 {
     uint32_t i = 0U;
+    bool retValue = true;
 
     /* Check the data received is correct. */
     for( i = 0U; i < testSize; i++ )
     {
-        TEST_ASSERT_EQUAL_UINT8_MESSAGE( ( ( uint8_t ) i ), pTransportTestBuffer[ i ],
-                                         "Received data is not the same as expected." );
+        if( ( ( uint8_t ) i ) != pTransportTestBuffer[ i ] )
+        {
+            TEST_MESSAGE( "Received data is not the same as expected." );
+            retValue = false;
+            break;
+        }
     }
 
     /* Check the buffer after testSize is unchanged. */
-    if( testSize < maxBufferSize )
+    if( ( retValue == true ) && ( testSize < maxBufferSize ) )
     {
-        TEST_ASSERT_EQUAL_UINT8_MESSAGE( pTransportTestBuffer[ i ], TRANSPORT_TEST_BUFFER_GUARD_PATTERN,
-                                         "Buffer after testSize should not be altered." );
+        for( i = 0U; i < ( maxBufferSize - testSize ); i++ )
+        {
+            if( pTransportTestBuffer[ testSize + i ] != TRANSPORT_TEST_BUFFER_GUARD_PATTERN )
+            {
+                TEST_MESSAGE( "Buffer after testSize should not be altered." );
+                retValue = false;
+                break;
+            }
+        }
     }
+
+    return retValue;
 }
+
 
 /*-----------------------------------------------------------*/
 
@@ -233,7 +264,7 @@ static void prvVerifyTestData( uint8_t * pTransportTestBuffer,
  * returns zero, it should represent the send operation can be retired by calling
  * the API function. The retry operation is handled in this function.
  */
-static void prvTransportSendData( TransportInterface_t * pTransport,
+static bool prvTransportSendData( TransportInterface_t * pTransport,
                                   NetworkContext_t * pNetworkContext,
                                   uint8_t * pTransportTestBuffer,
                                   uint32_t sendSize )
@@ -241,17 +272,29 @@ static void prvTransportSendData( TransportInterface_t * pTransport,
     uint32_t transferTotal = 0U;
     int32_t transportResult = 0;
     uint32_t i = 0U;
+    bool retValue = true;
 
     for( i = 0U; i < TRANSPORT_TEST_SEND_RECEIVE_RETRY_COUNT; i++ )
     {
         transportResult = pTransport->send( pNetworkContext,
                                             &pTransportTestBuffer[ transferTotal ],
                                             sendSize - transferTotal );
+
         /* Send should not have any error. */
-        TEST_ASSERT_GREATER_OR_EQUAL_INT32_MESSAGE( 0, transportResult,
-                                                    "Transport send data should not have any error." );
-        TEST_ASSERT_LESS_OR_EQUAL_UINT32_MESSAGE( ( sendSize - transferTotal ), ( uint32_t ) transportResult,
-                                                  "More data is sent than expected." );
+        if( transportResult < 0 )
+        {
+            TEST_MESSAGE( "Transport send data should not have any error." );
+            retValue = false;
+            break;
+        }
+
+        if( ( sendSize - transferTotal ) < ( uint32_t ) transportResult )
+        {
+            TEST_MESSAGE( "More data is sent than expected." );
+            retValue = false;
+            break;
+        }
+
         transferTotal = transferTotal + ( uint32_t ) transportResult;
 
         if( sendSize == transferTotal )
@@ -262,7 +305,13 @@ static void prvTransportSendData( TransportInterface_t * pTransport,
     }
 
     /* Check if all the data is sent. */
-    TEST_ASSERT_EQUAL_UINT32_MESSAGE( sendSize, transferTotal, "Fail to send all the data expected." );
+    if( sendSize != transferTotal )
+    {
+        TEST_MESSAGE( "Fail to send all the data expected." );
+        retValue = false;
+    }
+
+    return retValue;
 }
 
 /*-----------------------------------------------------------*/
@@ -274,7 +323,7 @@ static void prvTransportSendData( TransportInterface_t * pTransport,
  * function returns zero, it should represent the read operation can be retried
  * by calling the API function. The retry operation is handled in this function.
  */
-static void prvTransportRecvData( TransportInterface_t * pTransport,
+static bool prvTransportRecvData( TransportInterface_t * pTransport,
                                   NetworkContext_t * pNetworkContext,
                                   uint8_t * pTransportTestBuffer,
                                   uint32_t recvSize )
@@ -282,6 +331,7 @@ static void prvTransportRecvData( TransportInterface_t * pTransport,
     uint32_t transferTotal = 0U;
     int32_t transportResult = 0;
     uint32_t i = 0U;
+    bool retValue = true;
 
     /* Initialize the receive buffer with TRANSPORT_TEST_BUFFER_GUARD_PATTERN. */
     memset( &( pTransportTestBuffer[ 0 ] ), TRANSPORT_TEST_BUFFER_GUARD_PATTERN, recvSize );
@@ -293,19 +343,25 @@ static void prvTransportRecvData( TransportInterface_t * pTransport,
                                             recvSize - transferTotal );
 
         /* Receive should not have any error. */
-        TEST_ASSERT_GREATER_OR_EQUAL_INT32_MESSAGE( 0, transportResult,
-                                                    "Transport receive data should not have any error." );
-        TEST_ASSERT_LESS_OR_EQUAL_UINT32_MESSAGE( ( recvSize - transferTotal ), ( uint32_t ) transportResult,
-                                                  "More data is received than expected." );
+        if( transportResult < 0 )
+        {
+            TEST_MESSAGE( "Transport receive data should not have any error." );
+            retValue = false;
+            break;
+        }
+
+        if( ( recvSize - transferTotal ) < ( uint32_t ) transportResult )
+        {
+            TEST_MESSAGE( "More data is received than expected." );
+            retValue = false;
+            break;
+        }
+
         transferTotal = transferTotal + transportResult;
 
         if( recvSize > transferTotal )
         {
-            /* Check the remain buffer after receive. */
-            TEST_ASSERT_EACH_EQUAL_HEX8_MESSAGE( TRANSPORT_TEST_BUFFER_GUARD_PATTERN,
-                                                 &( pTransportTestBuffer[ transferTotal ] ),
-                                                 ( recvSize - transferTotal ),
-                                                 "Buffer after received data should not be altered." );
+            retValue = prvVerifyTestData( &pTransportTestBuffer[ transferTotal ], 0, ( recvSize - transferTotal ) );
         }
         else
         {
@@ -319,7 +375,13 @@ static void prvTransportRecvData( TransportInterface_t * pTransport,
     }
 
     /* Check if all the data is recevied. */
-    TEST_ASSERT_EQUAL_UINT32_MESSAGE( recvSize, transferTotal, "Fail to receive all the data expected." );
+    if( recvSize != transferTotal )
+    {
+        retValue = false;
+        TEST_MESSAGE( "Fail to receive all the data expected." );
+    }
+
+    return retValue;
 }
 
 /*-----------------------------------------------------------*/
@@ -352,7 +414,9 @@ static void prvSendRecvCompareFunc( void * pParam )
     uint8_t * pTrasnportTestBufferStart =
         &( pThreadParameter->transportTestBuffer[ TRANSPORT_TEST_BUFFER_PREFIX_GUARD_LENGTH ] );
     uint32_t testBufferSize = 0;
-    NetworkContext_t * pNextworkContext = pThreadParameter->pNetworkContext;
+    NetworkContext_t * pNetworkContext = pThreadParameter->pNetworkContext;
+
+    pThreadParameter->xResult = true;
 
     for( testBufferSize = 1; testBufferSize <= TRANSPORT_TEST_BUFFER_WRITABLE_LENGTH; testBufferSize = testBufferSize + 1 )
     {
@@ -360,17 +424,27 @@ static void prvSendRecvCompareFunc( void * pParam )
         prvInitializeTestData( pTrasnportTestBufferStart, testBufferSize );
 
         /* Send the test data to the server. */
-        prvTransportSendData( pTestTransport, pNextworkContext, pTrasnportTestBufferStart,
-                              testBufferSize );
+        if( pThreadParameter->xResult == true )
+        {
+            pThreadParameter->xResult = prvTransportSendData( pTestTransport, pNetworkContext, pTrasnportTestBufferStart,
+                                                              testBufferSize );
+        }
 
         /* Receive the test data from server. */
-        prvTransportRecvData( pTestTransport, pNextworkContext, pTrasnportTestBufferStart,
-                              testBufferSize );
+        if( pThreadParameter->xResult == true )
+        {
+            pThreadParameter->xResult = prvTransportRecvData( pTestTransport, pNetworkContext, pTrasnportTestBufferStart,
+                                                              testBufferSize );
+        }
 
         /* Compare the test data received from server. */
-        prvVerifyTestData( pTrasnportTestBufferStart, testBufferSize, TRANSPORT_TEST_BUFFER_WRITABLE_LENGTH );
+        if( pThreadParameter->xResult == true )
+        {
+            pThreadParameter->xResult = prvVerifyTestData( pTrasnportTestBufferStart, testBufferSize,
+                                                           TRANSPORT_TEST_BUFFER_WRITABLE_LENGTH );
+        }
 
-        if( pThreadParameter->stopFlag == true )
+        if( ( pThreadParameter->stopFlag == true ) || ( pThreadParameter->xResult == false ) )
         {
             break;
         }
@@ -393,17 +467,24 @@ static void prvRetunZeroRetryFunc( void * pParam )
         &( pThreadParameter->transportTestBuffer[ TRANSPORT_TEST_BUFFER_PREFIX_GUARD_LENGTH ] );
     NetworkContext_t * pNetworkContext = pThreadParameter->pNetworkContext;
 
+    pThreadParameter->xResult = true;
+
     /* Receive from remote server. No data will be recevied since no data is sent. */
     transportResult = pTestTransport->recv( pNetworkContext,
                                             pTrasnportTestBufferStart,
                                             TRANSPORT_TEST_BUFFER_WRITABLE_LENGTH );
-    TEST_ASSERT_EQUAL_INT32_MESSAGE( 0, transportResult, "No data to receive should return 0." );
+
+    if( transportResult != 0 )
+    {
+        TEST_MESSAGE( "No data to receive should return 0." );
+        pThreadParameter->xResult = false;
+    }
 
     /* The buffer should remain unchanged when zero returned. */
-    TEST_ASSERT_EACH_EQUAL_HEX8_MESSAGE( TRANSPORT_TEST_BUFFER_GUARD_PATTERN,
-                                         pTrasnportTestBufferStart,
-                                         TRANSPORT_TEST_BUFFER_WRITABLE_LENGTH,
-                                         "transportTestBuffer should not be altered." );
+    if( pThreadParameter->xResult == true )
+    {
+        pThreadParameter->xResult = prvVerifyTestData( pTrasnportTestBufferStart, 0, TRANSPORT_TEST_BUFFER_WRITABLE_LENGTH );
+    }
 
     /* Send some data to echo server then retry the receive operation. The receive
      * operation should be able to receive all the data. */
@@ -411,13 +492,25 @@ static void prvRetunZeroRetryFunc( void * pParam )
     prvInitializeTestData( pTrasnportTestBufferStart, TRANSPORT_TEST_BUFFER_WRITABLE_LENGTH );
 
     /* Send the test data to the server. */
-    prvTransportSendData( pTestTransport, pNetworkContext, pTrasnportTestBufferStart, TRANSPORT_TEST_BUFFER_WRITABLE_LENGTH );
+    if( pThreadParameter->xResult == true )
+    {
+        pThreadParameter->xResult = prvTransportSendData( pTestTransport, pNetworkContext,
+            pTrasnportTestBufferStart, TRANSPORT_TEST_BUFFER_WRITABLE_LENGTH );
+    }
 
     /* Receive the test data from server. */
-    prvTransportRecvData( pTestTransport, pNetworkContext, pTrasnportTestBufferStart, TRANSPORT_TEST_BUFFER_WRITABLE_LENGTH );
+    if( pThreadParameter->xResult == true )
+    {
+        pThreadParameter->xResult = prvTransportRecvData( pTestTransport, pNetworkContext,
+            pTrasnportTestBufferStart, TRANSPORT_TEST_BUFFER_WRITABLE_LENGTH );
+    }
 
     /* Compare the test data received from server. */
-    prvVerifyTestData( pTrasnportTestBufferStart, TRANSPORT_TEST_BUFFER_WRITABLE_LENGTH, TRANSPORT_TEST_BUFFER_WRITABLE_LENGTH );
+    if( pThreadParameter->xResult == true )
+    {
+        pThreadParameter->xResult = prvVerifyTestData( pTrasnportTestBufferStart,
+            TRANSPORT_TEST_BUFFER_WRITABLE_LENGTH, TRANSPORT_TEST_BUFFER_WRITABLE_LENGTH );
+    }
 }
 
 /*-----------------------------------------------------------*/
@@ -431,17 +524,24 @@ static void prvNoDataToReceiveFunc( void * pParam )
         &( pThreadParameter->transportTestBuffer[ TRANSPORT_TEST_BUFFER_PREFIX_GUARD_LENGTH ] );
     NetworkContext_t * pNetworkContext = pThreadParameter->pNetworkContext;
 
+    pThreadParameter->xResult = true;
+
     /* Receive from remote server. No data will be recevied since no data is sent. */
     transportResult = pTestTransport->recv( pNetworkContext,
                                             pTrasnportTestBufferStart,
                                             TRANSPORT_TEST_BUFFER_WRITABLE_LENGTH );
-    TEST_ASSERT_EQUAL_INT32_MESSAGE( 0, transportResult, "No data to receive should return 0." );
+
+    if( transportResult != 0 )
+    {
+        TEST_MESSAGE( "No data to receive should return 0." );
+        pThreadParameter->xResult = false;
+    }
 
     /* The buffer should remain unchanged when zero returned. */
-    TEST_ASSERT_EACH_EQUAL_HEX8_MESSAGE( TRANSPORT_TEST_BUFFER_GUARD_PATTERN,
-                                         pTrasnportTestBufferStart,
-                                         TRANSPORT_TEST_BUFFER_WRITABLE_LENGTH,
-                                         "transportTestBuffer should not be altered." );
+    if( pThreadParameter->xResult == true )
+    {
+        pThreadParameter->xResult = prvVerifyTestData( pTrasnportTestBufferStart, 0, TRANSPORT_TEST_BUFFER_WRITABLE_LENGTH );
+    }
 }
 
 /*-----------------------------------------------------------*/
@@ -454,6 +554,15 @@ TEST_SETUP( Full_TransportInterfaceTest )
     NetworkConnectStatus_t networkConnectResult = NETWORK_CONNECT_SUCCESS;
     uint8_t * pTransportTestBuffer = threadParameter[ TRANSPORT_TEST_INDEX ].transportTestBuffer;
     NetworkContext_t * pNetworkContext = threadParameter[ TRANSPORT_TEST_INDEX ].pNetworkContext;
+    uint32_t threadIndex;
+
+    /* Reset the threadParameter status. */
+    for( threadIndex = 0; threadIndex < TRANSPORT_TEST_MULTI_THREAD_TASK_COUNT; threadIndex++ )
+    {
+        threadParameter[ threadIndex ].xNetworkConnected = false;
+        threadParameter[ threadIndex ].xResult = false;
+        threadParameter[ threadIndex ].stopFlag = false;
+    }
 
     /* Ensure the test parameter is valid. testParam.pNetworkCredentials is not checked here. */
     TEST_ASSERT_NOT_NULL_MESSAGE( testParam.pTransport, "testParam.pTransport should not be NULL." );
@@ -474,6 +583,7 @@ TEST_SETUP( Full_TransportInterfaceTest )
     networkConnectResult = testParam.pNetworkConnect( pNetworkContext,
                                                       &testHostInfo, testParam.pNetworkCredentials );
     TEST_ASSERT_EQUAL_INT32_MESSAGE( NETWORK_CONNECT_SUCCESS, networkConnectResult, "Network connect failed." );
+    threadParameter[ TRANSPORT_TEST_INDEX ].xNetworkConnected = true;
 }
 
 /*-----------------------------------------------------------*/
@@ -489,7 +599,11 @@ TEST_TEAR_DOWN( Full_TransportInterfaceTest )
     prvVerifyTestBufferGuard( pTransportTestBuffer );
 
     /* Call the hook function implemented by the application to de-initialize the transport interface. */
-    testParam.pNetworkDisconnect( pNetworkContext );
+    if( threadParameter[ TRANSPORT_TEST_INDEX ].xNetworkConnected == true )
+    {
+        testParam.pNetworkDisconnect( pNetworkContext );
+        threadParameter[ TRANSPORT_TEST_INDEX ].xNetworkConnected = false;
+    }
 }
 
 /*-----------------------------------------------------------*/
@@ -624,24 +738,29 @@ TEST( Full_TransportInterfaceTest, Transport_SendOneByteRecvCompare )
     uint8_t * pTrasnportTestBufferStart =
         &( threadParameter[ TRANSPORT_TEST_INDEX ].transportTestBuffer[ TRANSPORT_TEST_BUFFER_PREFIX_GUARD_LENGTH ] );
     NetworkContext_t * pNetworkContext = threadParameter[ TRANSPORT_TEST_INDEX ].pNetworkContext;
+    bool retValue;
 
     /* Initialize the test data buffer. */
     prvInitializeTestData( pTrasnportTestBufferStart, TRANSPORT_TEST_BUFFER_WRITABLE_LENGTH );
 
     /* Send the test data to the server. */
-    prvTransportSendData( pTestTransport, pNetworkContext, pTrasnportTestBufferStart, 1U );
+    retValue = prvTransportSendData( pTestTransport, pNetworkContext, pTrasnportTestBufferStart, 1U );
+    TEST_ASSERT_MESSAGE( ( retValue == true ), "Send test data failed." );
 
     /* Send the rest test data to the server. */
-    prvTransportSendData( pTestTransport, pNetworkContext, &pTrasnportTestBufferStart[ 1 ],
-                          ( TRANSPORT_TEST_BUFFER_WRITABLE_LENGTH - 1U ) );
+    retValue = prvTransportSendData( pTestTransport, pNetworkContext, &pTrasnportTestBufferStart[ 1 ],
+                                     ( TRANSPORT_TEST_BUFFER_WRITABLE_LENGTH - 1U ) );
+    TEST_ASSERT_MESSAGE( ( retValue == true ), "Send test data failed." );
 
     /* Receive the test data from server. */
-    prvTransportRecvData( pTestTransport, pNetworkContext, pTrasnportTestBufferStart,
-                          TRANSPORT_TEST_BUFFER_WRITABLE_LENGTH );
+    retValue = prvTransportRecvData( pTestTransport, pNetworkContext, pTrasnportTestBufferStart,
+                                     TRANSPORT_TEST_BUFFER_WRITABLE_LENGTH );
+    TEST_ASSERT_MESSAGE( ( retValue == true ), "Receive test data failed." );
 
     /* Compare the test data received from server. */
-    prvVerifyTestData( pTrasnportTestBufferStart, TRANSPORT_TEST_BUFFER_WRITABLE_LENGTH,
-                       TRANSPORT_TEST_BUFFER_WRITABLE_LENGTH );
+    retValue = prvVerifyTestData( pTrasnportTestBufferStart, TRANSPORT_TEST_BUFFER_WRITABLE_LENGTH,
+                                  TRANSPORT_TEST_BUFFER_WRITABLE_LENGTH );
+    TEST_ASSERT_MESSAGE( ( retValue == true ), "Verify test data failed." );
 }
 
 /*-----------------------------------------------------------*/
@@ -660,30 +779,36 @@ TEST( Full_TransportInterfaceTest, Transport_SendRecvOneByteCompare )
     uint8_t * pTrasnportTestBufferStart =
         &( threadParameter[ TRANSPORT_TEST_INDEX ].transportTestBuffer[ TRANSPORT_TEST_BUFFER_PREFIX_GUARD_LENGTH ] );
     NetworkContext_t * pNetworkContext = threadParameter[ TRANSPORT_TEST_INDEX ].pNetworkContext;
+    bool retValue;
 
     /* Initialize the test data buffer. */
     prvInitializeTestData( pTrasnportTestBufferStart, TRANSPORT_TEST_BUFFER_WRITABLE_LENGTH );
 
     /* Send the test data to the server. */
-    prvTransportSendData( pTestTransport, pNetworkContext, pTrasnportTestBufferStart,
-                          TRANSPORT_TEST_BUFFER_WRITABLE_LENGTH );
+    retValue = prvTransportSendData( pTestTransport, pNetworkContext, pTrasnportTestBufferStart,
+                                     TRANSPORT_TEST_BUFFER_WRITABLE_LENGTH );
+    TEST_ASSERT_MESSAGE( ( retValue == true ), "Send test data failed." );
 
     /* Reset the buffer. The buffer after received data is verified in prvVerifyTestData. */
     memset( pTrasnportTestBufferStart, TRANSPORT_TEST_BUFFER_GUARD_PATTERN, TRANSPORT_TEST_BUFFER_WRITABLE_LENGTH );
 
     /* Receive one byte test data from server. */
-    prvTransportRecvData( pTestTransport, pNetworkContext, pTrasnportTestBufferStart, 1U );
+    retValue = prvTransportRecvData( pTestTransport, pNetworkContext, pTrasnportTestBufferStart, 1U );
+    TEST_ASSERT_MESSAGE( ( retValue == true ), "Receive test data failed." );
 
     /* Compare the test data received from server. */
-    prvVerifyTestData( pTrasnportTestBufferStart, 1U, TRANSPORT_TEST_BUFFER_WRITABLE_LENGTH );
+    retValue = prvVerifyTestData( pTrasnportTestBufferStart, 1U, TRANSPORT_TEST_BUFFER_WRITABLE_LENGTH );
+    TEST_ASSERT_MESSAGE( ( retValue == true ), "Verify test data failed." );
 
     /* Receive remain test data from server. */
-    prvTransportRecvData( pTestTransport, pNetworkContext, &pTrasnportTestBufferStart[ 1U ],
-                          ( TRANSPORT_TEST_BUFFER_WRITABLE_LENGTH - 1U ) );
+    retValue = prvTransportRecvData( pTestTransport, pNetworkContext, &pTrasnportTestBufferStart[ 1U ],
+                                     ( TRANSPORT_TEST_BUFFER_WRITABLE_LENGTH - 1U ) );
+    TEST_ASSERT_MESSAGE( ( retValue == true ), "Receive test data failed." );
 
     /* Compare remain test data received from server. */
-    prvVerifyTestData( pTrasnportTestBufferStart, TRANSPORT_TEST_BUFFER_WRITABLE_LENGTH,
-                       TRANSPORT_TEST_BUFFER_WRITABLE_LENGTH );
+    retValue = prvVerifyTestData( pTrasnportTestBufferStart, TRANSPORT_TEST_BUFFER_WRITABLE_LENGTH,
+                                  TRANSPORT_TEST_BUFFER_WRITABLE_LENGTH );
+    TEST_ASSERT_MESSAGE( ( retValue == true ), "Verify test data failed." );
 }
 
 /*-----------------------------------------------------------*/
@@ -693,7 +818,36 @@ TEST( Full_TransportInterfaceTest, Transport_SendRecvOneByteCompare )
  */
 TEST( Full_TransportInterfaceTest, Transport_SendRecvCompare )
 {
-    prvSendRecvCompareFunc( &threadParameter[ TRANSPORT_TEST_INDEX ] );
+    uint32_t testBufferSize = 0;
+    uint8_t * pTrasnportTestBufferStart =
+        &( threadParameter[ TRANSPORT_TEST_INDEX ].transportTestBuffer[ TRANSPORT_TEST_BUFFER_PREFIX_GUARD_LENGTH ] );
+    NetworkContext_t * pNetworkContext = threadParameter[ TRANSPORT_TEST_INDEX ].pNetworkContext;
+    bool retValue;
+
+    for( testBufferSize = 1; testBufferSize <= TRANSPORT_TEST_BUFFER_WRITABLE_LENGTH; testBufferSize = testBufferSize + 1 )
+    {
+        /* Initialize the test data buffer. */
+        prvInitializeTestData( pTrasnportTestBufferStart, testBufferSize );
+
+        /* Send the test data to the server. */
+        retValue = prvTransportSendData( pTestTransport, pNetworkContext, pTrasnportTestBufferStart,
+                                         testBufferSize );
+        TEST_ASSERT_MESSAGE( ( retValue == true ), "Send test data failed." );
+
+        /* Receive the test data from server. */
+        retValue = prvTransportRecvData( pTestTransport, pNetworkContext, pTrasnportTestBufferStart,
+                                         testBufferSize );
+        TEST_ASSERT_MESSAGE( ( retValue == true ), "Receive test data failed." );
+
+        /* Compare the test data received from server. */
+        retValue = prvVerifyTestData( pTrasnportTestBufferStart, testBufferSize, TRANSPORT_TEST_BUFFER_WRITABLE_LENGTH );
+        TEST_ASSERT_MESSAGE( ( retValue == true ), "Verify test data failed." );
+
+        #if ( TRANSPORT_TEST_PRINT_DEBUG_PROGRESS == 1 )
+            /* Output information to indicate the test is running. */
+            UNITY_OUTPUT_CHAR( '.' );
+        #endif
+    }
 }
 
 /*-----------------------------------------------------------*/
@@ -716,44 +870,58 @@ TEST( Full_TransportInterfaceTest, Transport_SendRecvCompareMultithreaded )
     }
 
     /* Connect the secondary network context. */
-    networkConnectResult = testParam.pNetworkConnect( testParam.pSecondNetworkContext,
+    networkConnectResult = testParam.pNetworkConnect( threadParameter[ TRANSPORT_TEST_SECOND_INDEX ].pNetworkContext,
                                                       &testHostInfo, testParam.pNetworkCredentials );
     TEST_ASSERT_EQUAL_INT32_MESSAGE( NETWORK_CONNECT_SUCCESS, networkConnectResult, "Network connect failed." );
+    threadParameter[ TRANSPORT_TEST_SECOND_INDEX ].xNetworkConnected = true;
 
     /* Create testing threads. */
     for( threadIndex = 0; threadIndex < TRANSPORT_TEST_MULTI_THREAD_TASK_COUNT; threadIndex++ )
     {
-        threadParameter[ threadIndex ].stopFlag = false;
+        /* threadParameters are initialized in test setup function. */
         threadHandle[ threadIndex ] = FRTest_ThreadCreate( prvSendRecvCompareFunc,
                                                            &threadParameter[ threadIndex ] );
-        TEST_ASSERT_MESSAGE( threadHandle != NULL, "Create thread failed." );
     }
 
     /* Waiting for all test threads complete. */
     for( threadIndex = 0; threadIndex < TRANSPORT_TEST_MULTI_THREAD_TASK_COUNT; threadIndex++ )
     {
-        timedWaitResult = FRTest_ThreadTimedJoin( threadHandle[ threadIndex ],
-                                                  TRANSPORT_TEST_WAIT_THREAD_TIMEOUT_MS );
-
-        if( timedWaitResult != 0 )
+        if( threadHandle[ threadIndex ] != NULL )
         {
+            timedWaitResult = FRTest_ThreadTimedJoin( threadHandle[ threadIndex ],
+                                                      TRANSPORT_TEST_WAIT_THREAD_TIMEOUT_MS );
+
+            if( timedWaitResult != 0 )
+            {
+                /* The created test thread runs over TRANSPORT_TEST_WAIT_THREAD_TIMEOUT_MS. */
+                threadParameter[ threadIndex ].stopFlag = true;
+            }
+        }
+        else
+        {
+            /* The thread is not created. */
             threadParameter[ threadIndex ].stopFlag = true;
         }
     }
 
-    /* The primary thread network context will be closed in the test shutdown function. */
+    /* The primary thread network context will be closed in the test tear down function. */
     for( threadIndex = 1; threadIndex < TRANSPORT_TEST_MULTI_THREAD_TASK_COUNT; threadIndex++ )
     {
         testParam.pNetworkDisconnect( threadParameter[ threadIndex ].pNetworkContext );
-
-        /* Check the test buffer guard. */
-        prvVerifyTestBufferGuard( threadParameter[ threadIndex ].transportTestBuffer );
+        threadParameter[ threadIndex ].xNetworkConnected = false;
     }
 
     /* Check if every thread finish the test in time. */
     for( threadIndex = 0; threadIndex < TRANSPORT_TEST_MULTI_THREAD_TASK_COUNT; threadIndex++ )
     {
-        TEST_ASSERT_MESSAGE( threadParameter[ threadIndex ].stopFlag != true, "Test thread timeout." );
+        /* Check the test buffer guard. */
+        prvVerifyTestBufferGuard( threadParameter[ threadIndex ].transportTestBuffer );
+
+        /* Check if the test thread timeout or not started. */
+        TEST_ASSERT_MESSAGE( ( threadParameter[ threadIndex ].stopFlag != true ), "Test thread timeout or not created." );
+
+        /* Check the test result. */
+        TEST_ASSERT_MESSAGE( ( threadParameter[ threadIndex ].xResult == true ), "Test failed in test thread." );
     }
 }
 
@@ -837,8 +1005,7 @@ TEST( Full_TransportInterfaceTest, TransportRecv_NoDataToReceive )
     FRTestThreadHandle_t threadHandle;
     int timedWaitResult = 0;
 
-    /* Create testing threads. */
-    threadParameter[ TRANSPORT_TEST_INDEX ].stopFlag = false;
+    /* Create testing thread. threadParameters are initialized in test setup function. */
     threadHandle = FRTest_ThreadCreate( prvNoDataToReceiveFunc,
                                         &threadParameter[ TRANSPORT_TEST_INDEX ] );
     TEST_ASSERT_MESSAGE( threadHandle != NULL, "Create thread failed." );
@@ -870,8 +1037,7 @@ TEST( Full_TransportInterfaceTest, TransportRecv_ReturnZeroRetry )
     FRTestThreadHandle_t threadHandle;
     int timedWaitResult = 0;
 
-    /* Create testing threads. */
-    threadParameter[ TRANSPORT_TEST_INDEX ].stopFlag = false;
+    /* Create testing thread. threadParameters are initialized in test setup function. */
     threadHandle = FRTest_ThreadCreate( prvRetunZeroRetryFunc,
                                         &threadParameter[ TRANSPORT_TEST_INDEX ] );
     TEST_ASSERT_MESSAGE( threadHandle != NULL, "Create thread failed." );
@@ -942,6 +1108,7 @@ int RunTransportInterfaceTest( void )
     RUN_TEST_GROUP( Full_TransportInterfaceTest );
 
     status = UNITY_END();
+
     return status;
 }
 
