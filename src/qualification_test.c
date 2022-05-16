@@ -24,8 +24,13 @@
  * @file qualification_test.c
  * @brief Implements the entry function for LTS qualification test.
  */
+
 #include "test_execution_config.h"
 #include "platform_function.h"
+
+#if ( DEVICE_ADVISOR_TEST_ENABLED == 1)
+    extern int RunDeviceAdvisorDemo( void );
+#endif
 
 #if ( TRANSPORT_INTERFACE_TEST_ENABLED == 1 )
     #include "transport_interface_test.h"
@@ -52,6 +57,11 @@
 void RunQualificationTest( void )
 {
     FRTest_TimeDelay( TEST_START_DELAY_MS );
+
+    #if ( DEVICE_ADVISOR_TEST_ENABLED == 1)
+        RunDeviceAdvisorDemo();
+    #endif
+
     #if ( TRANSPORT_INTERFACE_TEST_ENABLED == 1 )
         RunTransportInterfaceTest();
     #endif
