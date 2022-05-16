@@ -27,6 +27,10 @@
 #include "test_execution_config.h"
 #include "platform_function.h"
 
+#if ( DEVICE_ADVISOR_TEST_ENABLED == 1)
+    extern int RunDeviceAdvisorTest( void );
+#endif
+
 #if ( TRANSPORT_INTERFACE_TEST_ENABLED == 1 )
     #include "transport_interface_test.h"
 #endif
@@ -52,6 +56,11 @@
 void RunQualificationTest( void )
 {
     FRTest_TimeDelay( TEST_START_DELAY_MS );
+
+    #if ( DEVICE_ADVISOR_TEST_ENABLED == 1)
+        RunDeviceAdvisorTest();
+    #endif
+
     #if ( TRANSPORT_INTERFACE_TEST_ENABLED == 1 )
         RunTransportInterfaceTest();
     #endif
