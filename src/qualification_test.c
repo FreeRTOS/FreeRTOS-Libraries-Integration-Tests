@@ -25,12 +25,11 @@
  * @brief Implements the entry function for LTS qualification test.
  */
 
-#include "FreeRTOS.h"
 #include "test_execution_config.h"
 #include "platform_function.h"
 
 #if ( DEVICE_ADVISOR_TEST_ENABLED == 1)
-    extern BaseType_t RunDeviceAdvisorDemo( void );
+    extern int RunDeviceAdvisorDemo( void );
 #endif
 
 #if ( TRANSPORT_INTERFACE_TEST_ENABLED == 1 )
