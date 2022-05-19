@@ -284,7 +284,7 @@
 /**
  * @brief The IoT Thing name for the device for OTA test.
  *
- * #define OTA_IOT_THING_NAME  "PLACE_HOLDER"
+ * #define IOT_THING_NAME  "PLACE_HOLDER"
  */
 
 /**
