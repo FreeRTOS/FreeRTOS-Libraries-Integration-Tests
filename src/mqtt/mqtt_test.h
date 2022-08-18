@@ -51,6 +51,13 @@ typedef struct MqttTestParam
 void SetupMqttTestParam( MqttTestParam_t * pTestParam );
 
 /**
+ * @brief Customers need to implement this function for MQTT test to set 
+ * MQTTGetCurrentTimeFunc_t in MQTT_Init. This should be an Application 
+ * provided function to query the current time in milliseconds.
+ */
+uint32_t MqttTestGetTimeMs( void );
+
+/**
  * @brief Run MQTT test. This function should be called after calling `SetupMqttTest()`.
  *
  * @return Negative value if the transport test execution config is not set. Otherwise,
