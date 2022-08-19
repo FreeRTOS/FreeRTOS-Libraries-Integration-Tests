@@ -36,6 +36,7 @@
 #include "demo_config.h"
 #include "core_mqtt.h"
 #include "core_mqtt_state.h"
+#include "clock.h"
 #include "unity.h"
 #include "unity_fixture.h"
 
@@ -112,9 +113,14 @@
 #define TEST_MQTT_LWT_TOPIC_LENGTH              ( sizeof( TEST_MQTT_LWT_TOPIC ) - 1 )
 
 /**
+ * @brief Client identifier for MQTT session in the tests.
+ */
+#define TEST_CLIENT_IDENTIFIER                  CLIENT_IDENTIFIER
+
+/**
  * @brief Length of the client identifier.
  */
-#define TEST_CLIENT_IDENTIFIER_LENGTH           ( sizeof( CLIENT_IDENTIFIER ) - 1u )
+#define TEST_CLIENT_IDENTIFIER_LENGTH           ( sizeof( TEST_CLIENT_IDENTIFIER ) - 1u )
 
 /**
  * @brief Client identifier for use in LWT tests.
@@ -171,7 +177,7 @@
     #ifndef MQTT_SERVER_ENDPOINT
         #error "Please define MQTT_SERVER_ENDPOINT"
     #endif
-
+    
     #ifndef MQTT_SERVER_PORT
         #error "Please define MQTT_SERVER_PORT"
     #endif

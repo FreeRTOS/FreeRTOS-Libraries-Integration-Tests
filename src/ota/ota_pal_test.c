@@ -26,12 +26,9 @@
 
 /*-----------------------------------------------------------*/
 
-/* Wrapper to backward compatible for old version OTA. */
 #if !defined OTA_PAL_TEST_OTA_LIBRARY_VERSION
     #error "Can't get current OTA library version"
 #endif /* !defined OTA_PAL_TEST_OTA_LIBRARY_VERSION */
-
-/*-----------------------------------------------------------*/
 
 #ifndef OTA_PAL_TEST_CERT_TYPE
     #error "Please define OTA_PAL_TEST_CERT_TYPE"

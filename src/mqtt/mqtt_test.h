@@ -29,7 +29,6 @@
 
 #include "transport_interface.h"
 #include "network_connection.h"
-#include "core_mqtt.h"
 
 typedef struct MqttTestParam
 {
