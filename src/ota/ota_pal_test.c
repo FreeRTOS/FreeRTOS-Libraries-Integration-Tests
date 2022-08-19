@@ -29,12 +29,6 @@
 /* Wrapper to backward compatible for old version OTA. */
 #if !defined OTA_PAL_TEST_OTA_LIBRARY_VERSION
     #error "Can't get current OTA library version"
-
-#else
-    #if OTA_PAL_TEST_OTA_LIBRARY_VERSION == "v3.3.0"
-        #define Sig_t    ( Sig256_t )
-    #endif /* OTA_PAL_TEST_OTA_LIBRARY_VERSION == "v3.3.0" */
-
 #endif /* !defined OTA_PAL_TEST_OTA_LIBRARY_VERSION */
 
 /*-----------------------------------------------------------*/
@@ -146,7 +140,11 @@ TEST_GROUP_RUNNER( Full_OTA_PAL )
 TEST( Full_OTA_PAL, otaPal_CloseFile_ValidSignature )
 {
     OtaPalStatus_t xOtaStatus;
-    Sig_t xSig = { 0 };
+    #if OTA_PAL_TEST_OTA_LIBRARY_VERSION == "v3.3.0"
+        Sig256_t xSig = { 0 };
+    #else
+        Sig_t xSig = { 0 };
+    #endif /* OTA_PAL_TEST_OTA_LIBRARY_VERSION == "v3.3.0" */
     int16_t bytesWritten;
 
     /* We use a dummy file name here because closing the system designated bootable
@@ -184,7 +182,11 @@ TEST( Full_OTA_PAL, otaPal_CloseFile_ValidSignature )
 TEST( Full_OTA_PAL, otaPal_CloseFile_InvalidSignatureBlockWritten )
 {
     OtaPalStatus_t xOtaStatus;
-    Sig_t xSig = { 0 };
+    #if OTA_PAL_TEST_OTA_LIBRARY_VERSION == "v3.3.0"
+        Sig256_t xSig = { 0 };
+    #else
+        Sig_t xSig = { 0 };
+    #endif /* OTA_PAL_TEST_OTA_LIBRARY_VERSION == "v3.3.0" */
     int16_t bytesWritten;
 
     /* Create a local file using the PAL. */
@@ -224,7 +226,11 @@ TEST( Full_OTA_PAL, otaPal_CloseFile_InvalidSignatureBlockWritten )
 TEST( Full_OTA_PAL, otaPal_CloseFile_InvalidSignatureNoBlockWritten )
 {
     OtaPalStatus_t xOtaStatus;
-    Sig_t xSig = { 0 };
+    #if OTA_PAL_TEST_OTA_LIBRARY_VERSION == "v3.3.0"
+        Sig256_t xSig = { 0 };
+    #else
+        Sig_t xSig = { 0 };
+    #endif /* OTA_PAL_TEST_OTA_LIBRARY_VERSION == "v3.3.0" */
 
     /* Create a local file using the PAL. */
     xOtaFile.pFilePath = ( uint8_t * ) OTA_PAL_FIRMWARE_FILE;
@@ -587,7 +593,11 @@ TEST( Full_OTA_PAL, otaPal_SetPlatformImageState_AbortImageState )
 TEST( Full_OTA_PAL, otaPal_GetPlatformImageState_InvalidImageStateFromFileCloseFailure )
 {
     OtaPalStatus_t xOtaStatus;
-    Sig_t xSig = { 0 };
+    #if OTA_PAL_TEST_OTA_LIBRARY_VERSION == "v3.3.0"
+        Sig256_t xSig = { 0 };
+    #else
+        Sig_t xSig = { 0 };
+    #endif /* OTA_PAL_TEST_OTA_LIBRARY_VERSION == "v3.3.0" */
     OtaPalImageState_t ePalImageState = OtaPalImageStateUnknown;
     int16_t bytesWritten;
 
