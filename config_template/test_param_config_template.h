@@ -51,6 +51,21 @@
  */
 
 /**
+ * @brief The MQTT client identifier used in MQTT test.  Each client identifier
+ * must be unique; so edit as required to ensure that no two clients connecting to
+ * the same broker use the same client identifier.
+ *
+ * #define MQTT_TEST_CLIENT_IDENTIFIER				"insert here."
+ */
+
+ /**
+ * @brief Network buffer size specified in bytes. Must be large enough to hold the maximum
+ * anticipated MQTT payload.
+ *
+ * #define MQTT_TEST_NETWORK_BUFFER_SIZE			"insert here."
+ */
+
+/**
  * @brief Root certificate of the IoT Core.
  *
  * @note This certificate should be PEM-encoded.

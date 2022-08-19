@@ -29,6 +29,17 @@
 
 #include "transport_interface.h"
 #include "network_connection.h"
+#include "core_mqtt.h"
+
+#if !defined MQTT_LIBRARY_VERSION
+    #error "Can't get current MQTT library version"
+#else
+    #if MQTT_LIBRARY_VERSION == "v1.2.0"
+        #define MQTT_TEST_VERSION    ( 120 )
+    #else
+        #define MQTT_TEST_VERSION    ( 121 )
+    #endif /* MQTT_LIBRARY_VERSION == "v1.2.0" */
+#endif /* !defined MQTT_LIBRARY_VERSION */
 
 typedef struct MqttTestParam
 {
@@ -38,6 +49,7 @@ typedef struct MqttTestParam
     void * pNetworkCredentials;
     void * pNetworkContext;
     void * pSecondNetworkContext;
+    MQTTGetCurrentTimeFunc_t pGetTimeMs;
 } MqttTestParam_t;
 
 /**
