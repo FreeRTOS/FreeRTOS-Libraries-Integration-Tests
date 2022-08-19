@@ -46,9 +46,15 @@
 /*-----------------------------------------------------------*/
 
 /* Wrapper to backward compatible for old version coreMQTT. */
-#if MQTT_TEST_VERSION <= ( 120 )
-    #define lastPacketTxTime    ( lastPacketTime )
-#endif /* MQTT_TEST_VERSION <= ( 120 ) */
+#if !defined MQTT_TEST_COREMQTT_LIBRARY_VERSION
+    #error "Can't get current MQTT library version"
+
+#else
+    #if MQTT_TEST_COREMQTT_LIBRARY_VERSION == "v1.2.0"
+        #define lastPacketTxTime    ( lastPacketTime )
+    #endif /* MQTT_TEST_COREMQTT_LIBRARY_VERSION == "v1.2.0" */
+
+#endif /* !defined MQTT_TEST_COREMQTT_LIBRARY_VERSION */
 
 /*-----------------------------------------------------------*/
 

@@ -29,6 +29,31 @@
 #define TEST_PARAM_CONFIG_H
 
 /**
+ * @brief coreMQTT library version.
+ *
+ * #define MQTT_TEST_COREMQTT_LIBRARY_VERSION   MQTT_LIBRARY_VERSION
+ */
+#define MQTT_TEST_COREMQTT_LIBRARY_VERSION   MQTT_LIBRARY_VERSION
+
+/**
+ * @brief OTA library version.
+ * @note Get it from ota-for-aws-iot-embedded-sdk/source/include/ota.h. 
+         For example, set OTA_PAL_TEST_OTA_LIBRARY_VERSION to "v3.3.0" 
+         if "AWS IoT Over-the-air Update v3.3.0" shown in ota.h.
+ *
+ * #define OTA_PAL_TEST_OTA_LIBRARY_VERSION   "v3.3.0"
+ */
+
+/**
+ * @brief corePKCS11 library version.
+ * @note Get it corePKCS11/source/include/core_pkcs11.h. For example, 
+ *       set PKCS11_TEST_PKCS11_LIBRARY_VERSION to "v3.4.0" 
+ *       if "corePKCS11 v3.4.0" shown in core_pkcs11.h
+ *
+ * #define PKCS11_TEST_PKCS11_LIBRARY_VERSION   "v3.4.0"
+ */
+
+/**
  * @brief Configuration that indicates if the device should generate a key pair.
  *
  * @note When FORCE_GENERATE_NEW_KEY_PAIR is set to 1, the device should generate
