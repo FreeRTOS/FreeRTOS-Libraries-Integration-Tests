@@ -30,27 +30,29 @@
 
 /**
  * @brief coreMQTT library version.
+ * @note Get it from coreMQTT/source/include/core_mqtt.h. 
+ *       For example, set MQTT_TEST_COREMQTT_LIBRARY_VERSION to 120
+ *       if "coreMQTT v1.2.0" shown in core_mqtt.h.
  *
- * #define MQTT_TEST_COREMQTT_LIBRARY_VERSION   MQTT_LIBRARY_VERSION
+ * #define MQTT_TEST_COREMQTT_LIBRARY_VERSION   ( 120 )
  */
-#define MQTT_TEST_COREMQTT_LIBRARY_VERSION   MQTT_LIBRARY_VERSION
 
 /**
  * @brief OTA library version.
  * @note Get it from ota-for-aws-iot-embedded-sdk/source/include/ota.h. 
-         For example, set OTA_PAL_TEST_OTA_LIBRARY_VERSION to "v3.3.0" 
-         if "AWS IoT Over-the-air Update v3.3.0" shown in ota.h.
+ *       For example, set OTA_PAL_TEST_OTA_LIBRARY_VERSION to 330
+ *       if "AWS IoT Over-the-air Update v3.3.0" shown in ota.h.
  *
- * #define OTA_PAL_TEST_OTA_LIBRARY_VERSION   "v3.3.0"
+ * #define OTA_PAL_TEST_OTA_LIBRARY_VERSION   ( 330 )
  */
 
 /**
  * @brief corePKCS11 library version.
  * @note Get it corePKCS11/source/include/core_pkcs11.h. For example, 
- *       set PKCS11_TEST_PKCS11_LIBRARY_VERSION to "v3.4.0" 
+ *       set PKCS11_TEST_PKCS11_LIBRARY_VERSION to 340
  *       if "corePKCS11 v3.4.0" shown in core_pkcs11.h
  *
- * #define PKCS11_TEST_PKCS11_LIBRARY_VERSION   "v3.4.0"
+ * #define PKCS11_TEST_PKCS11_LIBRARY_VERSION   ( 340 )
  */
 
 /**
