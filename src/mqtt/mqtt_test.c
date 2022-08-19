@@ -45,6 +45,13 @@
 
 /*-----------------------------------------------------------*/
 
+/* Wrapper to backward compatible for old version coreMQTT. */
+#if MQTT_TEST_VERSION <= ( 120 )
+    #define lastPacketTxTime    ( lastPacketTime )
+#endif /* MQTT_TEST_VERSION <= ( 120 ) */
+
+/*-----------------------------------------------------------*/
+
 /**
  * @brief Length of MQTT server host name.
  */
@@ -119,7 +126,7 @@
 /**
  * @brief Client identifier for use in LWT tests.
  */
-#define TEST_CLIENT_IDENTIFIER_LWT              CLIENT_IDENTIFIER "-LWT"
+#define TEST_CLIENT_IDENTIFIER_LWT              MQTT_TEST_CLIENT_IDENTIFIER "-LWT"
 
 /**
  * @brief Length of LWT client identifier.
@@ -167,15 +174,13 @@
 
 /*-----------------------------------------------------------*/
 
-#if ( MQTT_TEST_ENABLED == 1 )
-    #ifndef MQTT_SERVER_ENDPOINT
-        #error "Please define MQTT_SERVER_ENDPOINT"
-    #endif
-    
-    #ifndef MQTT_SERVER_PORT
-        #error "Please define MQTT_SERVER_PORT"
-    #endif
-#endif /* if ( MQTT_TEST_ENABLED == 1 ) */
+#ifndef MQTT_SERVER_ENDPOINT
+    #error "Please define MQTT_SERVER_ENDPOINT"
+#endif
+
+#ifndef MQTT_SERVER_PORT
+    #error "Please define MQTT_SERVER_PORT"
+#endif
 
 /*-----------------------------------------------------------*/
 
@@ -394,7 +399,7 @@ static void establishMqttSession( MQTTContext_t * pContext,
         /* Initialize MQTT library. */
         TEST_ASSERT_EQUAL( MQTTSuccess, MQTT_Init( pContext,
                                                    &transport,
-                                                   MqttTestGetTimeMs,
+                                                   testParam->pGetTimeMs,
                                                    eventCallback,
                                                    &networkBuffer ) );
     }
@@ -420,7 +425,7 @@ static void establishMqttSession( MQTTContext_t * pContext,
             snprintf( clientIdBuffer,
                       sizeof( clientIdBuffer ),
                       "%d%s", clientIdRandNumber,
-                      TEST_CLIENT_IDENTIFIER );
+					  MQTT_TEST_CLIENT_IDENTIFIER );
         connectInfo.pClientIdentifier = clientIdBuffer;
     }
 
