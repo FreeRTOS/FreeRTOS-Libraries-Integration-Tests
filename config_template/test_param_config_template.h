@@ -29,30 +29,11 @@
 #define TEST_PARAM_CONFIG_H
 
 /**
- * @brief coreMQTT library version.
- * @note Get it from coreMQTT/source/include/core_mqtt.h. 
- *       For example, set MQTT_TEST_COREMQTT_LIBRARY_VERSION to 120
- *       if "coreMQTT v1.2.0" shown in core_mqtt.h.
+ * @brief Backward compatible for OTA version
+ * @note Define this if your OTA version is less than or equal to v3.3.0.
+ *       Get it from ota-for-aws-iot-embedded-sdk/source/include/ota.h
  *
- * #define MQTT_TEST_COREMQTT_LIBRARY_VERSION   ( 120 )
- */
-
-/**
- * @brief OTA library version.
- * @note Get it from ota-for-aws-iot-embedded-sdk/source/include/ota.h. 
- *       For example, set OTA_PAL_TEST_OTA_LIBRARY_VERSION to 330
- *       if "AWS IoT Over-the-air Update v3.3.0" shown in ota.h.
- *
- * #define OTA_PAL_TEST_OTA_LIBRARY_VERSION   ( 330 )
- */
-
-/**
- * @brief corePKCS11 library version.
- * @note Get it corePKCS11/source/include/core_pkcs11.h. For example, 
- *       set PKCS11_TEST_PKCS11_LIBRARY_VERSION to 340
- *       if "corePKCS11 v3.4.0" shown in core_pkcs11.h
- *
- * #define PKCS11_TEST_PKCS11_LIBRARY_VERSION   ( 340 )
+ * #define OTA_PAL_TEST_USE_OTA_V_3_3_0
  */
 
 /**
