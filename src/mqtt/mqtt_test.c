@@ -431,7 +431,7 @@ static void establishMqttSession( MQTTContext_t * pContext,
             snprintf( clientIdBuffer,
                       sizeof( clientIdBuffer ),
                       "%d%s", clientIdRandNumber,
-					  MQTT_TEST_CLIENT_IDENTIFIER );
+                      MQTT_TEST_CLIENT_IDENTIFIER );
         connectInfo.pClientIdentifier = clientIdBuffer;
     }
 
