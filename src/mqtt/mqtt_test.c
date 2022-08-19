@@ -396,7 +396,7 @@ static void establishMqttSession( MQTTContext_t * pContext,
         /* Initialize MQTT library. */
         TEST_ASSERT_EQUAL( MQTTSuccess, MQTT_Init( pContext,
                                                    &transport,
-                                                   testParam->pGetTimeMs,
+                                                   testParam.pGetTimeMs,
                                                    eventCallback,
                                                    &networkBuffer ) );
     }
