@@ -24,6 +24,21 @@
 #include "ota_pal_test.h"
 #include "test_param_config.h"
 
+/*-----------------------------------------------------------*/
+
+/* Wrapper to backward compatible for old version OTA. */
+#if !defined OTA_PAL_TEST_OTA_LIBRARY_VERSION
+    #error "Can't get current OTA library version"
+
+#else
+    #if OTA_PAL_TEST_OTA_LIBRARY_VERSION == "v3.3.0"
+        #define Sig_t    ( Sig256_t )
+    #endif /* OTA_PAL_TEST_OTA_LIBRARY_VERSION == "v3.3.0" */
+
+#endif /* !defined OTA_PAL_TEST_OTA_LIBRARY_VERSION */
+
+/*-----------------------------------------------------------*/
+
 #ifndef OTA_PAL_TEST_CERT_TYPE
     #error "Please define OTA_PAL_TEST_CERT_TYPE"
 #endif
