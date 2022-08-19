@@ -39,7 +39,6 @@ typedef struct MqttTestParam
     void * pNetworkCredentials;
     void * pNetworkContext;
     void * pSecondNetworkContext;
-    MQTTGetCurrentTimeFunc_t pGetTimeMs;
 } MqttTestParam_t;
 
 /**

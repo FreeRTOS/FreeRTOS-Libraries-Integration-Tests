@@ -45,19 +45,6 @@
 
 /*-----------------------------------------------------------*/
 
-/* Wrapper to backward compatible for old version coreMQTT. */
-#if !defined MQTT_TEST_COREMQTT_LIBRARY_VERSION
-    #error "Can't get current MQTT library version"
-
-#else
-    #if MQTT_TEST_COREMQTT_LIBRARY_VERSION == "v1.2.0"
-        #define lastPacketTxTime    ( lastPacketTime )
-    #endif /* MQTT_TEST_COREMQTT_LIBRARY_VERSION == "v1.2.0" */
-
-#endif /* !defined MQTT_TEST_COREMQTT_LIBRARY_VERSION */
-
-/*-----------------------------------------------------------*/
-
 /**
  * @brief Length of MQTT server host name.
  */
@@ -102,12 +89,12 @@
 /**
  * @brief Sample topic filter to subscribe to.
  */
-#define TEST_MQTT_TOPIC                         MQTT_TEST_CLIENT_IDENTIFIER "/iot/integration/test"
+#define TEST_MQTT_TOPIC                         CLIENT_IDENTIFIER "/iot/integration/test"
 
 /**
  * @brief Sample topic filter to test MQTT retainted message.
  */
-#define TEST_MQTT_RETAIN_TOPIC                  MQTT_TEST_CLIENT_IDENTIFIER "/iot/integration/testretain"
+#define TEST_MQTT_RETAIN_TOPIC                  CLIENT_IDENTIFIER "/iot/integration/testretain"
 
 /**
  * @brief Length of sample topic filter.
@@ -117,7 +104,7 @@
 /**
  * @brief Sample topic filter to subscribe to.
  */
-#define TEST_MQTT_LWT_TOPIC                     MQTT_TEST_CLIENT_IDENTIFIER "/iot/integration/test/lwt"
+#define TEST_MQTT_LWT_TOPIC                     CLIENT_IDENTIFIER "/iot/integration/test/lwt"
 
 /**
  * @brief Length of sample topic filter.
@@ -127,12 +114,12 @@
 /**
  * @brief Length of the client identifier.
  */
-#define TEST_CLIENT_IDENTIFIER_LENGTH           ( sizeof( MQTT_TEST_CLIENT_IDENTIFIER ) - 1u )
+#define TEST_CLIENT_IDENTIFIER_LENGTH           ( sizeof( CLIENT_IDENTIFIER ) - 1u )
 
 /**
  * @brief Client identifier for use in LWT tests.
  */
-#define TEST_CLIENT_IDENTIFIER_LWT              MQTT_TEST_CLIENT_IDENTIFIER "-LWT"
+#define TEST_CLIENT_IDENTIFIER_LWT              CLIENT_IDENTIFIER "-LWT"
 
 /**
  * @brief Length of LWT client identifier.
@@ -180,13 +167,15 @@
 
 /*-----------------------------------------------------------*/
 
-#ifndef MQTT_SERVER_ENDPOINT
-    #error "Please define MQTT_SERVER_ENDPOINT"
-#endif
+#if ( MQTT_TEST_ENABLED == 1 )
+    #ifndef MQTT_SERVER_ENDPOINT
+        #error "Please define MQTT_SERVER_ENDPOINT"
+    #endif
 
-#ifndef MQTT_SERVER_PORT
-    #error "Please define MQTT_SERVER_PORT"
-#endif
+    #ifndef MQTT_SERVER_PORT
+        #error "Please define MQTT_SERVER_PORT"
+    #endif
+#endif /* if ( MQTT_TEST_ENABLED == 1 ) */
 
 /*-----------------------------------------------------------*/
 
@@ -383,7 +372,7 @@ static void establishMqttSession( MQTTContext_t * pContext,
     assert( pContext != NULL );
 
     /* The network buffer must remain valid for the lifetime of the MQTT context. */
-    static uint8_t buffer[ MQTT_TEST_NETWORK_BUFFER_SIZE ];
+    static uint8_t buffer[ NETWORK_BUFFER_SIZE ];
 
     /* Buffer for storing client ID with random integer.
      * Note: Size value is chosen to accommodate both LWT and non-LWT client ID
@@ -393,7 +382,7 @@ static void establishMqttSession( MQTTContext_t * pContext,
 
     /* Fill the values for network buffer. */
     networkBuffer.pBuffer = buffer;
-    networkBuffer.size = MQTT_TEST_NETWORK_BUFFER_SIZE;
+    networkBuffer.size = NETWORK_BUFFER_SIZE;
 
     transport.pNetworkContext = pNetworkContext;
     transport.send = testParam.pTransport->send;
@@ -405,7 +394,7 @@ static void establishMqttSession( MQTTContext_t * pContext,
         /* Initialize MQTT library. */
         TEST_ASSERT_EQUAL( MQTTSuccess, MQTT_Init( pContext,
                                                    &transport,
-                                                   testParam->pGetTimeMs,
+                                                   Clock_GetTimeMs,
                                                    eventCallback,
                                                    &networkBuffer ) );
     }
@@ -431,7 +420,7 @@ static void establishMqttSession( MQTTContext_t * pContext,
             snprintf( clientIdBuffer,
                       sizeof( clientIdBuffer ),
                       "%d%s", clientIdRandNumber,
-                      MQTT_TEST_CLIENT_IDENTIFIER );
+                      TEST_CLIENT_IDENTIFIER );
         connectInfo.pClientIdentifier = clientIdBuffer;
     }
 
@@ -754,6 +743,8 @@ static MQTTStatus_t publishToTopic( MQTTContext_t * pContext,
  */
 TEST_SETUP( MqttTest )
 {
+    struct timespec tp;
+
     /* Reset file-scoped global variables. */
     receivedSubAck = false;
     receivedUnsubAck = false;
@@ -767,8 +758,14 @@ TEST_SETUP( MqttTest )
     packetTypeForDisconnection = MQTT_PACKET_TYPE_INVALID;
     memset( &incomingInfo, 0u, sizeof( MQTTPublishInfo_t ) );
 
+    /* Get current time to seed pseudo random number generator. */
+    ( void ) clock_gettime( CLOCK_REALTIME, &tp );
+
+    /* Seed pseudo random number generator with nanoseconds. */
+    srand( tp.tv_nsec );
+
     /* Generate a random number to use in the client identifier. */
-    clientIdRandNumber = ( FRTest_GenerateRandInt() % ( MAX_RAND_NUMBER_FOR_CLIENT_ID + 1u ) );
+    clientIdRandNumber = ( rand() % ( MAX_RAND_NUMBER_FOR_CLIENT_ID + 1u ) );
 
     /* Establish a TCP connection with the server endpoint, then
      * establish TLS session on top of TCP connection. */
@@ -1000,7 +997,7 @@ TEST( MqttTest, MQTT_Connect_LWT )
  */
 TEST( MqttTest, MQTT_ProcessLoop_KeepAlive )
 {
-    uint32_t connectPacketTime = context.lastPacketTxTime;
+    uint32_t connectPacketTime = context.lastPacketTime;
     uint32_t elapsedTime = 0;
 
     TEST_ASSERT_EQUAL( 0, context.pingReqSendTimeMs );
@@ -1010,9 +1007,9 @@ TEST( MqttTest, MQTT_ProcessLoop_KeepAlive )
     TEST_ASSERT_EQUAL( MQTTSuccess, MQTT_ProcessLoop( &context, MQTT_PROCESS_LOOP_TIMEOUT_MS ) );
 
     TEST_ASSERT_NOT_EQUAL( 0, context.pingReqSendTimeMs );
-    TEST_ASSERT_NOT_EQUAL( connectPacketTime, context.lastPacketTxTime );
+    TEST_ASSERT_NOT_EQUAL( connectPacketTime, context.lastPacketTime );
     /* Test that the ping was sent within 1.5 times the keep alive interval. */
-    elapsedTime = context.lastPacketTxTime - connectPacketTime;
+    elapsedTime = context.lastPacketTime - connectPacketTime;
     TEST_ASSERT_LESS_OR_EQUAL( MQTT_KEEP_ALIVE_INTERVAL_SECONDS * 1500, elapsedTime );
 }
 
