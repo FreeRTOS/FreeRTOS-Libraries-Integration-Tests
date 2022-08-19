@@ -363,7 +363,7 @@ static CK_RV prvBeforeRunningTests( void )
 /*-----------------------------------------------------------*/
 
 /* Test helper function to create and wait test thread. */
-static void prvMultiThreadHelper( void * pvTaskFxnPtr )
+static void prvMultiThreadHelper( FRTestThreadFunction_t pvTaskFxnPtr )
 {
     uint32_t xTaskNumber;
     int retThreadTimedJoin;
@@ -1348,7 +1348,7 @@ TEST( Full_PKCS11_NoObject, PKCS11_GenerateRandomMultiThread )
         xGlobalTaskParams[ xTaskNumber ].pvTaskData = &xSessionHandle[ xTaskNumber ];
     }
 
-    prvMultiThreadHelper( ( void * ) prvGenerateRandomMultiThreadTask );
+    prvMultiThreadHelper( prvGenerateRandomMultiThreadTask );
 
     for( xTaskNumber = 0; xTaskNumber < PKCS11_TEST_MULTI_THREAD_TASK_COUNT; xTaskNumber++ )
     {
@@ -1589,7 +1589,7 @@ static void prvTestRsaFindObjectMultiThread( provisionMethod_t testProvisionMeth
 
     prvFindObjectTest( &xPrivateKeyHandle, &xCertificateHandle, &xPublicKeyHandle );
 
-    prvMultiThreadHelper( ( void * ) prvFindObjectMultiThreadTask );
+    prvMultiThreadHelper( prvFindObjectMultiThreadTask );
 
     for( xTaskNumber = 0; xTaskNumber < PKCS11_TEST_MULTI_THREAD_TASK_COUNT; xTaskNumber++ )
     {
@@ -1874,7 +1874,7 @@ static void prvTestRsaGetAttributeValueMultiThread( provisionMethod_t testProvis
         xGlobalTaskParams[ xTaskNumber ].pvTaskData = &xAttributeStruct[ xTaskNumber ];
     }
 
-    prvMultiThreadHelper( ( void * ) prvRSAGetAttributeValueMultiThreadTask );
+    prvMultiThreadHelper( prvRSAGetAttributeValueMultiThreadTask );
 
     for( xTaskNumber = 0; xTaskNumber < PKCS11_TEST_MULTI_THREAD_TASK_COUNT; xTaskNumber++ )
     {
@@ -2672,7 +2672,7 @@ static void prvTestEcFindObjectMultiThread( provisionMethod_t testProvisionMetho
 
     prvFindObjectTest( &xPrivateKeyHandle, &xCertificateHandle, &xPublicKeyHandle );
 
-    prvMultiThreadHelper( ( void * ) prvFindObjectMultiThreadTask );
+    prvMultiThreadHelper( prvFindObjectMultiThreadTask );
 
     for( xTaskNumber = 0; xTaskNumber < PKCS11_TEST_MULTI_THREAD_TASK_COUNT; xTaskNumber++ )
     {
@@ -2789,7 +2789,7 @@ static void prvTestEcGetAttributeValueMultiThread( provisionMethod_t testProvisi
         xGlobalTaskParams[ xTaskNumber ].pvTaskData = &xAttributeStruct[ xTaskNumber ];
     }
 
-    prvMultiThreadHelper( ( void * ) prvECGetAttributeValueMultiThreadTask );
+    prvMultiThreadHelper( prvECGetAttributeValueMultiThreadTask );
 
     for( xTaskNumber = 0; xTaskNumber < PKCS11_TEST_MULTI_THREAD_TASK_COUNT; xTaskNumber++ )
     {
@@ -2894,7 +2894,7 @@ static void prvTestEcSignVerifyMultiThread( provisionMethod_t testProvisionMetho
         xGlobalTaskParams[ xTaskNumber ].pvTaskData = &xSignStructs[ xTaskNumber ];
     }
 
-    prvMultiThreadHelper( ( void * ) prvECSignVerifyMultiThreadTask );
+    prvMultiThreadHelper( prvECSignVerifyMultiThreadTask );
 
     for( xTaskNumber = 0; xTaskNumber < PKCS11_TEST_MULTI_THREAD_TASK_COUNT; xTaskNumber++ )
     {
