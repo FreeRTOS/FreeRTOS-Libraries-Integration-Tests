@@ -45,10 +45,6 @@
 
 /*-----------------------------------------------------------*/
 
-#if !defined MQTT_TEST_COREMQTT_LIBRARY_VERSION
-    #error "Can't get current MQTT library version"
-#endif /* !defined MQTT_TEST_COREMQTT_LIBRARY_VERSION */
-
 /**
  * @brief Length of MQTT server host name.
  */
@@ -991,11 +987,11 @@ TEST( MqttTest, MQTT_Connect_LWT )
  */
 TEST( MqttTest, MQTT_ProcessLoop_KeepAlive )
 {
-    #if MQTT_TEST_COREMQTT_LIBRARY_VERSION <= ( 120 )
+    #if defined ( MQTT_TEST_USE_CORE_MQTT_V_1_2_0 )
         uint32_t connectPacketTime = context.lastPacketTime;
     #else
         uint32_t connectPacketTime = context.lastPacketTxTime;
-    #endif /* MQTT_TEST_COREMQTT_LIBRARY_VERSION <= ( 120 ) */
+    #endif /* defined ( MQTT_TEST_USE_CORE_MQTT_V_1_2_0 ) */
     uint32_t elapsedTime = 0;
 
     TEST_ASSERT_EQUAL( 0, context.pingReqSendTimeMs );
@@ -1006,19 +1002,19 @@ TEST( MqttTest, MQTT_ProcessLoop_KeepAlive )
 
     TEST_ASSERT_NOT_EQUAL( 0, context.pingReqSendTimeMs );
     
-    #if MQTT_TEST_COREMQTT_LIBRARY_VERSION <= ( 120 )
+    #if defined ( MQTT_TEST_USE_CORE_MQTT_V_1_2_0 )
         TEST_ASSERT_NOT_EQUAL( connectPacketTime, context.lastPacketTime );
     #else
         TEST_ASSERT_NOT_EQUAL( connectPacketTime, context.lastPacketTxTime );
-    #endif /* MQTT_TEST_COREMQTT_LIBRARY_VERSION <= ( 120 ) */
+    #endif /* defined ( MQTT_TEST_USE_CORE_MQTT_V_1_2_0 ) */
 
     /* Test that the ping was sent within 1.5 times the keep alive interval. */
     
-    #if MQTT_TEST_COREMQTT_LIBRARY_VERSION <= ( 120 )
+    #if defined ( MQTT_TEST_USE_CORE_MQTT_V_1_2_0 )
         elapsedTime = context.lastPacketTime - connectPacketTime;
     #else
         elapsedTime = context.lastPacketTxTime - connectPacketTime;
-    #endif /* MQTT_TEST_COREMQTT_LIBRARY_VERSION <= ( 120 ) */
+    #endif /* defined ( MQTT_TEST_USE_CORE_MQTT_V_1_2_0 ) */
     TEST_ASSERT_LESS_OR_EQUAL( MQTT_KEEP_ALIVE_INTERVAL_SECONDS * 1500, elapsedTime );
 }
 
