@@ -69,7 +69,7 @@ typedef struct OtaPalTestParam
 
 void SetupOtaPalTestParam( OtaPalTestParam_t * pTestParam );
 ```
-
+The pageSize parameter is expected to be multiples of flash page size. The tests will handle page size alignment and OTA PAL implementation is not expected to handle page alignment explicitly. This is to align with [OTA platform interface specification](https://github.com/aws/ota-for-aws-iot-embedded-sdk/blob/1cd22fbe9cca9046c54bacbb2279098eccae13c2/source/include/ota_platform_interface.h#L213).  
 
 ## 5. Running OTA PAL Test
 
