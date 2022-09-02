@@ -987,11 +987,7 @@ TEST( MqttTest, MQTT_Connect_LWT )
  */
 TEST( MqttTest, MQTT_ProcessLoop_KeepAlive )
 {
-    #if defined ( MQTT_TEST_USE_CORE_MQTT_V_1_2_0 )
-        uint32_t connectPacketTime = context.lastPacketTime;
-    #else
-        uint32_t connectPacketTime = context.lastPacketTxTime;
-    #endif /* defined ( MQTT_TEST_USE_CORE_MQTT_V_1_2_0 ) */
+    uint32_t connectPacketTime = context.lastPacketTxTime;
     uint32_t elapsedTime = 0;
 
     TEST_ASSERT_EQUAL( 0, context.pingReqSendTimeMs );
@@ -1002,19 +998,10 @@ TEST( MqttTest, MQTT_ProcessLoop_KeepAlive )
 
     TEST_ASSERT_NOT_EQUAL( 0, context.pingReqSendTimeMs );
     
-    #if defined ( MQTT_TEST_USE_CORE_MQTT_V_1_2_0 )
-        TEST_ASSERT_NOT_EQUAL( connectPacketTime, context.lastPacketTime );
-    #else
-        TEST_ASSERT_NOT_EQUAL( connectPacketTime, context.lastPacketTxTime );
-    #endif /* defined ( MQTT_TEST_USE_CORE_MQTT_V_1_2_0 ) */
+    TEST_ASSERT_NOT_EQUAL( connectPacketTime, context.lastPacketTxTime );
 
     /* Test that the ping was sent within 1.5 times the keep alive interval. */
-    
-    #if defined ( MQTT_TEST_USE_CORE_MQTT_V_1_2_0 )
-        elapsedTime = context.lastPacketTime - connectPacketTime;
-    #else
-        elapsedTime = context.lastPacketTxTime - connectPacketTime;
-    #endif /* defined ( MQTT_TEST_USE_CORE_MQTT_V_1_2_0 ) */
+    elapsedTime = context.lastPacketTxTime - connectPacketTime;
     TEST_ASSERT_LESS_OR_EQUAL( MQTT_KEEP_ALIVE_INTERVAL_SECONDS * 1500, elapsedTime );
 }
 
