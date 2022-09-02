@@ -29,14 +29,6 @@
 #define TEST_PARAM_CONFIG_H
 
 /**
- * @brief Backward compatible for OTA version
- * @note Define this if your OTA version is less than or equal to v3.3.0.
- *       Get it from ota-for-aws-iot-embedded-sdk/source/include/ota.h
- *
- * #define OTA_PAL_TEST_USE_OTA_V_3_3_0
- */
-
-/**
  * @brief Configuration that indicates if the device should generate a key pair.
  *
  * @note When FORCE_GENERATE_NEW_KEY_PAIR is set to 1, the device should generate
