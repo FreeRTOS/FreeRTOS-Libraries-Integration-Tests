@@ -33,7 +33,6 @@
 #include <string.h>
 #include <time.h>
 #include <unistd.h>
-#include "demo_config.h"
 #include "core_mqtt.h"
 #include "core_mqtt_state.h"
 #include "unity.h"
@@ -89,12 +88,12 @@
 /**
  * @brief Sample topic filter to subscribe to.
  */
-#define TEST_MQTT_TOPIC                         MQTT_TEST_CLIENT_IDENTIFIER "/iot/integration/test"
+#define TEST_MQTT_TOPIC                         IOT_THING_NAME "/iot/integration/test"
 
 /**
  * @brief Sample topic filter to test MQTT retainted message.
  */
-#define TEST_MQTT_RETAIN_TOPIC                  MQTT_TEST_CLIENT_IDENTIFIER "/iot/integration/testretain"
+#define TEST_MQTT_RETAIN_TOPIC                  IOT_THING_NAME "/iot/integration/testretain"
 
 /**
  * @brief Length of sample topic filter.
@@ -104,7 +103,7 @@
 /**
  * @brief Sample topic filter to subscribe to.
  */
-#define TEST_MQTT_LWT_TOPIC                     MQTT_TEST_CLIENT_IDENTIFIER "/iot/integration/test/lwt"
+#define TEST_MQTT_LWT_TOPIC                     IOT_THING_NAME "/iot/integration/test/lwt"
 
 /**
  * @brief Length of sample topic filter.
@@ -114,12 +113,12 @@
 /**
  * @brief Length of the client identifier.
  */
-#define TEST_CLIENT_IDENTIFIER_LENGTH           ( sizeof( MQTT_TEST_CLIENT_IDENTIFIER ) - 1u )
+#define TEST_CLIENT_IDENTIFIER_LENGTH           ( sizeof( IOT_THING_NAME ) - 1u )
 
 /**
  * @brief Client identifier for use in LWT tests.
  */
-#define TEST_CLIENT_IDENTIFIER_LWT              MQTT_TEST_CLIENT_IDENTIFIER "-LWT"
+#define TEST_CLIENT_IDENTIFIER_LWT              IOT_THING_NAME "-LWT"
 
 /**
  * @brief Length of LWT client identifier.
@@ -418,7 +417,7 @@ static void establishMqttSession( MQTTContext_t * pContext,
             snprintf( clientIdBuffer,
                       sizeof( clientIdBuffer ),
                       "%d%s", clientIdRandNumber,
-                      MQTT_TEST_CLIENT_IDENTIFIER );
+                      IOT_THING_NAME );
         connectInfo.pClientIdentifier = clientIdBuffer;
     }
 

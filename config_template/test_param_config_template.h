@@ -51,11 +51,9 @@
  */
 
 /**
- * @brief The MQTT client identifier used in MQTT test.  Each client identifier
- * must be unique; so edit as required to ensure that no two clients connecting to
- * the same broker use the same client identifier.
+ * @brief The IoT Thing name for the device for OTA test and MQTT test.
  *
- * #define MQTT_TEST_CLIENT_IDENTIFIER				"insert here."
+ * #define IOT_THING_NAME  "PLACE_HOLDER"
  */
 
  /**
@@ -294,12 +292,6 @@
  * This label has to be defined if PKCS11_TEST_JITP_CODEVERIFY_ROOT_CERT_SUPPORTED is set to 1.
  *
  * #define PKCS11_TEST_LABEL_ROOT_CERTIFICATE    pkcs11configLABEL_ROOT_CERTIFICATE
- */
-
-/**
- * @brief The IoT Thing name for the device for OTA test.
- *
- * #define IOT_THING_NAME  "PLACE_HOLDER"
  */
 
 /**
