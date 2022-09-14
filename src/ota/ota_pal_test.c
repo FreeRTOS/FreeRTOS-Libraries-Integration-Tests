@@ -85,8 +85,6 @@ TEST_TEAR_DOWN( Full_OTA_PAL )
 
     /* Abort the OTA file after every test. This closes the OTA file. */
     xOtaStatus = otaPal_Abort( &xOtaFile );
-
-    TEST_ASSERT_EQUAL_MESSAGE( OtaPalSuccess, xOtaStatus, "Failed to abort xOtaFile" );
 }
 
 TEST_GROUP_RUNNER( Full_OTA_PAL )
