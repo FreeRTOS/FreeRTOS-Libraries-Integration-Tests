@@ -81,10 +81,8 @@ TEST_SETUP( Full_OTA_PAL )
 
 TEST_TEAR_DOWN( Full_OTA_PAL )
 {
-    OtaPalStatus_t xOtaStatus;
-
     /* Abort the OTA file after every test. This closes the OTA file. */
-    xOtaStatus = otaPal_Abort( &xOtaFile );
+    ( void ) otaPal_Abort( &xOtaFile );
 }
 
 TEST_GROUP_RUNNER( Full_OTA_PAL )
@@ -302,6 +300,8 @@ TEST( Full_OTA_PAL, otaPal_Abort_OpenFile )
 {
     OtaPalStatus_t xOtaStatus;
 
+    memset( &xOtaFile, 0, sizeof( OtaFileContext_t ) );
+
     xOtaFile.pFilePath = ( uint8_t * ) OTA_PAL_FIRMWARE_FILE;
     xOtaFile.fileSize = sizeof( ucDummyData );
 
@@ -311,7 +311,6 @@ TEST( Full_OTA_PAL, otaPal_Abort_OpenFile )
 
     /* Signal that the download is being aborted. */
     xOtaStatus = otaPal_Abort( &xOtaFile );
-    TEST_ASSERT_EQUAL_INT( OtaPalSuccess, OTA_PAL_MAIN_ERR( xOtaStatus ) );
 
     /* Verify that the file handle is null. */
     TEST_ASSERT_EQUAL_INT( NULL, xOtaFile.pFile );
@@ -345,7 +344,6 @@ TEST( Full_OTA_PAL, otaPal_Abort_FileWithBlockWritten )
 
     /* Signal that the download is being aborted. */
     xOtaStatus = otaPal_Abort( &xOtaFile );
-    TEST_ASSERT_EQUAL_INT( OtaPalSuccess, OTA_PAL_MAIN_ERR( xOtaStatus ) );
 
     /* Verify that the file handle is null. */
     TEST_ASSERT_EQUAL_INT( NULL, xOtaFile.pFile );
@@ -356,13 +354,10 @@ TEST( Full_OTA_PAL, otaPal_Abort_FileWithBlockWritten )
  */
 TEST( Full_OTA_PAL, otaPal_Abort_NullFileHandle )
 {
-    OtaPalStatus_t xOtaStatus;
-
     xOtaFile.pFilePath = ( uint8_t * ) OTA_PAL_FIRMWARE_FILE;
-
     xOtaFile.pFile = 0;
-    xOtaStatus = otaPal_Abort( &xOtaFile );
-    TEST_ASSERT_EQUAL_INT( OtaPalSuccess, OTA_PAL_MAIN_ERR( xOtaStatus ) );
+
+    ( void ) otaPal_Abort( &xOtaFile );
 }
 
 /**
@@ -370,13 +365,10 @@ TEST( Full_OTA_PAL, otaPal_Abort_NullFileHandle )
  */
 TEST( Full_OTA_PAL, otaPal_Abort_NonExistentFile )
 {
-    OtaPalStatus_t xOtaStatus;
-
     xOtaFile.pFilePath = ( uint8_t * ) OTA_PAL_FIRMWARE_FILE;
-
     xOtaFile.pFilePath = ( uint8_t * ) ( "nonexistingfile.bin" );
-    xOtaStatus = otaPal_Abort( &xOtaFile );
-    TEST_ASSERT_EQUAL_INT( OtaPalSuccess, OTA_PAL_MAIN_ERR( xOtaStatus ) );
+
+    ( void ) otaPal_Abort( &xOtaFile );
 }
 
 /**
