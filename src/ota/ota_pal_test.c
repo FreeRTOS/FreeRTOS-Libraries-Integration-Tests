@@ -353,8 +353,7 @@ TEST( Full_OTA_PAL, otaPal_Abort_FileWithBlockWritten )
 
     /* Signal that the download is being aborted. */
     xOtaStatus = otaPal_Abort( &xOtaFile );
-    TEST_ASSERT( OTA_PAL_MAIN_ERR( xOtaStatus ) == OtaPalSuccess ||
-                 OTA_PAL_MAIN_ERR( xOtaStatus ) == OtaPalAbortFailed );
+    TEST_ASSERT( OTA_PAL_MAIN_ERR( xOtaStatus ) == OtaPalSuccess );
 
     /* Verify that the file handle is null. */
     TEST_ASSERT_EQUAL_INT( NULL, xOtaFile.pFile );
@@ -370,6 +369,8 @@ TEST( Full_OTA_PAL, otaPal_Abort_NullFileHandle )
     xOtaFile.pFilePath = ( uint8_t * ) OTA_PAL_FIRMWARE_FILE;
     xOtaFile.pFile = 0;
 
+    /* Check if we can abort with null file handler, and the return value 
+     * is expected. */
     xOtaStatus = otaPal_Abort( &xOtaFile );
     TEST_ASSERT( OTA_PAL_MAIN_ERR( xOtaStatus ) == OtaPalSuccess ||
                  OTA_PAL_MAIN_ERR( xOtaStatus ) == OtaPalAbortFailed );
@@ -382,16 +383,17 @@ TEST( Full_OTA_PAL, otaPal_Abort_NonExistentFile )
 {
     OtaPalStatus_t xOtaStatus;
 
-    xOtaFile.pFilePath = ( uint8_t * ) OTA_PAL_FIRMWARE_FILE;
     xOtaFile.pFilePath = ( uint8_t * ) ( "nonexistingfile.bin" );
 
+    /* Check if we can abort with non-exist file, and the return value 
+     * is expected. */
     xOtaStatus =  otaPal_Abort( &xOtaFile );
     TEST_ASSERT( OTA_PAL_MAIN_ERR( xOtaStatus ) == OtaPalSuccess ||
                  OTA_PAL_MAIN_ERR( xOtaStatus ) == OtaPalAbortFailed );
 }
 
 /**
- * Write one byte of data and verify success.
+ * @brief Write one byte of data and verify success.
  */
 TEST( Full_OTA_PAL, otaPal_WriteBlock_WriteSingleByte )
 {
@@ -414,6 +416,7 @@ TEST( Full_OTA_PAL, otaPal_WriteBlock_WriteSingleByte )
 
 /**
  * @brief Write many blocks of data to a file opened in the device. Verify success.
+ * 
  * Because of Flash property, we might not able to write same page multiple times.
  * So we write one block into one page.
  */
