@@ -365,10 +365,12 @@ TEST( Full_OTA_PAL, otaPal_Abort_FileWithBlockWritten )
  */
 TEST( Full_OTA_PAL, otaPal_Abort_NullFileHandle )
 {
+    OtaPalStatus_t xOtaStatus;
+
     xOtaFile.pFilePath = ( uint8_t * ) OTA_PAL_FIRMWARE_FILE;
     xOtaFile.pFile = 0;
 
-    ( void ) otaPal_Abort( &xOtaFile );
+    xOtaStatus = otaPal_Abort( &xOtaFile );
     TEST_ASSERT( OTA_PAL_MAIN_ERR( xOtaStatus ) == OtaPalSuccess ||
                  OTA_PAL_MAIN_ERR( xOtaStatus ) == OtaPalAbortFailed );
 }
