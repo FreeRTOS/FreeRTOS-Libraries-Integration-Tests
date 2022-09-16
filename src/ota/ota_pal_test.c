@@ -81,8 +81,13 @@ TEST_SETUP( Full_OTA_PAL )
 
 TEST_TEAR_DOWN( Full_OTA_PAL )
 {
-    /* Abort the OTA file after every test. This closes the OTA file. */
-    ( void ) otaPal_Abort( &xOtaFile );
+    OtaPalStatus_t xOtaStatus;
+
+    /* Abort the OTA file after every test. This closes the OTA file.
+     * otaPal_Abort should only return OtaPalSuccess or OtaPalAbortFailed. */
+    xOtaStatus = otaPal_Abort( &xOtaFile );
+    TEST_ASSERT( OTA_PAL_MAIN_ERR( xOtaStatus ) == OtaPalSuccess ||
+                 OTA_PAL_MAIN_ERR( xOtaStatus ) == OtaPalAbortFailed );
 }
 
 TEST_GROUP_RUNNER( Full_OTA_PAL )
@@ -310,7 +315,11 @@ TEST( Full_OTA_PAL, otaPal_Abort_OpenFile )
     TEST_ASSERT_EQUAL( OtaPalSuccess, OTA_PAL_MAIN_ERR( xOtaStatus ) );
 
     /* Signal that the download is being aborted. */
+    /* In STM32U5, otaPal_Abort returns fail in this case and it returns success 
+     * only after 1st otaPal_WriteBlock. */
     xOtaStatus = otaPal_Abort( &xOtaFile );
+    TEST_ASSERT( OTA_PAL_MAIN_ERR( xOtaStatus ) == OtaPalSuccess ||
+                 OTA_PAL_MAIN_ERR( xOtaStatus ) == OtaPalAbortFailed );
 
     /* Verify that the file handle is null. */
     TEST_ASSERT_EQUAL_INT( NULL, xOtaFile.pFile );
@@ -344,6 +353,8 @@ TEST( Full_OTA_PAL, otaPal_Abort_FileWithBlockWritten )
 
     /* Signal that the download is being aborted. */
     xOtaStatus = otaPal_Abort( &xOtaFile );
+    TEST_ASSERT( OTA_PAL_MAIN_ERR( xOtaStatus ) == OtaPalSuccess ||
+                 OTA_PAL_MAIN_ERR( xOtaStatus ) == OtaPalAbortFailed );
 
     /* Verify that the file handle is null. */
     TEST_ASSERT_EQUAL_INT( NULL, xOtaFile.pFile );
@@ -358,6 +369,8 @@ TEST( Full_OTA_PAL, otaPal_Abort_NullFileHandle )
     xOtaFile.pFile = 0;
 
     ( void ) otaPal_Abort( &xOtaFile );
+    TEST_ASSERT( OTA_PAL_MAIN_ERR( xOtaStatus ) == OtaPalSuccess ||
+                 OTA_PAL_MAIN_ERR( xOtaStatus ) == OtaPalAbortFailed );
 }
 
 /**
@@ -365,10 +378,14 @@ TEST( Full_OTA_PAL, otaPal_Abort_NullFileHandle )
  */
 TEST( Full_OTA_PAL, otaPal_Abort_NonExistentFile )
 {
+    OtaPalStatus_t xOtaStatus;
+
     xOtaFile.pFilePath = ( uint8_t * ) OTA_PAL_FIRMWARE_FILE;
     xOtaFile.pFilePath = ( uint8_t * ) ( "nonexistingfile.bin" );
 
-    ( void ) otaPal_Abort( &xOtaFile );
+    xOtaStatus =  otaPal_Abort( &xOtaFile );
+    TEST_ASSERT( OTA_PAL_MAIN_ERR( xOtaStatus ) == OtaPalSuccess ||
+                 OTA_PAL_MAIN_ERR( xOtaStatus ) == OtaPalAbortFailed );
 }
 
 /**
