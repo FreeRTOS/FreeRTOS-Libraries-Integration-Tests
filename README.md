@@ -43,12 +43,44 @@ Refer to ReadMe in each subfolder for details of the test group, test cases and 
 2. Unity Test Framework is used to run the tests. See [Unity](https://github.com/ThrowTheSwitch/Unity) for integration guide.
 
 #### Follow these steps to set up the tests
-1. Take FreeRTOS-Libraries-Integration-Tests as a submodule in your project.
-2. Copy config_template/test_execution_config_template.h and config_template/test_param_config_template.h to a project location in the build path, and rename them to test_execution_config.h and test_param_config.h.
-3. Include relevant files into the build system. If using CMake, qualification_test.cmake and corresponding test cmake files in `src/` can be used to include relevant files.
-4. Implement platform functions in [src/common/platform_function.h](https://github.com/FreeRTOS/FreeRTOS-Libraries-Integration-Tests/blob/main/src/common/platform_function.h).
-5. Implement test specific configurations. This is usually in the form of implementing a parameter setup function, which should fill out the struct of parameters passed into the function. Please refer to the documentation of specific tests.
-6. In your application, call `RunQualificationTest()` function to start qualification tests.
+1. Add FreeRTOS-Libraries-Integration-Tests as a submodule in your project with the following command:
+```
+git submodule add https://github.com/FreeRTOS/FreeRTOS-Libraries-Integration-Tests.git <path_to_submodule>
+```
+2. Change directory to the FreeRTOS-Libraries-Integration-Tests submodule with the following command:
+```
+cd <path_to_submodule>
+```
+3. Determine the version of this repository needed according to the tables below.
+
+If testing using the [FreeRTOS](https://github.com/FreeRTOS/FreeRTOS) repository:
+   
+| FreeRTOS Release Tag                                             | FreeRTOS-Libraries-Integration-Tests Release Tag                                             |
+|------------------------------------------------------------------|----------------------------------------------------------------------------------------------|
+| [202112.00](https://github.com/FreeRTOS/FreeRTOS/tree/202112.00) | [202205.01](https://github.com/FreeRTOS/FreeRTOS-Libraries-Integration-Tests/tree/202205.01) |
+| [202209.00](https://github.com/FreeRTOS/FreeRTOS/tree/202209.00) | [202209.00](https://github.com/FreeRTOS/FreeRTOS-Libraries-Integration-Tests/tree/202209.00) |
+
+If testing using the [FreeRTOS-LTS](https://github.com/FreeRTOS/FreeRTOS-LTS) repository:
+
+| FreeRTOS-LTS Release Tag                                                     | FreeRTOS-Libraries-Integration-Tests Release Tag                                             |
+|------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------|
+| [202012.00-LTS](https://github.com/FreeRTOS/FreeRTOS-LTS/tree/202012.00-LTS) | [202205.01](https://github.com/FreeRTOS/FreeRTOS-Libraries-Integration-Tests/tree/202205.01) |
+| [202012.01-LTS](https://github.com/FreeRTOS/FreeRTOS-LTS/tree/202012.01-LTS) | [202205.01](https://github.com/FreeRTOS/FreeRTOS-Libraries-Integration-Tests/tree/202205.01) |
+| [202012.02-LTS](https://github.com/FreeRTOS/FreeRTOS-LTS/tree/202012.02-LTS) | [202205.01](https://github.com/FreeRTOS/FreeRTOS-Libraries-Integration-Tests/tree/202205.01) |
+| [202012.03-LTS](https://github.com/FreeRTOS/FreeRTOS-LTS/tree/202012.03-LTS) | [202205.01](https://github.com/FreeRTOS/FreeRTOS-Libraries-Integration-Tests/tree/202205.01) |
+| [202012.04-LTS](https://github.com/FreeRTOS/FreeRTOS-LTS/tree/202012.04-LTS) | [202205.01](https://github.com/FreeRTOS/FreeRTOS-Libraries-Integration-Tests/tree/202205.01) |
+| [202012.05-LTS](https://github.com/FreeRTOS/FreeRTOS-LTS/tree/202012.05-LTS) | [202205.01](https://github.com/FreeRTOS/FreeRTOS-Libraries-Integration-Tests/tree/202205.01) |
+| [202209.00-LTS](https://github.com/FreeRTOS/FreeRTOS-LTS/tree/202209.00-LTS) | [202209.00](https://github.com/FreeRTOS/FreeRTOS-Libraries-Integration-Tests/tree/202209.00) |   
+
+4. Checkout the version of this repository needed with the following command:
+```
+git checkout <FreeRTOS-Libraries-Integration-Tests_tag>
+```
+5. Copy config_template/test_execution_config_template.h and config_template/test_param_config_template.h to a project location in the build path, and rename them to test_execution_config.h and test_param_config.h.
+6. Include relevant files into the build system. If using CMake, qualification_test.cmake and corresponding test cmake files in `src/` can be used to include relevant files.
+7. Implement platform functions in [src/common/platform_function.h](https://github.com/FreeRTOS/FreeRTOS-Libraries-Integration-Tests/blob/main/src/common/platform_function.h).
+8. Implement test specific configurations. This is usually in the form of implementing a parameter setup function, which should fill out the struct of parameters passed into the function. Please refer to the documentation of specific tests.
+9. In your application, call `RunQualificationTest()` function to start qualification tests.
 
 #### For running the tests locally using your IDE
 1. In test_param_config.h, fill out the parameters required by the test.
