@@ -1003,7 +1003,7 @@ TEST( MqttTest, MQTT_Connect_LWT )
  */
 TEST( MqttTest, MQTT_ProcessLoop_KeepAlive )
 {
-    uint32_t connectPacketTime = context.lastPacketTime;
+    uint32_t connectPacketTime = context.lastPacketTxTime;
     uint32_t elapsedTime = 0;
 
     TEST_ASSERT_EQUAL( 0, context.pingReqSendTimeMs );
@@ -1013,9 +1013,9 @@ TEST( MqttTest, MQTT_ProcessLoop_KeepAlive )
     TEST_ASSERT_EQUAL( MQTTSuccess, MQTT_ProcessLoop( &context, MQTT_PROCESS_LOOP_TIMEOUT_MS ) );
 
     TEST_ASSERT_NOT_EQUAL( 0, context.pingReqSendTimeMs );
-    TEST_ASSERT_NOT_EQUAL( connectPacketTime, context.lastPacketTime );
+    TEST_ASSERT_NOT_EQUAL( connectPacketTime, context.lastPacketTxTime );
     /* Test that the ping was sent within 1.5 times the keep alive interval. */
-    elapsedTime = context.lastPacketTime - connectPacketTime;
+    elapsedTime = context.lastPacketTxTime - connectPacketTime;
     TEST_ASSERT_LESS_OR_EQUAL( MQTT_KEEP_ALIVE_INTERVAL_SECONDS * 1500, elapsedTime );
 }
 
