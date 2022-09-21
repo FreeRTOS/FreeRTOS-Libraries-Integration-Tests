@@ -51,6 +51,22 @@
  */
 
 /**
+ * @brief The IoT Thing name for the device for OTA test and MQTT test.
+ * From https://docs.aws.amazon.com/iot/latest/developerguide/iot-thing-management.html,
+ * MQTT_CLIENT_IDENTIFIER is different from IOT_THING_NAME. But we use IOT_THING_NAME
+ * to be MQTT_CLIENT_IDENTIFIER here in MQTT Test and OTA E2E test.
+ *
+ * #define IOT_THING_NAME  "PLACE_HOLDER"
+ */
+
+ /**
+ * @brief Network buffer size specified in bytes. Must be large enough to hold the maximum
+ * anticipated MQTT payload.
+ *
+ * #define MQTT_TEST_NETWORK_BUFFER_SIZE  ( 5000 )
+ */
+
+/**
  * @brief Root certificate of the IoT Core.
  *
  * @note This certificate should be PEM-encoded.
@@ -279,12 +295,6 @@
  * This label has to be defined if PKCS11_TEST_JITP_CODEVERIFY_ROOT_CERT_SUPPORTED is set to 1.
  *
  * #define PKCS11_TEST_LABEL_ROOT_CERTIFICATE    pkcs11configLABEL_ROOT_CERTIFICATE
- */
-
-/**
- * @brief The IoT Thing name for the device for OTA test.
- *
- * #define IOT_THING_NAME  "PLACE_HOLDER"
  */
 
 /**
