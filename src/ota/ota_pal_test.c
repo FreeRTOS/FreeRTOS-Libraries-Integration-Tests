@@ -313,11 +313,8 @@ TEST( Full_OTA_PAL, otaPal_Abort_OpenFile )
     TEST_ASSERT_EQUAL( OtaPalSuccess, OTA_PAL_MAIN_ERR( xOtaStatus ) );
 
     /* Signal that the download is being aborted. */
-    /* In STM32U5, otaPal_Abort returns fail in this case and it returns success 
-     * only after 1st otaPal_WriteBlock. */
     xOtaStatus = otaPal_Abort( &xOtaFile );
-    TEST_ASSERT( OTA_PAL_MAIN_ERR( xOtaStatus ) == OtaPalSuccess ||
-                 OTA_PAL_MAIN_ERR( xOtaStatus ) == OtaPalAbortFailed );
+    TEST_ASSERT_EQUAL_INT( OtaPalSuccess, OTA_PAL_MAIN_ERR( xOtaStatus ) );
 
     /* Verify that the file handle is null. */
     TEST_ASSERT_EQUAL_INT( NULL, xOtaFile.pFile );
@@ -367,11 +364,8 @@ TEST( Full_OTA_PAL, otaPal_Abort_NullFileHandle )
     xOtaFile.pFilePath = ( uint8_t * ) OTA_PAL_FIRMWARE_FILE;
     xOtaFile.pFile = 0;
 
-    /* Check if we can abort with null file handler, and the return value 
-     * is expected. */
     xOtaStatus = otaPal_Abort( &xOtaFile );
-    TEST_ASSERT( OTA_PAL_MAIN_ERR( xOtaStatus ) == OtaPalSuccess ||
-                 OTA_PAL_MAIN_ERR( xOtaStatus ) == OtaPalAbortFailed );
+    TEST_ASSERT_EQUAL_INT( OtaPalSuccess, OTA_PAL_MAIN_ERR( xOtaStatus ) );
 }
 
 /**
@@ -383,11 +377,8 @@ TEST( Full_OTA_PAL, otaPal_Abort_NonExistentFile )
 
     xOtaFile.pFilePath = ( uint8_t * ) ( "nonexistingfile.bin" );
 
-    /* Check if we can abort with non-exist file, and the return value 
-     * is expected. */
     xOtaStatus = otaPal_Abort( &xOtaFile );
-    TEST_ASSERT( OTA_PAL_MAIN_ERR( xOtaStatus ) == OtaPalSuccess ||
-                 OTA_PAL_MAIN_ERR( xOtaStatus ) == OtaPalAbortFailed );
+    TEST_ASSERT_EQUAL_INT( OtaPalSuccess, OTA_PAL_MAIN_ERR( xOtaStatus ) );
 }
 
 /**
