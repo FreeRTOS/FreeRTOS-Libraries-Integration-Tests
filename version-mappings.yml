@@ -5,15 +5,12 @@ mappings:
   - freeRTOSVersion: "202209.00-LTS"
     compatibleTestsVersions:
       - "202209.00"
+  - freeRTOSVersion: "202209.00"
+    compatibleTestsVersions:
+      - "202209.00"
   - freeRTOSVersion: "202012.05-LTS"
     compatibleTestsVersions:
-      - "202209.00"
-      - "7b531a24eb3d1f5e9fdd23ca0f3c57d7f24c875f"    
-  - freeRTOSVersion: "202012.04-LTS"
-    compatibleTestsVersions:
-      - "202209.00"
-      - "7b531a24eb3d1f5e9fdd23ca0f3c57d7f24c875f"
+      - "202205.01"
   - freeRTOSVersion: "202112.00"
     compatibleTestsVersions:
-      - "202209.00"
-      - "7b531a24eb3d1f5e9fdd23ca0f3c57d7f24c875f"
+      - "202205.01"  
