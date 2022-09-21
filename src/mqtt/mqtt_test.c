@@ -32,11 +32,11 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
-//#include <unistd.h>
+#include <unistd.h>
 #include "demo_config.h"
 #include "core_mqtt.h"
 #include "core_mqtt_state.h"
-//#include "clock.h"
+#include "clock.h"
 #include "unity.h"
 #include "unity_fixture.h"
 
@@ -774,10 +774,8 @@ TEST_SETUP( MqttTest )
     packetTypeForDisconnection = MQTT_PACKET_TYPE_INVALID;
     memset( &incomingInfo, 0u, sizeof( MQTTPublishInfo_t ) );
 
-//    /* Get current time to seed pseudo random number generator. */
-//    ( void ) clock_gettime( CLOCK_REALTIME, &tp );
-
-    tp.tv_nsec = 0x1234;
+    /* Get current time to seed pseudo random number generator. */
+    ( void ) clock_gettime( CLOCK_REALTIME, &tp );
 
     /* Seed pseudo random number generator with nanoseconds. */
     srand( tp.tv_nsec );
@@ -1143,19 +1141,21 @@ TEST( MqttTest, MQTT_ProcessLoop_KeepAlive )
 
     TEST_ASSERT_EQUAL( 0, context.pingReqSendTimeMs );
 
-    /* Sleep until control packet needs to be sent. */
-    FRTest_TimeDelay( ( MQTT_KEEP_ALIVE_INTERVAL_SECONDS -2 ) * 1000 );
-
     entryTime = FRTest_GetTimeMs();
     do
     {
         xMQTTStatus = MQTT_ProcessLoop( &context );
 
-        if( FRTest_GetTimeMs() > ( entryTime + MQTT_PROCESS_LOOP_TIMEOUT_MS ) )
+        if( FRTest_GetTimeMs() > ( entryTime + ( MQTT_KEEP_ALIVE_INTERVAL_SECONDS * 1000 ) ) )
         {
             /* Timeout. */
             break;
-        }            
+        }
+        else
+        {
+            /* Sleep for some time between iterations. */
+            FRTest_TimeDelay( ( MQTT_KEEP_ALIVE_INTERVAL_SECONDS * 1000 ) / 50 );
+        }
     }while( ( xMQTTStatus == MQTTSuccess ) || ( xMQTTStatus == MQTTNeedMoreBytes ) );
 
     TEST_ASSERT_TRUE( ( xMQTTStatus == MQTTSuccess ) || ( xMQTTStatus == MQTTNeedMoreBytes ) );
@@ -1399,6 +1399,11 @@ TEST( MqttTest, MQTT_Publish_With_Retain_Flag )
             /* Timeout. */
             break;
         }
+        else
+        {
+            /* Sleep for some time between iterations. */
+            FRTest_TimeDelay( MQTT_PROCESS_LOOP_TIMEOUT_MS / 50 );
+        }
             
     }while( ( xMQTTStatus == MQTTSuccess ) || ( xMQTTStatus == MQTTNeedMoreBytes ) );
 
@@ -1411,6 +1416,8 @@ TEST( MqttTest, MQTT_Publish_With_Retain_Flag )
     TEST_ASSERT_EQUAL( MQTTSuccess, subscribeToTopic(
                            &context, TEST_MQTT_RETAIN_TOPIC, MQTTQoS1 ) );
     TEST_ASSERT_FALSE( receivedSubAck );
+
+    TEST_ASSERT_FALSE( receivedRetainedMessage );
     
     entryTime = FRTest_GetTimeMs();
     do
@@ -1421,6 +1428,11 @@ TEST( MqttTest, MQTT_Publish_With_Retain_Flag )
         {
             /* Timeout. */
             break;
+        }
+        else
+        {
+            /* Sleep for some time between iterations. */
+            FRTest_TimeDelay( MQTT_PROCESS_LOOP_TIMEOUT_MS / 50 );
         }
             
     }while( ( xMQTTStatus == MQTTSuccess ) || ( xMQTTStatus == MQTTNeedMoreBytes ) );
@@ -1459,6 +1471,11 @@ TEST( MqttTest, MQTT_Publish_With_Retain_Flag )
             /* Timeout. */
             break;
         }
+        else
+        {
+            /* Sleep for some time between iterations. */
+            FRTest_TimeDelay( MQTT_PROCESS_LOOP_TIMEOUT_MS / 50 );
+        }
             
     }while( ( xMQTTStatus == MQTTSuccess ) || ( xMQTTStatus == MQTTNeedMoreBytes ) );
 
@@ -1482,6 +1499,11 @@ TEST( MqttTest, MQTT_Publish_With_Retain_Flag )
             /* Timeout. */
             break;
         }
+        else
+        {
+            /* Sleep for some time between iterations. */
+            FRTest_TimeDelay( MQTT_PROCESS_LOOP_TIMEOUT_MS / 50 );
+        }
             
     }while( ( xMQTTStatus == MQTTSuccess ) || ( xMQTTStatus == MQTTNeedMoreBytes ) );
 
@@ -1499,13 +1521,13 @@ TEST( MqttTest, MQTT_Publish_With_Retain_Flag )
  */
 TEST_GROUP_RUNNER( MqttTest )
 {
-        //RUN_TEST_CASE( MqttTest, MQTT_Subscribe_Publish_With_Qos_0 );
-        //RUN_TEST_CASE( MqttTest, MQTT_Subscribe_Publish_With_Qos_1 );
-        //RUN_TEST_CASE( MqttTest, MQTT_Connect_LWT );
+        RUN_TEST_CASE( MqttTest, MQTT_Subscribe_Publish_With_Qos_0 );
+        RUN_TEST_CASE( MqttTest, MQTT_Subscribe_Publish_With_Qos_1 );
+        RUN_TEST_CASE( MqttTest, MQTT_Connect_LWT );
         RUN_TEST_CASE( MqttTest, MQTT_ProcessLoop_KeepAlive );
-        /*RUN_TEST_CASE( MqttTest, MQTT_Resend_Unacked_Publish_QoS1 );
+        RUN_TEST_CASE( MqttTest, MQTT_Resend_Unacked_Publish_QoS1 );
         RUN_TEST_CASE( MqttTest, MQTT_Restore_Session_Duplicate_Incoming_Publish_Qos1 );
-        RUN_TEST_CASE( MqttTest, MQTT_Publish_With_Retain_Flag );*/
+        RUN_TEST_CASE( MqttTest, MQTT_Publish_With_Retain_Flag );
 }
 
 /*-----------------------------------------------------------*/
