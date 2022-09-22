@@ -29,6 +29,7 @@
 
 #include "transport_interface.h"
 #include "network_connection.h"
+#include "core_mqtt.h"
 
 typedef struct MqttTestParam
 {
@@ -38,6 +39,7 @@ typedef struct MqttTestParam
     void * pNetworkCredentials;
     void * pNetworkContext;
     void * pSecondNetworkContext;
+    MQTTGetCurrentTimeFunc_t pGetTimeMs; /**< @brief The getTimeFunction for MQTT_Init API. */
 } MqttTestParam_t;
 
 /**
