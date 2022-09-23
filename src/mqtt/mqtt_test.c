@@ -159,6 +159,12 @@
 #define MQTT_KEEP_ALIVE_INTERVAL_SECONDS    ( 5U )
 
 /**
+ * @brief Time in milliseconds for which the task should sleep between consecutive
+ * iteration of MQTT_ProcessLoop.
+ */
+#define TEST_SLEEP_TIME                          ( 10U )
+
+/**
  * @brief Timeout for MQTT_ProcessLoop() function in milliseconds.
  * The timeout value is appropriately chosen for receiving an incoming
  * PUBLISH message and ack responses for QoS 1 and QoS 2 communications
@@ -839,7 +845,8 @@ TEST( MqttTest, MQTT_Subscribe_Publish_With_Qos_0 )
     TEST_ASSERT_EQUAL( MQTTSuccess, subscribeToTopic(
                            &context, TEST_MQTT_TOPIC, MQTTQoS0 ) );
 
-    /* We expect a SUBACK from the broker for the subscribe operation. */
+    /* Assert that this flag is not set before MQTT_ProcessLoop is called.
+     * It will be set when a SUBACK is received. */
     TEST_ASSERT_FALSE( receivedSubAck );
 
     entryTime = FRTest_GetTimeMs();
@@ -938,9 +945,11 @@ TEST( MqttTest, MQTT_Subscribe_Publish_With_Qos_1 )
     TEST_ASSERT_EQUAL( MQTTSuccess, subscribeToTopic(
                            &context, TEST_MQTT_TOPIC, MQTTQoS1 ) );
 
-    /* Expect a SUBACK from the broker for the subscribe operation. */
+    /* Assert that this flag is not set before MQTT_ProcessLoop is called or
+     * else the test will return a flase positive. This flag should be set when
+     * a SUBACK is received. */
     TEST_ASSERT_FALSE( receivedSubAck );
-    
+
     entryTime = FRTest_GetTimeMs();
     do
     {
@@ -951,7 +960,15 @@ TEST( MqttTest, MQTT_Subscribe_Publish_With_Qos_1 )
             /* Timeout. */
             break;
         }
-            
+        else if( receivedSubAck != 0 )
+        {
+            /* Received the SUBACK. No need to call process loop anymore. */
+            break;
+        }
+        else
+        {
+            /* Nothing to do. */
+        }
     }while( ( xMQTTStatus == MQTTSuccess ) || ( xMQTTStatus == MQTTNeedMoreBytes ) );
 
     TEST_ASSERT_TRUE( ( xMQTTStatus == MQTTSuccess ) || ( xMQTTStatus == MQTTNeedMoreBytes ) );
@@ -984,6 +1001,15 @@ TEST( MqttTest, MQTT_Subscribe_Publish_With_Qos_1 )
         {
             /* Timeout. */
             break;
+        }
+        else if( receivedPubAck != 0 )
+        {
+            /* Received the SUBACK. No need to call process loop anymore. */
+            break;
+        }
+        else
+        {
+            /* Nothing to do. */
         }
             
     }while( ( xMQTTStatus == MQTTSuccess ) || ( xMQTTStatus == MQTTNeedMoreBytes ) );
@@ -1018,6 +1044,15 @@ TEST( MqttTest, MQTT_Subscribe_Publish_With_Qos_1 )
         {
             /* Timeout. */
             break;
+        }
+        else if( receivedUnsubAck != 0 )
+        {
+            /* Received the SUBACK. No need to call process loop anymore. */
+            break;
+        }
+        else
+        {
+            /* Nothing to do. */
         }
             
     }while( ( xMQTTStatus == MQTTSuccess ) || ( xMQTTStatus == MQTTNeedMoreBytes ) );
@@ -1146,15 +1181,20 @@ TEST( MqttTest, MQTT_ProcessLoop_KeepAlive )
     {
         xMQTTStatus = MQTT_ProcessLoop( &context );
 
-        if( FRTest_GetTimeMs() > ( entryTime + ( MQTT_KEEP_ALIVE_INTERVAL_SECONDS * 1000 ) ) )
+        /* Check whether it has been more than twice the keep alive timeout. */
+        if( FRTest_GetTimeMs() > ( entryTime + ( MQTT_KEEP_ALIVE_INTERVAL_SECONDS * 2000 ) ) )
         {
-            /* Timeout. */
+            /* Timeout after waiting for twice the keep alive interval. */
+            break;
+        }
+        else if( context.pingReqSendTimeMs != 0 )
+        {
+            /* Ping is sent! */
             break;
         }
         else
         {
-            /* Sleep for some time between iterations. */
-            FRTest_TimeDelay( ( MQTT_KEEP_ALIVE_INTERVAL_SECONDS * 1000 ) / 50 );
+            /* Nothing to be done for now. */
         }
     }while( ( xMQTTStatus == MQTTSuccess ) || ( xMQTTStatus == MQTTNeedMoreBytes ) );
 
@@ -1254,6 +1294,15 @@ TEST( MqttTest, MQTT_Resend_Unacked_Publish_QoS1 )
         {
             /* Timeout. */
             break;
+        }
+        else if( receivedPubAck != 0 )
+        {
+            /* Received the PUBACK, no need to wait anymore. */
+            break;
+        }
+        else
+        {
+            /* Nothing to be done for now. */
         }
             
     }while( ( xMQTTStatus == MQTTSuccess ) || ( xMQTTStatus == MQTTNeedMoreBytes ) );
@@ -1388,7 +1437,7 @@ TEST( MqttTest, MQTT_Publish_With_Retain_Flag )
                                                     MQTT_GetPacketId( &context ) ) );
     /* Complete the QoS 1 PUBLISH operation. */
     TEST_ASSERT_FALSE( receivedPubAck );
-    
+
     entryTime = FRTest_GetTimeMs();
     do
     {
@@ -1402,9 +1451,8 @@ TEST( MqttTest, MQTT_Publish_With_Retain_Flag )
         else
         {
             /* Sleep for some time between iterations. */
-            FRTest_TimeDelay( MQTT_PROCESS_LOOP_TIMEOUT_MS / 50 );
+            FRTest_TimeDelay( TEST_SLEEP_TIME );
         }
-            
     }while( ( xMQTTStatus == MQTTSuccess ) || ( xMQTTStatus == MQTTNeedMoreBytes ) );
 
     TEST_ASSERT_TRUE( ( xMQTTStatus == MQTTSuccess ) || ( xMQTTStatus == MQTTNeedMoreBytes ) );
@@ -1418,7 +1466,7 @@ TEST( MqttTest, MQTT_Publish_With_Retain_Flag )
     TEST_ASSERT_FALSE( receivedSubAck );
 
     TEST_ASSERT_FALSE( receivedRetainedMessage );
-    
+
     entryTime = FRTest_GetTimeMs();
     do
     {
@@ -1432,9 +1480,8 @@ TEST( MqttTest, MQTT_Publish_With_Retain_Flag )
         else
         {
             /* Sleep for some time between iterations. */
-            FRTest_TimeDelay( MQTT_PROCESS_LOOP_TIMEOUT_MS / 50 );
+            FRTest_TimeDelay( TEST_SLEEP_TIME );
         }
-            
     }while( ( xMQTTStatus == MQTTSuccess ) || ( xMQTTStatus == MQTTNeedMoreBytes ) );
 
     TEST_ASSERT_TRUE( ( xMQTTStatus == MQTTSuccess ) || ( xMQTTStatus == MQTTNeedMoreBytes ) );
@@ -1474,9 +1521,8 @@ TEST( MqttTest, MQTT_Publish_With_Retain_Flag )
         else
         {
             /* Sleep for some time between iterations. */
-            FRTest_TimeDelay( MQTT_PROCESS_LOOP_TIMEOUT_MS / 50 );
+            FRTest_TimeDelay( TEST_SLEEP_TIME );
         }
-            
     }while( ( xMQTTStatus == MQTTSuccess ) || ( xMQTTStatus == MQTTNeedMoreBytes ) );
 
     TEST_ASSERT_TRUE( ( xMQTTStatus == MQTTSuccess ) || ( xMQTTStatus == MQTTNeedMoreBytes ) );
@@ -1488,7 +1534,7 @@ TEST( MqttTest, MQTT_Publish_With_Retain_Flag )
     TEST_ASSERT_EQUAL( MQTTSuccess, subscribeToTopic(
                            &context, TEST_MQTT_TOPIC, MQTTQoS1 ) );
     TEST_ASSERT_FALSE( receivedSubAck );
-    
+
     entryTime = FRTest_GetTimeMs();
     do
     {
@@ -1502,9 +1548,8 @@ TEST( MqttTest, MQTT_Publish_With_Retain_Flag )
         else
         {
             /* Sleep for some time between iterations. */
-            FRTest_TimeDelay( MQTT_PROCESS_LOOP_TIMEOUT_MS / 50 );
+            FRTest_TimeDelay( TEST_SLEEP_TIME );
         }
-            
     }while( ( xMQTTStatus == MQTTSuccess ) || ( xMQTTStatus == MQTTNeedMoreBytes ) );
 
     TEST_ASSERT_TRUE( ( xMQTTStatus == MQTTSuccess ) || ( xMQTTStatus == MQTTNeedMoreBytes ) );
