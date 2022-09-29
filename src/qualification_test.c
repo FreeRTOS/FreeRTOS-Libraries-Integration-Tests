@@ -32,6 +32,10 @@
     extern int RunDeviceAdvisorDemo( void );
 #endif
 
+#if ( OTA_E2E_TEST_ENABLED == 1)
+    extern int RunOtaE2eDemo( void );
+#endif
+
 #if ( TRANSPORT_INTERFACE_TEST_ENABLED == 1 )
     #include "transport_interface_test.h"
 #endif
@@ -60,6 +64,10 @@ void RunQualificationTest( void )
 
     #if ( DEVICE_ADVISOR_TEST_ENABLED == 1)
         RunDeviceAdvisorDemo();
+    #endif
+
+    #if ( OTA_E2E_TEST_ENABLED == 1)
+        RunOtaE2eDemo();
     #endif
 
     #if ( TRANSPORT_INTERFACE_TEST_ENABLED == 1 )

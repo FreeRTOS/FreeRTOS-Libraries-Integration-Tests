@@ -81,10 +81,11 @@ TEST_TEAR_DOWN( Full_OTA_PAL )
 {
     OtaPalStatus_t xOtaStatus;
 
-    /* Abort the OTA file after every test. This closes the OTA file. */
+    /* Abort the OTA file after every test. This closes the OTA file.
+     * otaPal_Abort should only return OtaPalSuccess or OtaPalAbortFailed. */
     xOtaStatus = otaPal_Abort( &xOtaFile );
-
-    TEST_ASSERT_EQUAL_MESSAGE( OtaPalSuccess, xOtaStatus, "Failed to abort xOtaFile" );
+    TEST_ASSERT( OTA_PAL_MAIN_ERR( xOtaStatus ) == OtaPalSuccess ||
+                 OTA_PAL_MAIN_ERR( xOtaStatus ) == OtaPalAbortFailed );
 }
 
 TEST_GROUP_RUNNER( Full_OTA_PAL )
@@ -213,6 +214,7 @@ TEST( Full_OTA_PAL, otaPal_CloseFile_InvalidSignatureNoBlockWritten )
 
     /* Create a local file using the PAL. */
     xOtaFile.pFilePath = ( uint8_t * ) OTA_PAL_FIRMWARE_FILE;
+    xOtaFile.fileSize = sizeof( ucDummyData );
     xOtaStatus = otaPal_CreateFileForRx( &xOtaFile );
     TEST_ASSERT_EQUAL( OtaPalSuccess, OTA_PAL_MAIN_ERR( xOtaStatus ) );
 
@@ -289,6 +291,7 @@ TEST( Full_OTA_PAL, otaPal_CreateFileForRx_CreateAnyFile )
 
     /* TEST: Create a local file using the PAL. Verify error in close. */
     xOtaFile.pFilePath = ( uint8_t * ) OTA_PAL_FIRMWARE_FILE;
+    xOtaFile.fileSize = sizeof( ucDummyData );
     xOtaStatus = otaPal_CreateFileForRx( &xOtaFile );
     TEST_ASSERT_EQUAL( OtaPalSuccess, OTA_PAL_MAIN_ERR( xOtaStatus ) );
 }
@@ -300,7 +303,10 @@ TEST( Full_OTA_PAL, otaPal_Abort_OpenFile )
 {
     OtaPalStatus_t xOtaStatus;
 
+    memset( &xOtaFile, 0, sizeof( OtaFileContext_t ) );
+
     xOtaFile.pFilePath = ( uint8_t * ) OTA_PAL_FIRMWARE_FILE;
+    xOtaFile.fileSize = sizeof( ucDummyData );
 
     /* Create a local file using the PAL. */
     xOtaStatus = otaPal_CreateFileForRx( &xOtaFile );
@@ -356,8 +362,8 @@ TEST( Full_OTA_PAL, otaPal_Abort_NullFileHandle )
     OtaPalStatus_t xOtaStatus;
 
     xOtaFile.pFilePath = ( uint8_t * ) OTA_PAL_FIRMWARE_FILE;
-
     xOtaFile.pFile = 0;
+
     xOtaStatus = otaPal_Abort( &xOtaFile );
     TEST_ASSERT_EQUAL_INT( OtaPalSuccess, OTA_PAL_MAIN_ERR( xOtaStatus ) );
 }
@@ -369,15 +375,14 @@ TEST( Full_OTA_PAL, otaPal_Abort_NonExistentFile )
 {
     OtaPalStatus_t xOtaStatus;
 
-    xOtaFile.pFilePath = ( uint8_t * ) OTA_PAL_FIRMWARE_FILE;
-
     xOtaFile.pFilePath = ( uint8_t * ) ( "nonexistingfile.bin" );
+
     xOtaStatus = otaPal_Abort( &xOtaFile );
     TEST_ASSERT_EQUAL_INT( OtaPalSuccess, OTA_PAL_MAIN_ERR( xOtaStatus ) );
 }
 
 /**
- * Write one byte of data and verify success.
+ * @brief Write one byte of data and verify success.
  */
 TEST( Full_OTA_PAL, otaPal_WriteBlock_WriteSingleByte )
 {
@@ -387,6 +392,7 @@ TEST( Full_OTA_PAL, otaPal_WriteBlock_WriteSingleByte )
 
     /* TEST: Write a byte of data. */
     xOtaFile.pFilePath = ( uint8_t * ) OTA_PAL_FIRMWARE_FILE;
+    xOtaFile.fileSize = sizeof( ucDummyData );
     xOtaStatus = otaPal_CreateFileForRx( &xOtaFile );
     TEST_ASSERT_EQUAL( OtaPalSuccess, OTA_PAL_MAIN_ERR( xOtaStatus ) );
 
@@ -399,14 +405,22 @@ TEST( Full_OTA_PAL, otaPal_WriteBlock_WriteSingleByte )
 
 /**
  * @brief Write many blocks of data to a file opened in the device. Verify success.
+ *
+ * Because of Flash property, we might not able to write same page multiple times.
+ * So we write one block into one page.
  */
 TEST( Full_OTA_PAL, otaPal_WriteBlock_WriteManyBlocks )
 {
     OtaPalStatus_t xOtaStatus;
     int16_t bytesWritten;
 
+    /* The page size must >= dummy data size, so that we can write whole dummy data in one operation. */
+    TEST_ASSERT_LESS_OR_EQUAL( testParam.pageSize, sizeof( ucDummyData ) );
+
+    /* Some platforms compare the offset and file size, and it's not legal to write when offset > filesize.
+     * We just set file size to the number of block size to make sure file size is big enough for every write. */
     xOtaFile.pFilePath = ( uint8_t * ) OTA_PAL_FIRMWARE_FILE;
-    xOtaFile.fileSize = sizeof( ucDummyData ) * testotapalNUM_WRITE_BLOCKS;
+    xOtaFile.fileSize = testParam.pageSize * testotapalNUM_WRITE_BLOCKS;
     /* TEST: Write many bytes of data. */
 
     xOtaFile.pFilePath = ( uint8_t * ) OTA_PAL_FIRMWARE_FILE;
@@ -416,14 +430,15 @@ TEST( Full_OTA_PAL, otaPal_WriteBlock_WriteManyBlocks )
     if( TEST_PROTECT() )
     {
         int lIndex = 0;
+        uint32_t writeOffset = 0;
 
         for( lIndex = 0; lIndex < testotapalNUM_WRITE_BLOCKS; lIndex++ )
         {
-            uint32_t writeOffset = lIndex * sizeof( ucDummyData );
-            /* Align the writeOff with page size */
-            writeOffset = writeOffset + testParam.pageSize - ( writeOffset % testParam.pageSize );
             bytesWritten = otaPal_WriteBlock( &xOtaFile, writeOffset, ucDummyData, sizeof( ucDummyData ) );
             TEST_ASSERT_EQUAL_INT( sizeof( ucDummyData ), bytesWritten );
+
+            /* Align the writeOff with page size */
+            writeOffset = writeOffset + testParam.pageSize;
         }
     }
 }

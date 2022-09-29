@@ -95,4 +95,11 @@ void * FRTest_MemoryAlloc( size_t size );
  */
 void FRTest_MemoryFree( void * ptr );
 
+/**
+ * @brief To generate random number in INT format.
+ *
+ * @return A random number.
+ */
+int FRTest_GenerateRandInt();
+
 #endif /* PLATFORM_FUNCTION_H */
