@@ -1264,7 +1264,7 @@ TEST( MqttTest, MQTT_Resend_Unacked_Publish_QoS1 )
     {
         xMQTTStatus = MQTT_ProcessLoop( &context );
 
-        if( FRTest_GetTimeMs() > ( entryTime + ( MQTT_PROCESS_LOOP_TIMEOUT_MS *2 ) ) )
+        if( FRTest_GetTimeMs() > ( entryTime + ( MQTT_PROCESS_LOOP_TIMEOUT_MS * 2 ) ) )
         {
             /* Timeout. */
             break;
