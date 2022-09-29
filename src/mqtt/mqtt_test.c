@@ -1002,11 +1002,6 @@ TEST( MqttTest, MQTT_Subscribe_Publish_With_Qos_1 )
             /* Timeout. */
             break;
         }
-        else if( receivedPubAck != 0 )
-        {
-            /* Received the SUBACK. No need to call process loop anymore. */
-            break;
-        }
         else
         {
             /* Nothing to do. */
@@ -1100,7 +1095,16 @@ TEST( MqttTest, MQTT_Connect_LWT )
             /* Timeout. */
             break;
         }
-            
+        else if( receivedSubAck != 0 )
+        {
+            /* No need to wait any longer as we have received the subscribe
+             * acknowledgement. */
+            break;
+        }
+        else
+        {
+            /* Do nothing. */
+        }
     }while( ( xMQTTStatus == MQTTSuccess ) || ( xMQTTStatus == MQTTNeedMoreBytes ) );
 
     TEST_ASSERT_TRUE( ( xMQTTStatus == MQTTSuccess ) || ( xMQTTStatus == MQTTNeedMoreBytes ) );
@@ -1121,7 +1125,15 @@ TEST( MqttTest, MQTT_Connect_LWT )
             /* Timeout. */
             break;
         }
-            
+        else if( strcmp( incomingInfo.pTopicName, TEST_MQTT_LWT_TOPIC ) == 0 )
+        {
+            /* Some data was received on the LWT topic. */
+            break;
+        }
+        else
+        {
+            /* Do nothing. */
+        }
     }while( ( xMQTTStatus == MQTTSuccess ) || ( xMQTTStatus == MQTTNeedMoreBytes ) );
 
     TEST_ASSERT_TRUE( ( xMQTTStatus == MQTTSuccess ) || ( xMQTTStatus == MQTTNeedMoreBytes ) );
@@ -1154,7 +1166,15 @@ TEST( MqttTest, MQTT_Connect_LWT )
             /* Timeout. */
             break;
         }
-            
+        else if( receivedUnsubAck != 0 )
+        {
+            /* No need to call processloop anymore as unsub ACK has been received. */
+            break;
+        }
+        else
+        {
+            /* Do nothing. */
+        }
     }while( ( xMQTTStatus == MQTTSuccess ) || ( xMQTTStatus == MQTTNeedMoreBytes ) );
 
     TEST_ASSERT_TRUE( ( xMQTTStatus == MQTTSuccess ) || ( xMQTTStatus == MQTTNeedMoreBytes ) );
@@ -1348,7 +1368,15 @@ TEST( MqttTest, MQTT_Restore_Session_Duplicate_Incoming_Publish_Qos1 )
             /* Timeout. */
             break;
         }
-            
+        else if( receivedSubAck != 0 )
+        {
+            /* No need to call process loop anymore, we have received a sub ack. */
+            break;
+        }
+        else
+        {
+            /* Do nothing. */
+        }
     }while( ( xMQTTStatus == MQTTSuccess ) || ( xMQTTStatus == MQTTNeedMoreBytes ) );
 
     TEST_ASSERT_TRUE( ( xMQTTStatus == MQTTSuccess ) || ( xMQTTStatus == MQTTNeedMoreBytes ) );
@@ -1566,13 +1594,13 @@ TEST( MqttTest, MQTT_Publish_With_Retain_Flag )
  */
 TEST_GROUP_RUNNER( MqttTest )
 {
-        RUN_TEST_CASE( MqttTest, MQTT_Subscribe_Publish_With_Qos_0 );
-        RUN_TEST_CASE( MqttTest, MQTT_Subscribe_Publish_With_Qos_1 );
-        RUN_TEST_CASE( MqttTest, MQTT_Connect_LWT );
-        RUN_TEST_CASE( MqttTest, MQTT_ProcessLoop_KeepAlive );
-        RUN_TEST_CASE( MqttTest, MQTT_Resend_Unacked_Publish_QoS1 );
-        RUN_TEST_CASE( MqttTest, MQTT_Restore_Session_Duplicate_Incoming_Publish_Qos1 );
-        RUN_TEST_CASE( MqttTest, MQTT_Publish_With_Retain_Flag );
+    RUN_TEST_CASE( MqttTest, MQTT_Subscribe_Publish_With_Qos_0 );
+    RUN_TEST_CASE( MqttTest, MQTT_Subscribe_Publish_With_Qos_1 );
+    RUN_TEST_CASE( MqttTest, MQTT_Connect_LWT );
+    RUN_TEST_CASE( MqttTest, MQTT_ProcessLoop_KeepAlive );
+    RUN_TEST_CASE( MqttTest, MQTT_Resend_Unacked_Publish_QoS1 );
+    RUN_TEST_CASE( MqttTest, MQTT_Restore_Session_Duplicate_Incoming_Publish_Qos1 );
+    RUN_TEST_CASE( MqttTest, MQTT_Publish_With_Retain_Flag );
 }
 
 /*-----------------------------------------------------------*/
