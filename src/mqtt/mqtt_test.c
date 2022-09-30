@@ -988,11 +988,15 @@ TEST( MqttTest, MQTT_Subscribe_Publish_With_Qos_1 )
             /* Timeout. */
             break;
         }
+        else if( ( receivedPubAck != 0 ) && ( strncmp( TEST_MQTT_TOPIC, incomingInfo.pTopicName, TEST_MQTT_TOPIC_LENGTH ) == 0 ) )
+        {
+            /* Both the publish ackand the incoming publish have been received. */
+            break;
+        }
         else
         {
             /* Nothing to do. */
         }
-            
     }while( ( xMQTTStatus == MQTTSuccess ) || ( xMQTTStatus == MQTTNeedMoreBytes ) );
 
     TEST_ASSERT_TRUE( ( xMQTTStatus == MQTTSuccess ) || ( xMQTTStatus == MQTTNeedMoreBytes ) );
@@ -1111,7 +1115,7 @@ TEST( MqttTest, MQTT_Connect_LWT )
             /* Timeout. */
             break;
         }
-        else if( strcmp( incomingInfo.pTopicName, TEST_MQTT_LWT_TOPIC ) == 0 )
+        else if( strncmp( incomingInfo.pTopicName, TEST_MQTT_LWT_TOPIC, TEST_MQTT_LWT_TOPIC_LENGTH ) == 0 )
         {
             /* Some data was received on the LWT topic. */
             break;
