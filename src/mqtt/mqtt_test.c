@@ -990,7 +990,7 @@ TEST( MqttTest, MQTT_Subscribe_Publish_With_Qos_1 )
         }
         else if( ( receivedPubAck != 0 ) && ( strncmp( TEST_MQTT_TOPIC, incomingInfo.pTopicName, TEST_MQTT_TOPIC_LENGTH ) == 0 ) )
         {
-            /* Both the publish ackand the incoming publish have been received. */
+            /* Both the PUBACK and the incoming publish have been received. */
             break;
         }
         else
