@@ -153,12 +153,6 @@
 #define MQTT_KEEP_ALIVE_INTERVAL_SECONDS    ( 5U )
 
 /**
- * @brief Time in milliseconds for which the task should sleep between consecutive
- * iteration of MQTT_ProcessLoop.
- */
-#define TEST_SLEEP_TIME                          ( 10U )
-
-/**
  * @brief Timeout for MQTT_ProcessLoop() function in milliseconds.
  * The timeout value is appropriately chosen for receiving an incoming
  * PUBLISH message and ack responses for QoS 1 and QoS 2 communications
@@ -988,16 +982,15 @@ TEST( MqttTest, MQTT_Subscribe_Publish_With_Qos_1 )
             /* Timeout. */
             break;
         }
-        else if( receivedPubAck != 0 )
+        else if( ( receivedPubAck != 0 ) && ( strncmp( TEST_MQTT_TOPIC, incomingInfo.pTopicName, TEST_MQTT_TOPIC_LENGTH ) == 0 ) )
         {
-            /* Received the SUBACK. No need to call process loop anymore. */
+            /* Both the PUBACK and the incoming publish have been received. */
             break;
         }
         else
         {
             /* Nothing to do. */
         }
-            
     }while( ( xMQTTStatus == MQTTSuccess ) || ( xMQTTStatus == MQTTNeedMoreBytes ) );
 
     TEST_ASSERT_TRUE( ( xMQTTStatus == MQTTSuccess ) || ( xMQTTStatus == MQTTNeedMoreBytes ) );
@@ -1086,7 +1079,16 @@ TEST( MqttTest, MQTT_Connect_LWT )
             /* Timeout. */
             break;
         }
-            
+        else if( receivedSubAck != 0 )
+        {
+            /* No need to wait any longer as we have received the subscribe
+             * acknowledgement. */
+            break;
+        }
+        else
+        {
+            /* Do nothing. */
+        }
     }while( ( xMQTTStatus == MQTTSuccess ) || ( xMQTTStatus == MQTTNeedMoreBytes ) );
 
     TEST_ASSERT_TRUE( ( xMQTTStatus == MQTTSuccess ) || ( xMQTTStatus == MQTTNeedMoreBytes ) );
@@ -1107,7 +1109,15 @@ TEST( MqttTest, MQTT_Connect_LWT )
             /* Timeout. */
             break;
         }
-            
+        else if( strncmp( incomingInfo.pTopicName, TEST_MQTT_LWT_TOPIC, TEST_MQTT_LWT_TOPIC_LENGTH ) == 0 )
+        {
+            /* Some data was received on the LWT topic. */
+            break;
+        }
+        else
+        {
+            /* Do nothing. */
+        }
     }while( ( xMQTTStatus == MQTTSuccess ) || ( xMQTTStatus == MQTTNeedMoreBytes ) );
 
     TEST_ASSERT_TRUE( ( xMQTTStatus == MQTTSuccess ) || ( xMQTTStatus == MQTTNeedMoreBytes ) );
@@ -1140,7 +1150,15 @@ TEST( MqttTest, MQTT_Connect_LWT )
             /* Timeout. */
             break;
         }
-            
+        else if( receivedUnsubAck != 0 )
+        {
+            /* No need to call processloop anymore as unsub ACK has been received. */
+            break;
+        }
+        else
+        {
+            /* Do nothing. */
+        }
     }while( ( xMQTTStatus == MQTTSuccess ) || ( xMQTTStatus == MQTTNeedMoreBytes ) );
 
     TEST_ASSERT_TRUE( ( xMQTTStatus == MQTTSuccess ) || ( xMQTTStatus == MQTTNeedMoreBytes ) );
@@ -1334,7 +1352,15 @@ TEST( MqttTest, MQTT_Restore_Session_Duplicate_Incoming_Publish_Qos1 )
             /* Timeout. */
             break;
         }
-            
+        else if( receivedSubAck != 0 )
+        {
+            /* No need to call process loop anymore, we have received a sub ack. */
+            break;
+        }
+        else
+        {
+            /* Do nothing. */
+        }
     }while( ( xMQTTStatus == MQTTSuccess ) || ( xMQTTStatus == MQTTNeedMoreBytes ) );
 
     TEST_ASSERT_TRUE( ( xMQTTStatus == MQTTSuccess ) || ( xMQTTStatus == MQTTNeedMoreBytes ) );
@@ -1434,10 +1460,14 @@ TEST( MqttTest, MQTT_Publish_With_Retain_Flag )
             /* Timeout. */
             break;
         }
+        else if( receivedPubAck != 0 )
+        {
+            /* No need to loop anymore since we received the PUBACK. */
+            break;
+        }
         else
         {
-            /* Sleep for some time between iterations. */
-            FRTest_TimeDelay( TEST_SLEEP_TIME );
+            /* Do nothing. */
         }
     }while( ( xMQTTStatus == MQTTSuccess ) || ( xMQTTStatus == MQTTNeedMoreBytes ) );
 
@@ -1463,10 +1493,14 @@ TEST( MqttTest, MQTT_Publish_With_Retain_Flag )
             /* Timeout. */
             break;
         }
+        else if( ( receivedSubAck != 0 ) && ( receivedRetainedMessage != 0 ) )
+        {
+            /* No need to loop anymore since we received both the messages we were supposed to. */
+            break;
+        }
         else
         {
-            /* Sleep for some time between iterations. */
-            FRTest_TimeDelay( TEST_SLEEP_TIME );
+            /* Do nothing. */
         }
     }while( ( xMQTTStatus == MQTTSuccess ) || ( xMQTTStatus == MQTTNeedMoreBytes ) );
 
@@ -1504,10 +1538,14 @@ TEST( MqttTest, MQTT_Publish_With_Retain_Flag )
             /* Timeout. */
             break;
         }
+        else if( receivedPubAck != 0 )
+        {
+            /* No need to loop anymore since we received the PUBACK. */
+            break;
+        }
         else
         {
-            /* Sleep for some time between iterations. */
-            FRTest_TimeDelay( TEST_SLEEP_TIME );
+            /* Do nothing. */
         }
     }while( ( xMQTTStatus == MQTTSuccess ) || ( xMQTTStatus == MQTTNeedMoreBytes ) );
 
@@ -1531,10 +1569,14 @@ TEST( MqttTest, MQTT_Publish_With_Retain_Flag )
             /* Timeout. */
             break;
         }
+        else if( receivedSubAck != 0 )
+        {
+            /* No need to loop anymore since we received the SUBACK. */
+            break;
+        }
         else
         {
-            /* Sleep for some time between iterations. */
-            FRTest_TimeDelay( TEST_SLEEP_TIME );
+            /* Do nothing. */
         }
     }while( ( xMQTTStatus == MQTTSuccess ) || ( xMQTTStatus == MQTTNeedMoreBytes ) );
 
@@ -1552,13 +1594,13 @@ TEST( MqttTest, MQTT_Publish_With_Retain_Flag )
  */
 TEST_GROUP_RUNNER( MqttTest )
 {
-        RUN_TEST_CASE( MqttTest, MQTT_Subscribe_Publish_With_Qos_0 );
-        RUN_TEST_CASE( MqttTest, MQTT_Subscribe_Publish_With_Qos_1 );
-        RUN_TEST_CASE( MqttTest, MQTT_Connect_LWT );
-        RUN_TEST_CASE( MqttTest, MQTT_ProcessLoop_KeepAlive );
-        RUN_TEST_CASE( MqttTest, MQTT_Resend_Unacked_Publish_QoS1 );
-        RUN_TEST_CASE( MqttTest, MQTT_Restore_Session_Duplicate_Incoming_Publish_Qos1 );
-        RUN_TEST_CASE( MqttTest, MQTT_Publish_With_Retain_Flag );
+    RUN_TEST_CASE( MqttTest, MQTT_Subscribe_Publish_With_Qos_0 );
+    RUN_TEST_CASE( MqttTest, MQTT_Subscribe_Publish_With_Qos_1 );
+    RUN_TEST_CASE( MqttTest, MQTT_Connect_LWT );
+    RUN_TEST_CASE( MqttTest, MQTT_ProcessLoop_KeepAlive );
+    RUN_TEST_CASE( MqttTest, MQTT_Resend_Unacked_Publish_QoS1 );
+    RUN_TEST_CASE( MqttTest, MQTT_Restore_Session_Duplicate_Incoming_Publish_Qos1 );
+    RUN_TEST_CASE( MqttTest, MQTT_Publish_With_Retain_Flag );
 }
 
 /*-----------------------------------------------------------*/
