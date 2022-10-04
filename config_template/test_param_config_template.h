@@ -51,6 +51,19 @@
  */
 
 /**
+ * @brief The client identifier for MQTT test.
+ *
+ * #define MQTT_TEST_CLIENT_IDENTIFIER    "PLACE_HOLDER"
+ */
+
+ /**
+ * @brief Network buffer size specified in bytes. Must be large enough to hold the maximum
+ * anticipated MQTT payload.
+ *
+ * #define MQTT_TEST_NETWORK_BUFFER_SIZE  ( 5000 )
+ */
+
+/**
  * @brief Root certificate of the IoT Core.
  *
  * @note This certificate should be PEM-encoded.
