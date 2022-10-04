@@ -77,6 +77,11 @@
 #define TRANSPORT_TEST_SEND_RECEIVE_RETRY_COUNT    ( 50U )
 
 /**
+ * @brief Transport Interface writev retry count.
+ */
+#define TRANSPORT_TEST_WRITEV_RETRY_COUNT    ( 50U )
+
+/**
  * @brief Transport Interface delay in milliseconds.
  *
  * The Delay time for the transport interface test to wait for the data echo-ed
@@ -306,6 +311,102 @@ static bool prvTransportSendData( TransportInterface_t * pTransport,
 
     /* Check if all the data is sent. */
     if( sendSize != transferTotal )
+    {
+        TEST_MESSAGE( "Fail to send all the data expected." );
+        retValue = false;
+    }
+
+    return retValue;
+}
+
+/*-----------------------------------------------------------*/
+
+/**
+ * @brief Send the data over transport network using writev with retry.
+ *
+ * The writev API may return less bytes then requested. If the transport writev function
+ * returns zero, it should represent that the writev operation can be retired by calling
+ * the API function. The retry operation is handled in this function.
+ */
+static bool prvTransportWritevData( TransportInterface_t * pTransport,
+                                    NetworkContext_t * pNetworkContext,
+                                    TransportOutVector_t * pTransportTestVectorArray,
+                                    size_t ioVecCount )
+{
+    uint32_t transferTotal = 0U;
+    int32_t transportResult = 0;
+    uint32_t i = 0U;
+    bool retValue = true;
+    uint32_t bytesToSend = 0U;
+    int32_t bytesSentOrError = 0;
+    TransportOutVector_t * pIoVectIterator;
+    size_t vectorsToBeSent = ioVecCount;
+
+    /* Count the total number of bytes to be sent as outlined in the vector. */
+    for( pIoVectIterator = pTransportTestVectorArray; pIoVectIterator <= &( pTransportTestVectorArray[ ioVecCount - 1U ] ); pIoVectIterator++ )
+    {
+        bytesToSend += ( uint32_t ) pIoVectIterator->iov_len;
+    }
+
+    /* Reset the iterator to point to the first entry in the array. */
+    pIoVectIterator = pTransportTestVectorArray;
+
+    for( i = 0U; i < TRANSPORT_TEST_WRITEV_RETRY_COUNT; i++ )
+    {
+        uint32_t bytesSentThisVector = 0U;
+
+        transportResult = pTransport->writev( pNetworkContext,
+                                              pIoVectIterator,
+                                              vectorsToBeSent );
+
+        /* Send should not have any error. */
+        if( transportResult < 0 )
+        {
+            TEST_MESSAGE( "Transport send data should not have any error." );
+            retValue = false;
+            break;
+        }
+
+        if( ( ( ( int32_t ) bytesToSend ) - bytesSentOrError ) < transportResult )
+        {
+            TEST_MESSAGE( "More data is sent than expected." );
+            retValue = false;
+            break;
+        }
+
+        bytesSentOrError += transportResult;
+        bytesSentThisVector += transportResult;
+
+        if( bytesToSend == bytesSentOrError )
+        {
+            /* All the data is sent. Break the retry loop. */
+            break;
+        }
+
+        /* Increment the vector iterator based on the number of bytes sent. */
+        while( ( pIoVectIterator <= &( pTransportTestVectorArray[ ioVecCount - 1U ] ) ) &&
+               ( bytesSentThisVector >= pIoVectIterator->iov_len ) )
+        {
+            bytesSentThisVector -= ( uint32_t ) pIoVectIterator->iov_len;
+            pIoVectIterator++;
+
+            /* Update the number of vector which are yet to be sent. */
+            vectorsToBeSent--;
+        }
+
+        /* Some of the bytes from the current vector pointed to by the vector iterator were sent
+         * as well, update the length and the pointer to data in this vector. */
+        if( ( bytesSentThisVector > 0U ) &&
+            ( pIoVectIterator <= &( pTransportTestVectorArray[ ioVecCount - 1U ] ) ) )
+        {
+            /* Update the pointer to data to point to the first byte which needs to be sent in the next iteration. */
+            pIoVectIterator->iov_base = ( const void * ) &( ( ( const uint8_t * ) pIoVectIterator->iov_base )[ bytesSentThisVector ] );
+            pIoVectIterator->iov_len -= bytesSentThisVector;
+        }
+    }
+
+    /* Check if all the data is sent. */
+    if( bytesToSend != transferTotal )
     {
         TEST_MESSAGE( "Fail to send all the data expected." );
         retValue = false;
@@ -627,6 +728,24 @@ TEST( Full_TransportInterfaceTest, TransportSend_NetworkContextNullPtr )
 /*-----------------------------------------------------------*/
 
 /**
+ * @brief Test transport interface writev with NULL network context pointer handling.
+ */
+TEST( Full_TransportInterfaceTest, TransportWritev_NetworkContextNullPtr )
+{
+    int32_t sendResult = 0;
+    TransportOutVector_t transportTestVector = { threadParameter[ TRANSPORT_TEST_INDEX ].transportTestBuffer, TRANSPORT_TEST_BUFFER_WRITABLE_LENGTH };
+
+    /* writev with NULL network context pointer should return negative value. */
+    sendResult = pTestTransport->writev( NULL,
+                                         &( transportTestVector ),
+                                         1U );
+    TEST_ASSERT_LESS_THAN_INT32_MESSAGE( 0, sendResult, "Transport interface writev with NULL NetworkContext_t "
+                                                        "pointer should return negative value." );
+}
+
+/*-----------------------------------------------------------*/
+
+/**
  * @brief Test transport interface send with NULL buffer pointer handling.
  */
 TEST( Full_TransportInterfaceTest, TransportSend_BufferNullPtr )
@@ -637,6 +756,22 @@ TEST( Full_TransportInterfaceTest, TransportSend_BufferNullPtr )
     /* Send with NULL buffer pointer should return negative value. */
     sendResult = pTestTransport->send( pNetworkContext, NULL, 1 );
     TEST_ASSERT_LESS_THAN_INT32_MESSAGE( 0, sendResult, "Transport interface send with NULL buffer "
+                                                        "pointer should return negative value." );
+}
+
+/*-----------------------------------------------------------*/
+
+/**
+ * @brief Test transport interface writev with NULL buffer pointer handling.
+ */
+TEST( Full_TransportInterfaceTest, TransportWritev_BufferNullPtr )
+{
+    int32_t sendResult = 0;
+    NetworkContext_t * pNetworkContext = threadParameter[ TRANSPORT_TEST_INDEX ].pNetworkContext;
+
+    /* Writev with NULL buffer pointer should return negative value. */
+    sendResult = pTestTransport->writev( pNetworkContext, NULL, 1 );
+    TEST_ASSERT_LESS_THAN_INT32_MESSAGE( 0, sendResult, "Transport interface writev with NULL vector "
                                                         "pointer should return negative value." );
 }
 
@@ -656,6 +791,25 @@ TEST( Full_TransportInterfaceTest, TransportSend_ZeroByteToSend )
                                        &( pTransportTestBuffer[ TRANSPORT_TEST_BUFFER_PREFIX_GUARD_LENGTH ] ),
                                        0 );
     TEST_ASSERT_LESS_THAN_INT32_MESSAGE( 0, sendResult, "Transport interface send with zero byte "
+                                                        "to send should return negative value." );
+}
+
+/*-----------------------------------------------------------*/
+
+/**
+ * @brief Test transport interface writev with zero vectors to send handling.
+ */
+TEST( Full_TransportInterfaceTest, TransportWritev_ZeroByteToSend )
+{
+    int32_t sendResult = 0;
+    TransportOutVector_t transportTestVector = { threadParameter[ TRANSPORT_TEST_INDEX ].transportTestBuffer, TRANSPORT_TEST_BUFFER_WRITABLE_LENGTH };
+    NetworkContext_t * pNetworkContext = threadParameter[ TRANSPORT_TEST_INDEX ].pNetworkContext;
+
+    /* Send with zero byte to send should return negative value. */
+    sendResult = pTestTransport->writev( pNetworkContext,
+                                         &transportTestVector,
+                                         0 );
+    TEST_ASSERT_LESS_THAN_INT32_MESSAGE( 0, sendResult, "Transport interface writev with zero vectors "
                                                         "to send should return negative value." );
 }
 
@@ -958,6 +1112,37 @@ TEST( Full_TransportInterfaceTest, TransportSend_RemoteDisconnect )
 /*-----------------------------------------------------------*/
 
 /**
+ * @brief Test transport interface writev function return value when disconnected.
+ */
+TEST( Full_TransportInterfaceTest, TransportWritev_RemoteDisconnect )
+{
+    int32_t transportResult = 0;
+    NetworkContext_t * pNetworkContext = threadParameter[ TRANSPORT_TEST_INDEX ].pNetworkContext;
+
+    TransportOutVector_t transportTestVectorDisconnect = { TRANSPORT_TEST_DISCONNECT_COMMAND, strlen( TRANSPORT_TEST_DISCONNECT_COMMAND ) };
+    TransportOutVector_t transportTestVectorbuffer = { &( threadParameter[ TRANSPORT_TEST_INDEX ].transportTestBuffer[ TRANSPORT_TEST_BUFFER_PREFIX_GUARD_LENGTH ] ), TRANSPORT_TEST_BUFFER_WRITABLE_LENGTH };
+
+    /* Send the disconnect command to remote server. */
+    transportResult = pTestTransport->writev( pNetworkContext,
+                                              transportTestVectorDisconnect,
+                                              1U );
+    TEST_ASSERT_EQUAL_INT32_MESSAGE( strlen( TRANSPORT_TEST_DISCONNECT_COMMAND ), transportResult,
+                                     "Transport writev should not have any error." );
+
+    /* Delay to wait for the command send to server and server disconnection. */
+    FRTest_TimeDelay( TRANSPORT_TEST_NETWORK_DELAY_MS );
+
+    /* Negative value should be returned if a network disconnection has occurred. */
+    transportResult = pTestTransport->writev( pNetworkContext,
+                                              transportTestVectorbuffer,
+                                              1U );
+    TEST_ASSERT_LESS_THAN_INT32_MESSAGE( 0, transportResult,
+                                         "Transport writev should return negative value when disconnected." );
+}
+
+/*-----------------------------------------------------------*/
+
+/**
  * @brief Test transport interface receive function return value when disconnected.
  */
 TEST( Full_TransportInterfaceTest, TransportRecv_RemoteDisconnect )
@@ -1068,6 +1253,9 @@ TEST_GROUP_RUNNER( Full_TransportInterfaceTest )
     RUN_TEST_CASE( Full_TransportInterfaceTest, TransportRecv_NetworkContextNullPtr );
     RUN_TEST_CASE( Full_TransportInterfaceTest, TransportRecv_BufferNullPtr );
     RUN_TEST_CASE( Full_TransportInterfaceTest, TransportRecv_ZeroByteToRecv );
+    //TransportWritev_NetworkContextNullPtr
+    //TransportWritev_BufferNullPtr
+    //TransportWritev_ZeroByteToSend
 
     /* Send and receive correctness test. */
     RUN_TEST_CASE( Full_TransportInterfaceTest, Transport_SendOneByteRecvCompare );
@@ -1078,6 +1266,7 @@ TEST_GROUP_RUNNER( Full_TransportInterfaceTest )
     /* Disconnect test. */
     RUN_TEST_CASE( Full_TransportInterfaceTest, TransportSend_RemoteDisconnect );
     RUN_TEST_CASE( Full_TransportInterfaceTest, TransportRecv_RemoteDisconnect );
+    //TransportWritev_RemoteDisconnect
 
     /* Transport behavior test. */
     RUN_TEST_CASE( Full_TransportInterfaceTest, TransportRecv_NoDataToReceive );
