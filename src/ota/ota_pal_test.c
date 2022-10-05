@@ -132,7 +132,7 @@ TEST_GROUP_RUNNER( Full_OTA_PAL )
 TEST( Full_OTA_PAL, otaPal_CloseFile_ValidSignature )
 {
     OtaPalStatus_t xOtaStatus;
-    Sig256_t xSig = { 0 };
+    Sig_t xSig = { 0 };
     int16_t bytesWritten;
 
     /* We use a dummy file name here because closing the system designated bootable
@@ -170,7 +170,7 @@ TEST( Full_OTA_PAL, otaPal_CloseFile_ValidSignature )
 TEST( Full_OTA_PAL, otaPal_CloseFile_InvalidSignatureBlockWritten )
 {
     OtaPalStatus_t xOtaStatus;
-    Sig256_t xSig = { 0 };
+    Sig_t xSig = { 0 };
     int16_t bytesWritten;
 
     /* Create a local file using the PAL. */
@@ -210,7 +210,7 @@ TEST( Full_OTA_PAL, otaPal_CloseFile_InvalidSignatureBlockWritten )
 TEST( Full_OTA_PAL, otaPal_CloseFile_InvalidSignatureNoBlockWritten )
 {
     OtaPalStatus_t xOtaStatus;
-    Sig256_t xSig = { 0 };
+    Sig_t xSig = { 0 };
 
     /* Create a local file using the PAL. */
     xOtaFile.pFilePath = ( uint8_t * ) OTA_PAL_FIRMWARE_FILE;
@@ -246,7 +246,7 @@ TEST( Full_OTA_PAL, otaPal_CloseFile_NonexistingCodeSignerCertificate )
 {
     #if ( OTA_PAL_USE_FILE_SYSTEM == 1 )
         OtaPalStatus_t xOtaStatus;
-        Sig256_t xSig = { 0 };
+        Sig_t xSig = { 0 };
         int16_t bytesWritten;
 
         memset( &xOtaFile, 0, sizeof( xOtaFile ) );
@@ -587,7 +587,7 @@ TEST( Full_OTA_PAL, otaPal_SetPlatformImageState_AbortImageState )
 TEST( Full_OTA_PAL, otaPal_GetPlatformImageState_InvalidImageStateFromFileCloseFailure )
 {
     OtaPalStatus_t xOtaStatus;
-    Sig256_t xSig = { 0 };
+    Sig_t xSig = { 0 };
     OtaPalImageState_t ePalImageState = OtaPalImageStateUnknown;
     int16_t bytesWritten;
 
