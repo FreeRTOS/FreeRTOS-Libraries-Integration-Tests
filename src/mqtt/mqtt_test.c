@@ -949,7 +949,7 @@ TEST( MqttTest, MQTT_Subscribe_Publish_With_Qos_1 )
         {
             /* Nothing to do. */
         }
-    }while( ( xMQTTStatus == MQTTSuccess ) || ( xMQTTStatus == MQTTNeedMoreBytes ) );
+    } while( ( xMQTTStatus == MQTTSuccess ) || ( xMQTTStatus == MQTTNeedMoreBytes ) );
 
     TEST_ASSERT_TRUE( ( xMQTTStatus == MQTTSuccess ) || ( xMQTTStatus == MQTTNeedMoreBytes ) );
     TEST_ASSERT_TRUE( receivedSubAck );
@@ -982,7 +982,7 @@ TEST( MqttTest, MQTT_Subscribe_Publish_With_Qos_1 )
             /* Timeout. */
             break;
         }
-        else if( ( receivedPubAck != 0 ) && ( strncmp( TEST_MQTT_TOPIC, incomingInfo.pTopicName, TEST_MQTT_TOPIC_LENGTH ) == 0 ) )
+        else if( ( receivedPubAck != 0 ) && ( incomingInfo.topicNameLength == TEST_MQTT_TOPIC_LENGTH ) )
         {
             /* Both the PUBACK and the incoming publish have been received. */
             break;
@@ -991,7 +991,7 @@ TEST( MqttTest, MQTT_Subscribe_Publish_With_Qos_1 )
         {
             /* Nothing to do. */
         }
-    }while( ( xMQTTStatus == MQTTSuccess ) || ( xMQTTStatus == MQTTNeedMoreBytes ) );
+    } while( ( xMQTTStatus == MQTTSuccess ) || ( xMQTTStatus == MQTTNeedMoreBytes ) );
 
     TEST_ASSERT_TRUE( ( xMQTTStatus == MQTTSuccess ) || ( xMQTTStatus == MQTTNeedMoreBytes ) );
     /* Make sure we have received PUBACK response. */
