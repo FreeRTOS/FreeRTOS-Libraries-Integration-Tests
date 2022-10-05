@@ -1109,7 +1109,7 @@ TEST( MqttTest, MQTT_Connect_LWT )
             /* Timeout. */
             break;
         }
-        else if( strncmp( incomingInfo.pTopicName, TEST_MQTT_LWT_TOPIC, TEST_MQTT_LWT_TOPIC_LENGTH ) == 0 )
+        else if( incomingInfo.topicNameLength == TEST_MQTT_LWT_TOPIC_LENGTH )
         {
             /* Some data was received on the LWT topic. */
             break;
