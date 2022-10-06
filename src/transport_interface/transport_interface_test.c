@@ -320,7 +320,7 @@ static bool prvTransportSendData( TransportInterface_t * pTransport,
 }
 
 /*-----------------------------------------------------------*/
-
+#ifdef TRANSPORT_TEST_EXECUTE_WRITEV_TESTS
 /**
  * @brief Send the data over transport network using writev with retry.
  *
@@ -333,7 +333,6 @@ static bool prvTransportWritevData( TransportInterface_t * pTransport,
                                     TransportOutVector_t * pTransportTestVectorArray,
                                     size_t ioVecCount )
 {
-    uint32_t transferTotal = 0U;
     int32_t transportResult = 0;
     uint32_t i = 0U;
     bool retValue = true;
@@ -406,7 +405,7 @@ static bool prvTransportWritevData( TransportInterface_t * pTransport,
     }
 
     /* Check if all the data is sent. */
-    if( bytesToSend != transferTotal )
+    if( bytesToSend != bytesSentOrError )
     {
         TEST_MESSAGE( "Fail to send all the data expected." );
         retValue = false;
@@ -414,6 +413,7 @@ static bool prvTransportWritevData( TransportInterface_t * pTransport,
 
     return retValue;
 }
+#endif
 
 /*-----------------------------------------------------------*/
 
@@ -559,6 +559,7 @@ static void prvSendRecvCompareFunc( void * pParam )
 
 /*-----------------------------------------------------------*/
 
+#ifdef TRANSPORT_TEST_EXECUTE_WRITEV_TESTS
 /**
  * @brief Thread function of the writev/receive/compare test.
  */
@@ -581,16 +582,16 @@ static void prvWritevRecvCompareFunc( void * pParam )
             pTransportTestVectorArray[ 0U ].iov_base = pTransportTestBufferStart;
             pTransportTestVectorArray[ 0U ].iov_len = testBufferSize / 5;
 
-            pTransportTestVectorArray[ 1U ].iov_base = pTransportTestBufferStart[ testBufferSize / 5 ];
+            pTransportTestVectorArray[ 1U ].iov_base = &pTransportTestBufferStart[ testBufferSize / 5 ];
             pTransportTestVectorArray[ 1U ].iov_len = testBufferSize / 5;
 
-            pTransportTestVectorArray[ 2U ].iov_base = pTransportTestBufferStart[ 2 * ( testBufferSize / 5 ) ];
+            pTransportTestVectorArray[ 2U ].iov_base = &pTransportTestBufferStart[ 2 * ( testBufferSize / 5 ) ];
             pTransportTestVectorArray[ 2U ].iov_len = testBufferSize / 5;
 
-            pTransportTestVectorArray[ 3U ].iov_base = pTransportTestBufferStart[ 3 * ( testBufferSize / 5 ) ];
+            pTransportTestVectorArray[ 3U ].iov_base = &pTransportTestBufferStart[ 3 * ( testBufferSize / 5 ) ];
             pTransportTestVectorArray[ 3U ].iov_len = testBufferSize / 5;
 
-            pTransportTestVectorArray[ 4U ].iov_base = pTransportTestBufferStart[ 4 * ( testBufferSize / 5 ) ];
+            pTransportTestVectorArray[ 4U ].iov_base = &pTransportTestBufferStart[ 4 * ( testBufferSize / 5 ) ];
             pTransportTestVectorArray[ 4U ].iov_len = testBufferSize / 5;
 
             ioVecCount = 5U;
@@ -600,10 +601,10 @@ static void prvWritevRecvCompareFunc( void * pParam )
             pTransportTestVectorArray[ 0U ].iov_base = pTransportTestBufferStart;
             pTransportTestVectorArray[ 0U ].iov_len = testBufferSize / 3;
 
-            pTransportTestVectorArray[ 1U ].iov_base = pTransportTestBufferStart[ testBufferSize / 3 ];
+            pTransportTestVectorArray[ 1U ].iov_base = &pTransportTestBufferStart[ testBufferSize / 3 ];
             pTransportTestVectorArray[ 1U ].iov_len = testBufferSize / 3;
 
-            pTransportTestVectorArray[ 2U ].iov_base = pTransportTestBufferStart[ 2 * ( testBufferSize / 3 ) ];
+            pTransportTestVectorArray[ 2U ].iov_base = &pTransportTestBufferStart[ 2 * ( testBufferSize / 3 ) ];
             pTransportTestVectorArray[ 2U ].iov_len = testBufferSize / 3;
 
             ioVecCount = 3U;
@@ -613,7 +614,7 @@ static void prvWritevRecvCompareFunc( void * pParam )
             pTransportTestVectorArray[ 0U ].iov_base = pTransportTestBufferStart;
             pTransportTestVectorArray[ 0U ].iov_len = testBufferSize / 2;
 
-            pTransportTestVectorArray[ 1U ].iov_base = pTransportTestBufferStart[ testBufferSize / 2 ];
+            pTransportTestVectorArray[ 1U ].iov_base = &pTransportTestBufferStart[ testBufferSize / 2 ];
             pTransportTestVectorArray[ 1U ].iov_len = testBufferSize / 2;
 
             ioVecCount = 2U;
@@ -661,6 +662,7 @@ static void prvWritevRecvCompareFunc( void * pParam )
         #endif
     }
 }
+#endif
 
 /*-----------------------------------------------------------*/
 
@@ -774,6 +776,9 @@ TEST_SETUP( Full_TransportInterfaceTest )
     TEST_ASSERT_NOT_NULL_MESSAGE( testParam.pTransport, "testParam.pTransport should not be NULL." );
     TEST_ASSERT_NOT_NULL_MESSAGE( testParam.pTransport->send, "testParam.pTransport->send should not be NULL." );
     TEST_ASSERT_NOT_NULL_MESSAGE( testParam.pTransport->recv, "testParam.pTransport->recv should not be NULL." );
+#ifdef TRANSPORT_TEST_EXECUTE_WRITEV_TESTS
+    TEST_ASSERT_NOT_NULL_MESSAGE( testParam.pTransport->writev, "testParam.pTransport->writev should not be NULL." );
+#endif
     TEST_ASSERT_NOT_NULL_MESSAGE( testParam.pNetworkContext, "testParam.pNetworkContext should not be NULL." );
     TEST_ASSERT_NOT_NULL_MESSAGE( testParam.pSecondNetworkContext, "testParam.pSecondNetworkContext should not be NULL." );
     TEST_ASSERT_NOT_NULL_MESSAGE( testParam.pNetworkConnect, "testParam.pNetworkConnect should not be NULL." );
@@ -831,7 +836,7 @@ TEST( Full_TransportInterfaceTest, TransportSend_NetworkContextNullPtr )
 }
 
 /*-----------------------------------------------------------*/
-
+#ifdef TRANSPORT_TEST_EXECUTE_WRITEV_TESTS
 /**
  * @brief Test transport interface writev with NULL network context pointer handling.
  */
@@ -847,6 +852,7 @@ TEST( Full_TransportInterfaceTest, TransportWritev_NetworkContextNullPtr )
     TEST_ASSERT_LESS_THAN_INT32_MESSAGE( 0, sendResult, "Transport interface writev with NULL NetworkContext_t "
                                                         "pointer should return negative value." );
 }
+#endif
 
 /*-----------------------------------------------------------*/
 
@@ -865,7 +871,7 @@ TEST( Full_TransportInterfaceTest, TransportSend_BufferNullPtr )
 }
 
 /*-----------------------------------------------------------*/
-
+#ifdef TRANSPORT_TEST_EXECUTE_WRITEV_TESTS
 /**
  * @brief Test transport interface writev with NULL buffer pointer handling.
  */
@@ -879,6 +885,7 @@ TEST( Full_TransportInterfaceTest, TransportWritev_BufferNullPtr )
     TEST_ASSERT_LESS_THAN_INT32_MESSAGE( 0, sendResult, "Transport interface writev with NULL vector "
                                                         "pointer should return negative value." );
 }
+#endif
 
 /*-----------------------------------------------------------*/
 
@@ -900,7 +907,7 @@ TEST( Full_TransportInterfaceTest, TransportSend_ZeroByteToSend )
 }
 
 /*-----------------------------------------------------------*/
-
+#ifdef TRANSPORT_TEST_EXECUTE_WRITEV_TESTS
 /**
  * @brief Test transport interface writev with zero vectors to send handling.
  */
@@ -917,7 +924,7 @@ TEST( Full_TransportInterfaceTest, TransportWritev_ZeroByteToSend )
     TEST_ASSERT_LESS_THAN_INT32_MESSAGE( 0, sendResult, "Transport interface writev with zero vectors "
                                                         "to send should return negative value." );
 }
-
+#endif
 /*-----------------------------------------------------------*/
 
 /**
@@ -1024,6 +1031,7 @@ TEST( Full_TransportInterfaceTest, Transport_SendOneByteRecvCompare )
 
 /*-----------------------------------------------------------*/
 
+#ifdef TRANSPORT_TEST_EXECUTE_WRITEV_TESTS
 /**
  * @brief Test transport interface with writev one byte, receive and compare
  *
@@ -1051,11 +1059,11 @@ TEST( Full_TransportInterfaceTest, Transport_WritevOneByteRecvCompare )
     prvInitializeTestData( pTransportTestBufferStart, TRANSPORT_TEST_BUFFER_WRITABLE_LENGTH );
 
     /* Send 1 byte of test data to the server. */
-    retValue = prvTransportSendData( pTestTransport, pNetworkContext, &pTransportVectorArray[ 0U ], 1U );
+    retValue = prvTransportWritevData( pTestTransport, pNetworkContext, &pTransportVectorArray[ 0U ], 1U );
     TEST_ASSERT_MESSAGE( ( retValue == true ), "Send test data failed." );
 
     /* Send the rest test data to the server. */
-    retValue = prvTransportSendData( pTestTransport, pNetworkContext, &pTransportVectorArray[ 1U ], 1U );
+    retValue = prvTransportWritevData( pTestTransport, pNetworkContext, &pTransportVectorArray[ 1U ], 1U );
     TEST_ASSERT_MESSAGE( ( retValue == true ), "Send test data failed." );
 
     /* Receive the test data from server. */
@@ -1068,7 +1076,7 @@ TEST( Full_TransportInterfaceTest, Transport_WritevOneByteRecvCompare )
                                   TRANSPORT_TEST_BUFFER_WRITABLE_LENGTH );
     TEST_ASSERT_MESSAGE( ( retValue == true ), "Verify test data failed." );
 }
-
+#endif
 /*-----------------------------------------------------------*/
 
 /**
@@ -1157,7 +1165,7 @@ TEST( Full_TransportInterfaceTest, Transport_SendRecvCompare )
 }
 
 /*-----------------------------------------------------------*/
-
+#ifdef TRANSPORT_TEST_EXECUTE_WRITEV_TESTS
 /**
  * @brief Test transport interface with writev, receive and compare on variable length.
  */
@@ -1178,16 +1186,16 @@ TEST( Full_TransportInterfaceTest, Transport_WritevRecvCompare )
             pTransportTestVectorArray[ 0U ].iov_base = pTransportTestBufferStart;
             pTransportTestVectorArray[ 0U ].iov_len = testBufferSize / 5;
 
-            pTransportTestVectorArray[ 1U ].iov_base = pTransportTestBufferStart[ testBufferSize / 5 ];
+            pTransportTestVectorArray[ 1U ].iov_base = &pTransportTestBufferStart[ testBufferSize / 5 ];
             pTransportTestVectorArray[ 1U ].iov_len = testBufferSize / 5;
 
-            pTransportTestVectorArray[ 2U ].iov_base = pTransportTestBufferStart[ 2 * ( testBufferSize / 5 ) ];
+            pTransportTestVectorArray[ 2U ].iov_base = &pTransportTestBufferStart[ 2 * ( testBufferSize / 5 ) ];
             pTransportTestVectorArray[ 2U ].iov_len = testBufferSize / 5;
 
-            pTransportTestVectorArray[ 3U ].iov_base = pTransportTestBufferStart[ 3 * ( testBufferSize / 5 ) ];
+            pTransportTestVectorArray[ 3U ].iov_base = &pTransportTestBufferStart[ 3 * ( testBufferSize / 5 ) ];
             pTransportTestVectorArray[ 3U ].iov_len = testBufferSize / 5;
 
-            pTransportTestVectorArray[ 4U ].iov_base = pTransportTestBufferStart[ 4 * ( testBufferSize / 5 ) ];
+            pTransportTestVectorArray[ 4U ].iov_base = &pTransportTestBufferStart[ 4 * ( testBufferSize / 5 ) ];
             pTransportTestVectorArray[ 4U ].iov_len = testBufferSize / 5;
 
             ioVecCount = 5U;
@@ -1197,10 +1205,10 @@ TEST( Full_TransportInterfaceTest, Transport_WritevRecvCompare )
             pTransportTestVectorArray[ 0U ].iov_base = pTransportTestBufferStart;
             pTransportTestVectorArray[ 0U ].iov_len = testBufferSize / 3;
 
-            pTransportTestVectorArray[ 1U ].iov_base = pTransportTestBufferStart[ testBufferSize / 3 ];
+            pTransportTestVectorArray[ 1U ].iov_base = &pTransportTestBufferStart[ testBufferSize / 3 ];
             pTransportTestVectorArray[ 1U ].iov_len = testBufferSize / 3;
 
-            pTransportTestVectorArray[ 2U ].iov_base = pTransportTestBufferStart[ 2 * ( testBufferSize / 3 ) ];
+            pTransportTestVectorArray[ 2U ].iov_base = &pTransportTestBufferStart[ 2 * ( testBufferSize / 3 ) ];
             pTransportTestVectorArray[ 2U ].iov_len = testBufferSize / 3;
 
             ioVecCount = 3U;
@@ -1210,7 +1218,7 @@ TEST( Full_TransportInterfaceTest, Transport_WritevRecvCompare )
             pTransportTestVectorArray[ 0U ].iov_base = pTransportTestBufferStart;
             pTransportTestVectorArray[ 0U ].iov_len = testBufferSize / 2;
 
-            pTransportTestVectorArray[ 1U ].iov_base = pTransportTestBufferStart[ testBufferSize / 2 ];
+            pTransportTestVectorArray[ 1U ].iov_base = &pTransportTestBufferStart[ testBufferSize / 2 ];
             pTransportTestVectorArray[ 1U ].iov_len = testBufferSize / 2;
 
             ioVecCount = 2U;
@@ -1227,8 +1235,8 @@ TEST( Full_TransportInterfaceTest, Transport_WritevRecvCompare )
         prvInitializeTestData( pTransportTestBufferStart, testBufferSize );
 
         /* Send the test data to the server. */
-        retValue = prvTransportWritevData( pTestTransport, pNetworkContext, pTransportTestBufferStart,
-                                           testBufferSize );
+        retValue = prvTransportWritevData( pTestTransport, pNetworkContext, pTransportTestVectorArray,
+                                           ioVecCount );
         TEST_ASSERT_MESSAGE( ( retValue == true ), "Send test data failed." );
 
         /* Receive the test data from server. */
@@ -1246,6 +1254,7 @@ TEST( Full_TransportInterfaceTest, Transport_WritevRecvCompare )
         #endif
     }
 }
+#endif
 
 /*-----------------------------------------------------------*/
 
@@ -1323,7 +1332,7 @@ TEST( Full_TransportInterfaceTest, Transport_SendRecvCompareMultithreaded )
 }
 
 /*-----------------------------------------------------------*/
-
+#ifdef TRANSPORT_TEST_EXECUTE_WRITEV_TESTS
 /**
  * @brief Test transport interface with writev, receive and compare on variable length in multiple threads.
  */
@@ -1396,6 +1405,7 @@ TEST( Full_TransportInterfaceTest, Transport_WritevRecvCompareMultithreaded )
         TEST_ASSERT_MESSAGE( ( threadParameter[ threadIndex ].xResult == true ), "Test failed in test thread." );
     }
 }
+#endif
 
 /*-----------------------------------------------------------*/
 
@@ -1428,7 +1438,7 @@ TEST( Full_TransportInterfaceTest, TransportSend_RemoteDisconnect )
 }
 
 /*-----------------------------------------------------------*/
-
+#ifdef TRANSPORT_TEST_EXECUTE_WRITEV_TESTS
 /**
  * @brief Test transport interface writev function return value when disconnected.
  */
@@ -1457,7 +1467,7 @@ TEST( Full_TransportInterfaceTest, TransportWritev_RemoteDisconnect )
     TEST_ASSERT_LESS_THAN_INT32_MESSAGE( 0, transportResult,
                                          "Transport writev should return negative value when disconnected." );
 }
-
+#endif
 /*-----------------------------------------------------------*/
 
 /**
@@ -1571,28 +1581,35 @@ TEST_GROUP_RUNNER( Full_TransportInterfaceTest )
     RUN_TEST_CASE( Full_TransportInterfaceTest, TransportRecv_NetworkContextNullPtr );
     RUN_TEST_CASE( Full_TransportInterfaceTest, TransportRecv_BufferNullPtr );
     RUN_TEST_CASE( Full_TransportInterfaceTest, TransportRecv_ZeroByteToRecv );
-    //TransportWritev_NetworkContextNullPtr
-    //TransportWritev_BufferNullPtr
-    //TransportWritev_ZeroByteToSend
 
     /* Send and receive correctness test. */
     RUN_TEST_CASE( Full_TransportInterfaceTest, Transport_SendOneByteRecvCompare );
     RUN_TEST_CASE( Full_TransportInterfaceTest, Transport_SendRecvOneByteCompare );
     RUN_TEST_CASE( Full_TransportInterfaceTest, Transport_SendRecvCompare );
     RUN_TEST_CASE( Full_TransportInterfaceTest, Transport_SendRecvCompareMultithreaded );
-    // Transport_WritevOneByteRecvCompare
-    // No need. It is testing recv.
-    // Transport_WritevRecvCompare
-    // Transport_WritevRecvCompareMultithreaded
 
     /* Disconnect test. */
     RUN_TEST_CASE( Full_TransportInterfaceTest, TransportSend_RemoteDisconnect );
     RUN_TEST_CASE( Full_TransportInterfaceTest, TransportRecv_RemoteDisconnect );
-    //TransportWritev_RemoteDisconnect
 
     /* Transport behavior test. */
     RUN_TEST_CASE( Full_TransportInterfaceTest, TransportRecv_NoDataToReceive );
     RUN_TEST_CASE( Full_TransportInterfaceTest, TransportRecv_ReturnZeroRetry );
+
+#ifdef TRANSPORT_TEST_EXECUTE_WRITEV_TESTS
+    /* Invalid parameter test. Disable or replace assert may be required to run these tests. */
+    RUN_TEST_CASE( Full_TransportInterfaceTest, TransportWritev_NetworkContextNullPtr );
+    RUN_TEST_CASE( Full_TransportInterfaceTest, TransportWritev_BufferNullPtr );
+    RUN_TEST_CASE( Full_TransportInterfaceTest, TransportWritev_ZeroByteToSend );
+
+    /* Send and receive correctness test. */
+    RUN_TEST_CASE( Full_TransportInterfaceTest, Transport_WritevOneByteRecvCompare );
+    RUN_TEST_CASE( Full_TransportInterfaceTest, Transport_WritevRecvCompare );
+    RUN_TEST_CASE( Full_TransportInterfaceTest, Transport_WritevRecvCompareMultithreaded );
+
+    /* Disconnect test. */
+    RUN_TEST_CASE( Full_TransportInterfaceTest, TransportWritev_RemoteDisconnect );
+#endif
 }
 
 /*-----------------------------------------------------------*/
