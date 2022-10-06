@@ -982,9 +982,11 @@ TEST( MqttTest, MQTT_Subscribe_Publish_With_Qos_1 )
             /* Timeout. */
             break;
         }
-        else if( ( receivedPubAck != 0 ) && ( incomingInfo.topicNameLength == TEST_MQTT_TOPIC_LENGTH ) )
+        else if( ( receivedPubAck != 0 ) && ( incomingInfo.topicNameLength > 0 ) )
         {
             /* Both the PUBACK and the incoming publish have been received. */
+            /* "incomingInfo.topicNameLength > 0" means we got a publish message from MQTT broker.
+             * We compare message's content/length after breaking loop. */
             break;
         }
         else
@@ -1109,9 +1111,11 @@ TEST( MqttTest, MQTT_Connect_LWT )
             /* Timeout. */
             break;
         }
-        else if( incomingInfo.topicNameLength == TEST_MQTT_LWT_TOPIC_LENGTH )
+        else if( incomingInfo.topicNameLength > 0 )
         {
             /* Some data was received on the LWT topic. */
+            /* "incomingInfo.topicNameLength > 0" means we got a publish message from MQTT broker.
+             * We compare message's content/length after breaking loop. */
             break;
         }
         else
