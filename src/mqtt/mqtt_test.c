@@ -949,7 +949,7 @@ TEST( MqttTest, MQTT_Subscribe_Publish_With_Qos_1 )
         {
             /* Nothing to do. */
         }
-    }while( ( xMQTTStatus == MQTTSuccess ) || ( xMQTTStatus == MQTTNeedMoreBytes ) );
+    } while( ( xMQTTStatus == MQTTSuccess ) || ( xMQTTStatus == MQTTNeedMoreBytes ) );
 
     TEST_ASSERT_TRUE( ( xMQTTStatus == MQTTSuccess ) || ( xMQTTStatus == MQTTNeedMoreBytes ) );
     TEST_ASSERT_TRUE( receivedSubAck );
@@ -982,16 +982,18 @@ TEST( MqttTest, MQTT_Subscribe_Publish_With_Qos_1 )
             /* Timeout. */
             break;
         }
-        else if( ( receivedPubAck != 0 ) && ( strncmp( TEST_MQTT_TOPIC, incomingInfo.pTopicName, TEST_MQTT_TOPIC_LENGTH ) == 0 ) )
+        else if( ( receivedPubAck != 0 ) && ( incomingInfo.topicNameLength > 0 ) )
         {
             /* Both the PUBACK and the incoming publish have been received. */
+            /* "incomingInfo.topicNameLength > 0" means we got a publish message from MQTT broker.
+             * We compare message's content/length after breaking loop. */
             break;
         }
         else
         {
             /* Nothing to do. */
         }
-    }while( ( xMQTTStatus == MQTTSuccess ) || ( xMQTTStatus == MQTTNeedMoreBytes ) );
+    } while( ( xMQTTStatus == MQTTSuccess ) || ( xMQTTStatus == MQTTNeedMoreBytes ) );
 
     TEST_ASSERT_TRUE( ( xMQTTStatus == MQTTSuccess ) || ( xMQTTStatus == MQTTNeedMoreBytes ) );
     /* Make sure we have received PUBACK response. */
@@ -1109,9 +1111,11 @@ TEST( MqttTest, MQTT_Connect_LWT )
             /* Timeout. */
             break;
         }
-        else if( strncmp( incomingInfo.pTopicName, TEST_MQTT_LWT_TOPIC, TEST_MQTT_LWT_TOPIC_LENGTH ) == 0 )
+        else if( incomingInfo.topicNameLength > 0 )
         {
             /* Some data was received on the LWT topic. */
+            /* "incomingInfo.topicNameLength > 0" means we got a publish message from MQTT broker.
+             * We compare message's content/length after breaking loop. */
             break;
         }
         else
