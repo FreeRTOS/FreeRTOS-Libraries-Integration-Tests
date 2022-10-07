@@ -30,6 +30,8 @@ The test application is usually implemented by calling the provided transport in
 
 The transport interface tests verify the implementation by running various test cases. The test cases are designed according to the guidelines in the transport interface header file.
 
+###Mandatory Test Cases
+
 |Test Case	|Test Case Detail	|Expected result	|
 |---	|---	|---	|
 |TransportSend_NetworkContextNullPtr	|Test transport interface send with NULL network context pointer handling	|Negative value should be returned	|
@@ -46,6 +48,11 @@ The transport interface tests verify the implementation by running various test 
 |TransportRecv_RemoteDisconnect	|Test transport interface receive function return value when disconnected by remote server	|Negative value should be returned	|
 |TransportRecv_NoDataToReceive	|Test transport interface receive function return value when no data to receive	|0 should be returned	|
 |TransportRecv_ReturnZeroRetry	|Test transport interface receive function return zero due to no data to receive. Send data to echo server then retry the receive function. Transport receive function should be able to receive data from echo server and return positive value.	|Postive value should be returned after retry transport receive	|
+
+###Optional Test Cases
+
+|Test Case	|Test Case Detail	|Expected result	|
+|---	|---	|---	|
 |TransportWritev_NetworkContextNullPtr    |Test transport interface writev with NULL network context pointer handling       |Negative value should be returned      |
 |TransportWritev_BufferNullPtr    |Test transport interface writev with NULL transport vector array pointer handling       |Negative value should be returned      |
 |TransportWritev_ZeroByteToSend    |Test transport interface writev with zero vector array length to send handling  |Negative value should be returned      |
@@ -186,7 +193,7 @@ int FRTest_ThreadTimedJoin( FRTestThreadHandle_t threadHandle,
 
 7. Optionally define **TRANSPORT_TEST_EXECUTE_WRITEV_TESTS**, in **test_param_config.h** to enable the execution of writev tests.
 
-```c
+```C
 #define TRANSPORT_TEST_EXECUTE_WRITEV_TESTS
 ```
 
