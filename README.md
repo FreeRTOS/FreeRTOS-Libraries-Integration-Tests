@@ -58,7 +58,7 @@ If testing using the [FreeRTOS](https://github.com/FreeRTOS/FreeRTOS) repository
 | FreeRTOS Release Tag                                             | FreeRTOS-Libraries-Integration-Tests Release Tag                                             |
 |------------------------------------------------------------------|----------------------------------------------------------------------------------------------|
 | [202112.00](https://github.com/FreeRTOS/FreeRTOS/tree/202112.00) | [202205.01](https://github.com/FreeRTOS/FreeRTOS-Libraries-Integration-Tests/tree/202205.01) |
-| [202209.00](https://github.com/FreeRTOS/FreeRTOS/tree/202209.00) | [202209.00](https://github.com/FreeRTOS/FreeRTOS-Libraries-Integration-Tests/tree/202209.00) |
+| [202210.00](https://github.com/FreeRTOS/FreeRTOS/tree/202210.00) | [202210.00](https://github.com/FreeRTOS/FreeRTOS-Libraries-Integration-Tests/tree/202210.00) |
 
 If testing using the [FreeRTOS-LTS](https://github.com/FreeRTOS/FreeRTOS-LTS) repository:
 
@@ -70,7 +70,7 @@ If testing using the [FreeRTOS-LTS](https://github.com/FreeRTOS/FreeRTOS-LTS) re
 | [202012.03-LTS](https://github.com/FreeRTOS/FreeRTOS-LTS/tree/202012.03-LTS) | [202205.01](https://github.com/FreeRTOS/FreeRTOS-Libraries-Integration-Tests/tree/202205.01) |
 | [202012.04-LTS](https://github.com/FreeRTOS/FreeRTOS-LTS/tree/202012.04-LTS) | [202205.01](https://github.com/FreeRTOS/FreeRTOS-Libraries-Integration-Tests/tree/202205.01) |
 | [202012.05-LTS](https://github.com/FreeRTOS/FreeRTOS-LTS/tree/202012.05-LTS) | [202205.01](https://github.com/FreeRTOS/FreeRTOS-Libraries-Integration-Tests/tree/202205.01) |
-| [202209.00-LTS](https://github.com/FreeRTOS/FreeRTOS-LTS/tree/202209.00-LTS) | [202209.00](https://github.com/FreeRTOS/FreeRTOS-Libraries-Integration-Tests/tree/202209.00) |   
+| [202210.00-LTS](https://github.com/FreeRTOS/FreeRTOS-LTS/tree/202210.00-LTS) | [202210.00](https://github.com/FreeRTOS/FreeRTOS-Libraries-Integration-Tests/tree/202210.00) |
 
 4. Checkout the version of this repository needed with the following command:
 ```
