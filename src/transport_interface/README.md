@@ -21,6 +21,8 @@ The test directly exercises the transport interface on the device under testing 
 * A PC to run the provided echo server.
 * A test application which runs on the device under test with transport interface implemented.
 
+_NOTE: The writev tests are optional and can be used to verify the implementation of writev method using the scatter-gather approach._
+
 The test application is usually implemented by calling the provided transport interface test routine from the main function.
 
 
@@ -44,6 +46,13 @@ The transport interface tests verify the implementation by running various test 
 |TransportRecv_RemoteDisconnect	|Test transport interface receive function return value when disconnected by remote server	|Negative value should be returned	|
 |TransportRecv_NoDataToReceive	|Test transport interface receive function return value when no data to receive	|0 should be returned	|
 |TransportRecv_ReturnZeroRetry	|Test transport interface receive function return zero due to no data to receive. Send data to echo server then retry the receive function. Transport receive function should be able to receive data from echo server and return positive value.	|Postive value should be returned after retry transport receive	|
+|TransportWritev_NetworkContextNullPtr    |Test transport interface writev with NULL network context pointer handling       |Negative value should be returned      |
+|TransportWritev_BufferNullPtr    |Test transport interface writev with NULL transport vector array pointer handling       |Negative value should be returned      |
+|TransportWritev_ZeroByteToSend    |Test transport interface writev with zero vector array length to send handling  |Negative value should be returned      |
+|Transport_WritevOneByteRecvCompare    |Test writev receive behavior in the following order<br>Send : 1 byte<br>Send : ( TRANSPORT_TEST_BUFFER_WRITABLE_LENGTH - 1 ) bytes<br>Receive : TRANSPORT_TEST_BUFFER_WRITABLE_LENGTH bytes | Send/receive/compare should has no error |
+|Transport_WritevRecvCompare    |Test transport interface with writev, receive and compare on bulk of data.<br>The data size ranges from 1 byte to TRANSPORT_TEST_BUFFER_WRITABLE_LENGTH bytes |Send/receive/compare should has no error within timeout |
+|Transport_WritevRecvCompareMultithreaded    |Test transport interface with send, receive and compare on bulk of data in multiple threads.<br>Each thread will create a network connection.<br>The data size ranges from 1 byte to TRANSPORT_TEST_BUFFER_WRITABLE_LENGTH bytes |Send/receive/compare should has no error within timeout |
+|TransportWritev_RemoteDisconnect    |Test transport interface send function return value when disconnected by remote server  |Negative value should be returned      |
 
 Assert may be used to check invalid parameters. In that case, you need to replace
 the assert macro to return negative value in your transport interface implementation
@@ -173,7 +182,13 @@ int FRTest_ThreadTimedJoin( FRTestThreadHandle_t threadHandle,
 #define TRANSPORT_INTERFACE_TEST_ENABLED  ( 1 )     /* Set 1 to enable the transport interface test. */
 ```
 
-6. Implement the main function and call the **RunQualificationTest**.
+7. Optionally define **TRANSPORT_TEST_EXECUTE_WRITEV_TESTS**, in **test_param_config.h** to enable the execution of writev tests.
+
+```c
+#define TRANSPORT_TEST_EXECUTE_WRITEV_TESTS
+```
+
+8. Implement the main function and call the **RunQualificationTest**.
 
 The following is an example test application.
 
