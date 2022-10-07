@@ -336,7 +336,7 @@ static bool prvTransportWritevData( TransportInterface_t * pTransport,
     int32_t transportResult = 0;
     uint32_t i;
     bool retValue = true;
-    uint32_t bytesToSend = 0U;
+    int32_t bytesToSend = 0;
     int32_t bytesSentOrError = 0;
     TransportOutVector_t * pIoVectIterator;
     size_t vectorsToBeSent = ioVecCount;
@@ -344,7 +344,7 @@ static bool prvTransportWritevData( TransportInterface_t * pTransport,
     /* Count the total number of bytes to be sent as outlined in the vector. */
     for( pIoVectIterator = pTransportTestVectorArray; pIoVectIterator <= &( pTransportTestVectorArray[ ioVecCount - 1U ] ); pIoVectIterator++ )
     {
-        bytesToSend += ( uint32_t ) pIoVectIterator->iov_len;
+        bytesToSend += ( int32_t ) pIoVectIterator->iov_len;
     }
 
     /* Reset the iterator to point to the first entry in the array. */
@@ -366,7 +366,7 @@ static bool prvTransportWritevData( TransportInterface_t * pTransport,
             break;
         }
 
-        if( ( ( ( int32_t ) bytesToSend ) - bytesSentOrError ) < transportResult )
+        if( ( bytesToSend - bytesSentOrError ) < transportResult )
         {
             TEST_MESSAGE( "More data is sent than expected." );
             retValue = false;
@@ -376,7 +376,7 @@ static bool prvTransportWritevData( TransportInterface_t * pTransport,
         bytesSentOrError += transportResult;
         bytesSentThisVector += transportResult;
 
-        if( ( int32_t ) bytesToSend == bytesSentOrError )
+        if( bytesToSend == bytesSentOrError )
         {
             /* All the data is sent. Break the retry loop. */
             break;
@@ -405,7 +405,7 @@ static bool prvTransportWritevData( TransportInterface_t * pTransport,
     }
 
     /* Check if all the data is sent. */
-    if( ( int32_t ) bytesToSend != bytesSentOrError )
+    if( bytesToSend != bytesSentOrError )
     {
         TEST_MESSAGE( "Fail to send all the data expected." );
         retValue = false;
