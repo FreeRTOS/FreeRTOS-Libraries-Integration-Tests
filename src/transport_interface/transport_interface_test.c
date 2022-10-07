@@ -527,21 +527,26 @@ static void prvSendRecvCompareFunc( void * pParam )
         /* Send the test data to the server. */
         if( pThreadParameter->xResult == true )
         {
-            pThreadParameter->xResult = prvTransportSendData( pTestTransport, pNetworkContext, pTransportTestBufferStart,
+            pThreadParameter->xResult = prvTransportSendData( pTestTransport,
+                                                              pNetworkContext,
+                                                              pTransportTestBufferStart,
                                                               testBufferSize );
         }
 
         /* Receive the test data from server. */
         if( pThreadParameter->xResult == true )
         {
-            pThreadParameter->xResult = prvTransportRecvData( pTestTransport, pNetworkContext, pTransportTestBufferStart,
+            pThreadParameter->xResult = prvTransportRecvData( pTestTransport,
+                                                              pNetworkContext,
+                                                              pTransportTestBufferStart,
                                                               testBufferSize );
         }
 
         /* Compare the test data received from server. */
         if( pThreadParameter->xResult == true )
         {
-            pThreadParameter->xResult = prvVerifyTestData( pTransportTestBufferStart, testBufferSize,
+            pThreadParameter->xResult = prvVerifyTestData( pTransportTestBufferStart,
+                                                           testBufferSize,
                                                            TRANSPORT_TEST_BUFFER_WRITABLE_LENGTH );
         }
 

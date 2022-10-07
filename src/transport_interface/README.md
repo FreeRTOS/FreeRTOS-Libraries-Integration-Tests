@@ -51,8 +51,8 @@ The transport interface tests verify the implementation by running various test 
 |TransportWritev_ZeroByteToSend    |Test transport interface writev with zero vector array length to send handling  |Negative value should be returned      |
 |Transport_WritevOneByteRecvCompare    |Test writev receive behavior in the following order<br>Send : 1 byte<br>Send : ( TRANSPORT_TEST_BUFFER_WRITABLE_LENGTH - 1 ) bytes<br>Receive : TRANSPORT_TEST_BUFFER_WRITABLE_LENGTH bytes | Send/receive/compare should has no error |
 |Transport_WritevRecvCompare    |Test transport interface with writev, receive and compare on bulk of data.<br>The data size ranges from 1 byte to TRANSPORT_TEST_BUFFER_WRITABLE_LENGTH bytes |Send/receive/compare should has no error within timeout |
-|Transport_WritevRecvCompareMultithreaded    |Test transport interface with send, receive and compare on bulk of data in multiple threads.<br>Each thread will create a network connection.<br>The data size ranges from 1 byte to TRANSPORT_TEST_BUFFER_WRITABLE_LENGTH bytes |Send/receive/compare should has no error within timeout |
-|TransportWritev_RemoteDisconnect    |Test transport interface send function return value when disconnected by remote server  |Negative value should be returned      |
+|Transport_WritevRecvCompareMultithreaded    |Test transport interface with writev, receive and compare on bulk of data in multiple threads.<br>Each thread will create a network connection.<br>The data size ranges from 1 byte to TRANSPORT_TEST_BUFFER_WRITABLE_LENGTH bytes |Send/receive/compare should has no error within timeout |
+|TransportWritev_RemoteDisconnect    |Test transport interface writev function return value when disconnected by remote server  |Negative value should be returned      |
 
 Assert may be used to check invalid parameters. In that case, you need to replace
 the assert macro to return negative value in your transport interface implementation
@@ -255,7 +255,7 @@ void yourMainFunction( void )
 
 ## 6. Run The Transport Interface Test
 
-The go-based echo_server.go program can setup a TCP server to echo back data. This echo server is used in the transport interface test to verify the transport interface implementation.
+The go-based echo_server.go program located [here](../../tools/echo_server) can setup a TCP server to echo back data. This echo server is used in the transport interface test to verify the transport interface implementation.
 
 The transport interface test starts with the following steps:
 
