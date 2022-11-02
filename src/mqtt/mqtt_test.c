@@ -1751,26 +1751,26 @@ TEST( MqttTest, MQTT_SubUnsub_Multiple_Topics )
 
     /* Expect an UNSUBACK from the broker for the unsubscribe operation. */
     entryTime = FRTest_GetTimeMs();
-	do
-	{
-		xMQTTStatus = MQTT_ProcessLoop( &context );
+    do
+    {
+        xMQTTStatus = MQTT_ProcessLoop( &context );
 
-		if( FRTest_GetTimeMs() > ( entryTime + MQTT_PROCESS_LOOP_TIMEOUT_MS ) )
-		{
-			/* Timeout. */
-			break;
-		}
-		else if( receivedUnsubAck != 0 )
-		{
-			break;
-		}
-		else
-		{
-			/* Do nothing. */
-		}
-	}while( ( xMQTTStatus == MQTTSuccess ) || ( xMQTTStatus == MQTTNeedMoreBytes ) );
+        if( FRTest_GetTimeMs() > ( entryTime + MQTT_PROCESS_LOOP_TIMEOUT_MS ) )
+        {
+            /* Timeout. */
+            break;
+        }
+        else if( receivedUnsubAck != 0 )
+        {
+            break;
+        }
+        else
+        {
+            /* Do nothing. */
+        }
+    }while( ( xMQTTStatus == MQTTSuccess ) || ( xMQTTStatus == MQTTNeedMoreBytes ) );
 
-	TEST_ASSERT_TRUE( ( xMQTTStatus == MQTTSuccess ) || ( xMQTTStatus == MQTTNeedMoreBytes ) );
+    TEST_ASSERT_TRUE( ( xMQTTStatus == MQTTSuccess ) || ( xMQTTStatus == MQTTNeedMoreBytes ) );
     TEST_ASSERT_TRUE( receivedUnsubAck );
 }
 
