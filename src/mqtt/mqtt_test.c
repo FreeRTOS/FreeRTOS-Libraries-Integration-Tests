@@ -1689,32 +1689,32 @@ TEST( MqttTest, MQTT_SubUnsub_Multiple_Topics )
         qos = ( i % 2 );
 
         TEST_ASSERT_EQUAL( MQTTSuccess, publishToTopic(
-                               &context,
-                               topicList[ i ],
-                               false, /* setRetainFlag */
-                               false, /* isDuplicate */
-                               qos,   /* QoS */
-                               MQTT_GetPacketId( &context ) ) );
+                                            &context,
+                                            topicList[ i ],
+                                            false, /* setRetainFlag */
+                                            false, /* isDuplicate */
+                                            qos,   /* QoS */
+                                            MQTT_GetPacketId( &context ) ) );
 
         /* Reset the PUBACK flag. */
         receivedPubAck = false;
 
         configPRINTF( ( "%u Entered1", xTaskGetTickCount() ) );
         entryTime = FRTest_GetTimeMs();
-		do
-		{
-			xMQTTStatus = MQTT_ProcessLoop( &context );
+        do
+        {
+            xMQTTStatus = MQTT_ProcessLoop( &context );
 
-			if( FRTest_GetTimeMs() > ( entryTime + MQTT_PROCESS_LOOP_TIMEOUT_MS ) )
-			{
-				/* Timeout. */
-				break;
-			}
-			else
-			{
-				/* Do nothing. */
-			}
-		}while( ( xMQTTStatus == MQTTSuccess ) || ( xMQTTStatus == MQTTNeedMoreBytes ) );
+            if( FRTest_GetTimeMs() > ( entryTime + MQTT_PROCESS_LOOP_TIMEOUT_MS ) )
+            {
+                /* Timeout. */
+                break;
+            }
+            else
+            {
+                /* Do nothing. */
+            }
+        }while( ( xMQTTStatus == MQTTSuccess ) || ( xMQTTStatus == MQTTNeedMoreBytes ) );
 
 		TEST_ASSERT_TRUE( ( xMQTTStatus == MQTTSuccess ) || ( xMQTTStatus == MQTTNeedMoreBytes ) );
 
