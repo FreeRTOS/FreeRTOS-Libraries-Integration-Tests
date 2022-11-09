@@ -173,14 +173,6 @@
 #define MQTT_KEEP_ALIVE_INTERVAL_SECONDS    ( 5U )
 
 /**
- * @brief Timeout for MQTT_ProcessLoop() function in milliseconds.
- * The timeout value is appropriately chosen for receiving an incoming
- * PUBLISH message and ack responses for QoS 1 and QoS 2 communications
- * with the broker.
- */
-#define MQTT_PROCESS_LOOP_TIMEOUT_MS        ( 700U )
-
-/**
  * @brief The MQTT message published in this example.
  */
 #define MQTT_EXAMPLE_MESSAGE                "Hello World!"
@@ -854,7 +846,7 @@ TEST( MqttTest, MQTT_Subscribe_Publish_With_Qos_0 )
     {
         xMQTTStatus = MQTT_ProcessLoop( &context );
 
-        if( FRTest_GetTimeMs() > ( entryTime + MQTT_PROCESS_LOOP_TIMEOUT_MS ) )
+        if( FRTest_GetTimeMs() > ( entryTime + MQTT_TEST_PROCESS_LOOP_TIMEOUT_MS ) )
         {
             /* Timeout. */
             break;
@@ -883,7 +875,7 @@ TEST( MqttTest, MQTT_Subscribe_Publish_With_Qos_0 )
     {
         xMQTTStatus = MQTT_ProcessLoop( &context );
 
-        if( FRTest_GetTimeMs() > ( entryTime + MQTT_PROCESS_LOOP_TIMEOUT_MS ) )
+        if( FRTest_GetTimeMs() > ( entryTime + MQTT_TEST_PROCESS_LOOP_TIMEOUT_MS ) )
         {
             /* Timeout. */
             break;
@@ -917,7 +909,7 @@ TEST( MqttTest, MQTT_Subscribe_Publish_With_Qos_0 )
     {
         xMQTTStatus = MQTT_ProcessLoop( &context );
 
-        if( FRTest_GetTimeMs() > ( entryTime + MQTT_PROCESS_LOOP_TIMEOUT_MS ) )
+        if( FRTest_GetTimeMs() > ( entryTime + MQTT_TEST_PROCESS_LOOP_TIMEOUT_MS ) )
         {
             /* Timeout. */
             break;
@@ -955,7 +947,7 @@ TEST( MqttTest, MQTT_Subscribe_Publish_With_Qos_1 )
     {
         xMQTTStatus = MQTT_ProcessLoop( &context );
 
-        if( FRTest_GetTimeMs() > ( entryTime + MQTT_PROCESS_LOOP_TIMEOUT_MS ) )
+        if( FRTest_GetTimeMs() > ( entryTime + MQTT_TEST_PROCESS_LOOP_TIMEOUT_MS ) )
         {
             /* Timeout. */
             break;
@@ -997,12 +989,12 @@ TEST( MqttTest, MQTT_Subscribe_Publish_With_Qos_1 )
     {
         xMQTTStatus = MQTT_ProcessLoop( &context );
 
-        if( FRTest_GetTimeMs() > ( entryTime + MQTT_PROCESS_LOOP_TIMEOUT_MS ) )
+        if( FRTest_GetTimeMs() > ( entryTime + MQTT_TEST_PROCESS_LOOP_TIMEOUT_MS ) )
         {
             /* Timeout. */
             break;
         }
-        else if( ( receivedPubAck != 0 ) && ( incomingInfo.topicNameLength > 0 ) )
+        else if( ( receivedPubAck != 0 ) && ( incomingInfo.topicNameLength > 0 ) && ( strncmp( TEST_MQTT_TOPIC, incomingInfo.pTopicName, TEST_MQTT_TOPIC_LENGTH ) == 0 ) )
         {
             /* Both the PUBACK and the incoming publish have been received. */
             /* "incomingInfo.topicNameLength > 0" means we got a publish message from MQTT broker.
@@ -1041,7 +1033,7 @@ TEST( MqttTest, MQTT_Subscribe_Publish_With_Qos_1 )
     {
         xMQTTStatus = MQTT_ProcessLoop( &context );
 
-        if( FRTest_GetTimeMs() > ( entryTime + MQTT_PROCESS_LOOP_TIMEOUT_MS ) )
+        if( FRTest_GetTimeMs() > ( entryTime + MQTT_TEST_PROCESS_LOOP_TIMEOUT_MS ) )
         {
             /* Timeout. */
             break;
@@ -1096,7 +1088,7 @@ TEST( MqttTest, MQTT_Connect_LWT )
     {
         xMQTTStatus = MQTT_ProcessLoop( &context );
 
-        if( FRTest_GetTimeMs() > ( entryTime + MQTT_PROCESS_LOOP_TIMEOUT_MS ) )
+        if( FRTest_GetTimeMs() > ( entryTime + MQTT_TEST_PROCESS_LOOP_TIMEOUT_MS ) )
         {
             /* Timeout. */
             break;
@@ -1126,12 +1118,12 @@ TEST( MqttTest, MQTT_Connect_LWT )
     {
         xMQTTStatus = MQTT_ProcessLoop( &context );
 
-        if( FRTest_GetTimeMs() > ( entryTime + ( MQTT_PROCESS_LOOP_TIMEOUT_MS * 2 ) ) )
+        if( FRTest_GetTimeMs() > ( entryTime + ( MQTT_TEST_PROCESS_LOOP_TIMEOUT_MS * 2 ) ) )
         {
             /* Timeout. */
             break;
         }
-        else if( incomingInfo.topicNameLength > 0 )
+        else if( ( incomingInfo.topicNameLength > 0 ) && ( strncmp( TEST_MQTT_LWT_TOPIC, incomingInfo.pTopicName, TEST_MQTT_LWT_TOPIC_LENGTH ) == 0 ) )
         {
             /* Some data was received on the LWT topic. */
             /* "incomingInfo.topicNameLength > 0" means we got a publish message from MQTT broker.
@@ -1169,7 +1161,7 @@ TEST( MqttTest, MQTT_Connect_LWT )
     {
         xMQTTStatus = MQTT_ProcessLoop( &context );
 
-        if( FRTest_GetTimeMs() > ( entryTime + MQTT_PROCESS_LOOP_TIMEOUT_MS ) )
+        if( FRTest_GetTimeMs() > ( entryTime + MQTT_TEST_PROCESS_LOOP_TIMEOUT_MS ) )
         {
             /* Timeout. */
             break;
@@ -1272,7 +1264,7 @@ TEST( MqttTest, MQTT_Resend_Unacked_Publish_QoS1 )
     {
         xMQTTStatus = MQTT_ProcessLoop( &context );
 
-        if( FRTest_GetTimeMs() > ( entryTime + ( MQTT_PROCESS_LOOP_TIMEOUT_MS * 2 ) ) )
+        if( FRTest_GetTimeMs() > ( entryTime + ( MQTT_TEST_PROCESS_LOOP_TIMEOUT_MS * 2 ) ) )
         {
             /* Timeout. */
             break;
@@ -1318,7 +1310,7 @@ TEST( MqttTest, MQTT_Resend_Unacked_Publish_QoS1 )
     {
         xMQTTStatus = MQTT_ProcessLoop( &context );
 
-        if( FRTest_GetTimeMs() > ( entryTime + ( MQTT_PROCESS_LOOP_TIMEOUT_MS * 2 ) ) )
+        if( FRTest_GetTimeMs() > ( entryTime + ( MQTT_TEST_PROCESS_LOOP_TIMEOUT_MS * 2 ) ) )
         {
             /* Timeout. */
             break;
@@ -1371,7 +1363,7 @@ TEST( MqttTest, MQTT_Restore_Session_Duplicate_Incoming_Publish_Qos1 )
     {
         xMQTTStatus = MQTT_ProcessLoop( &context );
 
-        if( FRTest_GetTimeMs() > ( entryTime + MQTT_PROCESS_LOOP_TIMEOUT_MS ) )
+        if( FRTest_GetTimeMs() > ( entryTime + MQTT_TEST_PROCESS_LOOP_TIMEOUT_MS ) )
         {
             /* Timeout. */
             break;
@@ -1409,7 +1401,7 @@ TEST( MqttTest, MQTT_Restore_Session_Duplicate_Incoming_Publish_Qos1 )
     {
         xMQTTStatus = MQTT_ProcessLoop( &context );
 
-        if( FRTest_GetTimeMs() > ( entryTime + ( MQTT_PROCESS_LOOP_TIMEOUT_MS * 2 ) ) )
+        if( FRTest_GetTimeMs() > ( entryTime + ( MQTT_TEST_PROCESS_LOOP_TIMEOUT_MS * 2 ) ) )
         {
             /* Timeout. */
             break;
@@ -1439,7 +1431,7 @@ TEST( MqttTest, MQTT_Restore_Session_Duplicate_Incoming_Publish_Qos1 )
     {
         xMQTTStatus = MQTT_ProcessLoop( &context );
 
-        if( FRTest_GetTimeMs() > ( entryTime + ( MQTT_PROCESS_LOOP_TIMEOUT_MS * 2 ) ) )
+        if( FRTest_GetTimeMs() > ( entryTime + ( MQTT_TEST_PROCESS_LOOP_TIMEOUT_MS * 2 ) ) )
         {
             /* Timeout. */
             break;
@@ -1479,7 +1471,7 @@ TEST( MqttTest, MQTT_Publish_With_Retain_Flag )
     {
         xMQTTStatus = MQTT_ProcessLoop( &context );
 
-        if( FRTest_GetTimeMs() > ( entryTime + ( MQTT_PROCESS_LOOP_TIMEOUT_MS * 2 ) ) )
+        if( FRTest_GetTimeMs() > ( entryTime + ( MQTT_TEST_PROCESS_LOOP_TIMEOUT_MS * 2 ) ) )
         {
             /* Timeout. */
             break;
@@ -1512,7 +1504,7 @@ TEST( MqttTest, MQTT_Publish_With_Retain_Flag )
     {
         xMQTTStatus = MQTT_ProcessLoop( &context );
 
-        if( FRTest_GetTimeMs() > ( entryTime + ( MQTT_PROCESS_LOOP_TIMEOUT_MS * 2 ) ) )
+        if( FRTest_GetTimeMs() > ( entryTime + ( MQTT_TEST_PROCESS_LOOP_TIMEOUT_MS * 2 ) ) )
         {
             /* Timeout. */
             break;
@@ -1557,7 +1549,7 @@ TEST( MqttTest, MQTT_Publish_With_Retain_Flag )
     {
         xMQTTStatus = MQTT_ProcessLoop( &context );
 
-        if( FRTest_GetTimeMs() > ( entryTime + ( MQTT_PROCESS_LOOP_TIMEOUT_MS * 2 ) ) )
+        if( FRTest_GetTimeMs() > ( entryTime + ( MQTT_TEST_PROCESS_LOOP_TIMEOUT_MS * 2 ) ) )
         {
             /* Timeout. */
             break;
@@ -1588,7 +1580,7 @@ TEST( MqttTest, MQTT_Publish_With_Retain_Flag )
     {
         xMQTTStatus = MQTT_ProcessLoop( &context );
 
-        if( FRTest_GetTimeMs() > ( entryTime + ( MQTT_PROCESS_LOOP_TIMEOUT_MS * 2 ) ) )
+        if( FRTest_GetTimeMs() > ( entryTime + ( MQTT_TEST_PROCESS_LOOP_TIMEOUT_MS * 2 ) ) )
         {
             /* Timeout. */
             break;
@@ -1663,7 +1655,7 @@ TEST( MqttTest, MQTT_SubUnsub_Multiple_Topics )
     {
         xMQTTStatus = MQTT_ProcessLoop( &context );
 
-        if( FRTest_GetTimeMs() > ( entryTime + MQTT_PROCESS_LOOP_TIMEOUT_MS ) )
+        if( FRTest_GetTimeMs() > ( entryTime + MQTT_TEST_PROCESS_LOOP_TIMEOUT_MS ) )
         {
             /* Timeout. */
             break;
@@ -1705,7 +1697,7 @@ TEST( MqttTest, MQTT_SubUnsub_Multiple_Topics )
         {
             xMQTTStatus = MQTT_ProcessLoop( &context );
 
-            if( FRTest_GetTimeMs() > ( entryTime + MQTT_PROCESS_LOOP_TIMEOUT_MS ) )
+            if( FRTest_GetTimeMs() > ( entryTime + MQTT_TEST_PROCESS_LOOP_TIMEOUT_MS ) )
             {
                 /* Timeout. */
                 break;
@@ -1755,7 +1747,7 @@ TEST( MqttTest, MQTT_SubUnsub_Multiple_Topics )
     {
         xMQTTStatus = MQTT_ProcessLoop( &context );
 
-        if( FRTest_GetTimeMs() > ( entryTime + MQTT_PROCESS_LOOP_TIMEOUT_MS ) )
+        if( FRTest_GetTimeMs() > ( entryTime + MQTT_TEST_PROCESS_LOOP_TIMEOUT_MS ) )
         {
             /* Timeout. */
             break;
