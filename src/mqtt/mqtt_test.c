@@ -1691,7 +1691,6 @@ TEST( MqttTest, MQTT_SubUnsub_Multiple_Topics )
         /* Reset the PUBACK flag. */
         receivedPubAck = false;
 
-        configPRINTF( ( "%u Entered1", xTaskGetTickCount() ) );
         entryTime = FRTest_GetTimeMs();
         do
         {
