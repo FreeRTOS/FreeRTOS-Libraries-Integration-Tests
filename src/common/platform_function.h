@@ -43,23 +43,6 @@ typedef void * FRTestThreadHandle_t;
 typedef void ( * FRTestThreadFunction_t )( void * pParam );
 
 /**
- * @brief Delay function to wait for at least specified amount of time.
- *
- * @param[in] delayMs Delay in milliseconds.
- */
-void FRTest_TimeDelay( uint32_t delayMs );
-
-/**
- * @brief Function to get time elapsed in milliseconds since a given epoch.
- * 
- * @note The timer should be a monotonic timer. It just needs to provide an
- * incrementing count of milliseconds elapsed since a given epoch.
- * 
- * @return Time elapsed since the given epoch in milliseconds.
- */
-uint32_t FRTest_GetTimeMs( void );
-
-/**
  * @brief Thread create function for test application.
  *
  * @param[in] threadFunc The thread function to be executed in the created thread.
@@ -80,26 +63,5 @@ FRTestThreadHandle_t FRTest_ThreadCreate( FRTestThreadFunction_t threadFunc,
  */
 int FRTest_ThreadTimedJoin( FRTestThreadHandle_t threadHandle,
                             uint32_t timeoutMs );
-
-/**
- * @brief Malloc function to allocate memory for test.
- *
- * @param[in] size Size in bytes.
- */
-void * FRTest_MemoryAlloc( size_t size );
-
-/**
- * @brief Free function to free memory allocated by FRTest_MemoryAlloc function.
- *
- * @param[in] size Size in bytes.
- */
-void FRTest_MemoryFree( void * ptr );
-
-/**
- * @brief To generate random number in INT format.
- *
- * @return A random number.
- */
-int FRTest_GenerateRandInt();
 
 #endif /* PLATFORM_FUNCTION_H */

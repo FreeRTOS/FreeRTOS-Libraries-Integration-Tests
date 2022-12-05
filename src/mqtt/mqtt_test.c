@@ -183,7 +183,7 @@
     #ifndef MQTT_SERVER_ENDPOINT
         #error "Please define MQTT_SERVER_ENDPOINT"
     #endif
-    
+
     #ifndef MQTT_SERVER_PORT
         #error "Please define MQTT_SERVER_PORT"
     #endif
@@ -779,7 +779,7 @@ TEST_SETUP( MqttTest )
     memset( &incomingInfo, 0u, sizeof( MQTTPublishInfo_t ) );
 
     /* Generate a random number to use in the client identifier. */
-    clientIdRandNumber = ( FRTest_GenerateRandInt() % ( MAX_RAND_NUMBER_FOR_CLIENT_ID + 1u ) );
+    clientIdRandNumber = ( xTaskGetTickCount() % ( MAX_RAND_NUMBER_FOR_CLIENT_ID + 1u ) );
 
     /* Establish a TCP connection with the server endpoint, then
      * establish TLS session on top of TCP connection. */
@@ -841,17 +841,17 @@ TEST( MqttTest, MQTT_Subscribe_Publish_With_Qos_0 )
      * It will be set when a SUBACK is received. */
     TEST_ASSERT_FALSE( receivedSubAck );
 
-    entryTime = FRTest_GetTimeMs();
+    entryTime = ( xTaskGetTickCount() * portTICK_PERIOD_MS );
     do
     {
         xMQTTStatus = MQTT_ProcessLoop( &context );
 
-        if( FRTest_GetTimeMs() > ( entryTime + MQTT_TEST_PROCESS_LOOP_TIMEOUT_MS ) )
+        if( ( xTaskGetTickCount() * portTICK_PERIOD_MS ) > ( entryTime + MQTT_TEST_PROCESS_LOOP_TIMEOUT_MS ) )
         {
             /* Timeout. */
             break;
         }
-            
+
     }while( ( xMQTTStatus == MQTTSuccess ) || ( xMQTTStatus == MQTTNeedMoreBytes ) );
 
     TEST_ASSERT_TRUE( ( xMQTTStatus == MQTTSuccess ) || ( xMQTTStatus == MQTTNeedMoreBytes ) );
@@ -869,18 +869,18 @@ TEST( MqttTest, MQTT_Subscribe_Publish_With_Qos_0 )
     /* Call the MQTT library for the expectation to read an incoming PUBLISH for
      * the same message that we published (as we have subscribed to the same topic). */
     TEST_ASSERT_FALSE( receivedPubAck );
-    
-    entryTime = FRTest_GetTimeMs();
+
+    entryTime = ( xTaskGetTickCount() * portTICK_PERIOD_MS );
     do
     {
         xMQTTStatus = MQTT_ProcessLoop( &context );
 
-        if( FRTest_GetTimeMs() > ( entryTime + MQTT_TEST_PROCESS_LOOP_TIMEOUT_MS ) )
+        if( ( xTaskGetTickCount() * portTICK_PERIOD_MS ) > ( entryTime + MQTT_TEST_PROCESS_LOOP_TIMEOUT_MS ) )
         {
             /* Timeout. */
             break;
         }
-            
+
     }while( ( xMQTTStatus == MQTTSuccess ) || ( xMQTTStatus == MQTTNeedMoreBytes ) );
 
     TEST_ASSERT_TRUE( ( xMQTTStatus == MQTTSuccess ) || ( xMQTTStatus == MQTTNeedMoreBytes ) );
@@ -904,17 +904,17 @@ TEST( MqttTest, MQTT_Subscribe_Publish_With_Qos_0 )
                            &context, TEST_MQTT_TOPIC, MQTTQoS0 ) );
 
     /* We expect an UNSUBACK from the broker for the unsubscribe operation. */
-    entryTime = FRTest_GetTimeMs();
+    entryTime = ( xTaskGetTickCount() * portTICK_PERIOD_MS );
     do
     {
         xMQTTStatus = MQTT_ProcessLoop( &context );
 
-        if( FRTest_GetTimeMs() > ( entryTime + MQTT_TEST_PROCESS_LOOP_TIMEOUT_MS ) )
+        if( ( xTaskGetTickCount() * portTICK_PERIOD_MS ) > ( entryTime + MQTT_TEST_PROCESS_LOOP_TIMEOUT_MS ) )
         {
             /* Timeout. */
             break;
         }
-            
+
     }while( ( xMQTTStatus == MQTTSuccess ) || ( xMQTTStatus == MQTTNeedMoreBytes ) );
 
     TEST_ASSERT_TRUE( ( xMQTTStatus == MQTTSuccess ) || ( xMQTTStatus == MQTTNeedMoreBytes ) );
@@ -942,12 +942,12 @@ TEST( MqttTest, MQTT_Subscribe_Publish_With_Qos_1 )
      * a SUBACK is received. */
     TEST_ASSERT_FALSE( receivedSubAck );
 
-    entryTime = FRTest_GetTimeMs();
+    entryTime = ( xTaskGetTickCount() * portTICK_PERIOD_MS );
     do
     {
         xMQTTStatus = MQTT_ProcessLoop( &context );
 
-        if( FRTest_GetTimeMs() > ( entryTime + MQTT_TEST_PROCESS_LOOP_TIMEOUT_MS ) )
+        if( ( xTaskGetTickCount() * portTICK_PERIOD_MS ) > ( entryTime + MQTT_TEST_PROCESS_LOOP_TIMEOUT_MS ) )
         {
             /* Timeout. */
             break;
@@ -983,13 +983,13 @@ TEST( MqttTest, MQTT_Subscribe_Publish_With_Qos_1 )
     /* Expect a PUBACK response for the PUBLISH and an incoming PUBLISH for the
      * same message that we published (as we have subscribed to the same topic). */
     TEST_ASSERT_FALSE( receivedPubAck );
-    
-    entryTime = FRTest_GetTimeMs();
+
+    entryTime = ( xTaskGetTickCount() * portTICK_PERIOD_MS );
     do
     {
         xMQTTStatus = MQTT_ProcessLoop( &context );
 
-        if( FRTest_GetTimeMs() > ( entryTime + MQTT_TEST_PROCESS_LOOP_TIMEOUT_MS ) )
+        if( ( xTaskGetTickCount() * portTICK_PERIOD_MS ) > ( entryTime + MQTT_TEST_PROCESS_LOOP_TIMEOUT_MS ) )
         {
             /* Timeout. */
             break;
@@ -1028,12 +1028,12 @@ TEST( MqttTest, MQTT_Subscribe_Publish_With_Qos_1 )
                            &context, TEST_MQTT_TOPIC, MQTTQoS1 ) );
 
     /* Expect an UNSUBACK from the broker for the unsubscribe operation. */
-    entryTime = FRTest_GetTimeMs();
+    entryTime = ( xTaskGetTickCount() * portTICK_PERIOD_MS );
     do
     {
         xMQTTStatus = MQTT_ProcessLoop( &context );
 
-        if( FRTest_GetTimeMs() > ( entryTime + MQTT_TEST_PROCESS_LOOP_TIMEOUT_MS ) )
+        if( ( xTaskGetTickCount() * portTICK_PERIOD_MS ) > ( entryTime + MQTT_TEST_PROCESS_LOOP_TIMEOUT_MS ) )
         {
             /* Timeout. */
             break;
@@ -1047,7 +1047,7 @@ TEST( MqttTest, MQTT_Subscribe_Publish_With_Qos_1 )
         {
             /* Nothing to do. */
         }
-            
+
     }while( ( xMQTTStatus == MQTTSuccess ) || ( xMQTTStatus == MQTTNeedMoreBytes ) );
 
     TEST_ASSERT_TRUE( ( xMQTTStatus == MQTTSuccess ) || ( xMQTTStatus == MQTTNeedMoreBytes ) );
@@ -1083,12 +1083,12 @@ TEST( MqttTest, MQTT_Connect_LWT )
                            &context, TEST_MQTT_LWT_TOPIC, MQTTQoS0 ) );
 
     /* Wait for the SUBACK response from the broker for the subscribe request. */
-    entryTime = FRTest_GetTimeMs();
+    entryTime = ( xTaskGetTickCount() * portTICK_PERIOD_MS );
     do
     {
         xMQTTStatus = MQTT_ProcessLoop( &context );
 
-        if( FRTest_GetTimeMs() > ( entryTime + MQTT_TEST_PROCESS_LOOP_TIMEOUT_MS ) )
+        if( ( xTaskGetTickCount() * portTICK_PERIOD_MS ) > ( entryTime + MQTT_TEST_PROCESS_LOOP_TIMEOUT_MS ) )
         {
             /* Timeout. */
             break;
@@ -1113,12 +1113,12 @@ TEST( MqttTest, MQTT_Connect_LWT )
 
     /* Run the process loop to receive the LWT. Allow some more time for the
      * server to realize the connection is closed. */
-    entryTime = FRTest_GetTimeMs();
+    entryTime = ( xTaskGetTickCount() * portTICK_PERIOD_MS );
     do
     {
         xMQTTStatus = MQTT_ProcessLoop( &context );
 
-        if( FRTest_GetTimeMs() > ( entryTime + ( MQTT_TEST_PROCESS_LOOP_TIMEOUT_MS * 2 ) ) )
+        if( ( xTaskGetTickCount() * portTICK_PERIOD_MS ) > ( entryTime + ( MQTT_TEST_PROCESS_LOOP_TIMEOUT_MS * 2 ) ) )
         {
             /* Timeout. */
             break;
@@ -1155,13 +1155,13 @@ TEST( MqttTest, MQTT_Connect_LWT )
 
     /* We expect an UNSUBACK from the broker for the unsubscribe operation. */
     TEST_ASSERT_FALSE( receivedUnsubAck );
-    
-    entryTime = FRTest_GetTimeMs();
+
+    entryTime = ( xTaskGetTickCount() * portTICK_PERIOD_MS );
     do
     {
         xMQTTStatus = MQTT_ProcessLoop( &context );
 
-        if( FRTest_GetTimeMs() > ( entryTime + MQTT_TEST_PROCESS_LOOP_TIMEOUT_MS ) )
+        if( ( xTaskGetTickCount() * portTICK_PERIOD_MS ) > ( entryTime + MQTT_TEST_PROCESS_LOOP_TIMEOUT_MS ) )
         {
             /* Timeout. */
             break;
@@ -1196,13 +1196,13 @@ TEST( MqttTest, MQTT_ProcessLoop_KeepAlive )
 
     TEST_ASSERT_EQUAL( 0, context.pingReqSendTimeMs );
 
-    entryTime = FRTest_GetTimeMs();
+    entryTime = ( xTaskGetTickCount() * portTICK_PERIOD_MS );
     do
     {
         xMQTTStatus = MQTT_ProcessLoop( &context );
 
         /* Check whether it has been more than twice the keep alive timeout. */
-        if( FRTest_GetTimeMs() > ( entryTime + ( MQTT_KEEP_ALIVE_INTERVAL_SECONDS * 2000 ) ) )
+        if( ( xTaskGetTickCount() * portTICK_PERIOD_MS ) > ( entryTime + ( MQTT_KEEP_ALIVE_INTERVAL_SECONDS * 2000 ) ) )
         {
             /* Timeout after waiting for twice the keep alive interval. */
             break;
@@ -1259,17 +1259,17 @@ TEST( MqttTest, MQTT_Resend_Unacked_Publish_QoS1 )
      * to terminated network connection.
      * The abrupt network disconnection should cause the PUBLISH packet to be left
      * in an un-acknowledged state in the MQTT context. */
-    entryTime = FRTest_GetTimeMs();
+    entryTime = ( xTaskGetTickCount() * portTICK_PERIOD_MS );
     do
     {
         xMQTTStatus = MQTT_ProcessLoop( &context );
 
-        if( FRTest_GetTimeMs() > ( entryTime + ( MQTT_TEST_PROCESS_LOOP_TIMEOUT_MS * 2 ) ) )
+        if( ( xTaskGetTickCount() * portTICK_PERIOD_MS ) > ( entryTime + ( MQTT_TEST_PROCESS_LOOP_TIMEOUT_MS * 2 ) ) )
         {
             /* Timeout. */
             break;
         }
-            
+
     }while( ( xMQTTStatus == MQTTSuccess ) || ( xMQTTStatus == MQTTNeedMoreBytes ) );
 
     TEST_ASSERT_EQUAL( MQTTRecvFailed, xMQTTStatus );
@@ -1304,13 +1304,13 @@ TEST( MqttTest, MQTT_Resend_Unacked_Publish_QoS1 )
 
     /* Complete the QoS 1 PUBLISH resend operation. */
     TEST_ASSERT_FALSE( receivedPubAck );
-    
-    entryTime = FRTest_GetTimeMs();
+
+    entryTime = ( xTaskGetTickCount() * portTICK_PERIOD_MS );
     do
     {
         xMQTTStatus = MQTT_ProcessLoop( &context );
 
-        if( FRTest_GetTimeMs() > ( entryTime + ( MQTT_TEST_PROCESS_LOOP_TIMEOUT_MS * 2 ) ) )
+        if( ( xTaskGetTickCount() * portTICK_PERIOD_MS ) > ( entryTime + ( MQTT_TEST_PROCESS_LOOP_TIMEOUT_MS * 2 ) ) )
         {
             /* Timeout. */
             break;
@@ -1324,7 +1324,7 @@ TEST( MqttTest, MQTT_Resend_Unacked_Publish_QoS1 )
         {
             /* Nothing to be done for now. */
         }
-            
+
     }while( ( xMQTTStatus == MQTTSuccess ) || ( xMQTTStatus == MQTTNeedMoreBytes ) );
 
     TEST_ASSERT_TRUE( ( xMQTTStatus == MQTTSuccess ) || ( xMQTTStatus == MQTTNeedMoreBytes ) );
@@ -1357,13 +1357,13 @@ TEST( MqttTest, MQTT_Restore_Session_Duplicate_Incoming_Publish_Qos1 )
     TEST_ASSERT_EQUAL( MQTTSuccess, subscribeToTopic(
                            &context, TEST_MQTT_TOPIC, MQTTQoS1 ) );
     TEST_ASSERT_FALSE( receivedSubAck );
-    
-    entryTime = FRTest_GetTimeMs();
+
+    entryTime = ( xTaskGetTickCount() * portTICK_PERIOD_MS );
     do
     {
         xMQTTStatus = MQTT_ProcessLoop( &context );
 
-        if( FRTest_GetTimeMs() > ( entryTime + MQTT_TEST_PROCESS_LOOP_TIMEOUT_MS ) )
+        if( ( xTaskGetTickCount() * portTICK_PERIOD_MS ) > ( entryTime + MQTT_TEST_PROCESS_LOOP_TIMEOUT_MS ) )
         {
             /* Timeout. */
             break;
@@ -1395,18 +1395,18 @@ TEST( MqttTest, MQTT_Restore_Session_Duplicate_Incoming_Publish_Qos1 )
     /* Disconnect on receiving the incoming PUBLISH packet from the broker so that
      * an acknowledgement cannot be sent to the broker. */
     packetTypeForDisconnection = MQTT_PACKET_TYPE_PUBLISH;
-    
-    entryTime = FRTest_GetTimeMs();
+
+    entryTime = ( xTaskGetTickCount() * portTICK_PERIOD_MS );
     do
     {
         xMQTTStatus = MQTT_ProcessLoop( &context );
 
-        if( FRTest_GetTimeMs() > ( entryTime + ( MQTT_TEST_PROCESS_LOOP_TIMEOUT_MS * 2 ) ) )
+        if( ( xTaskGetTickCount() * portTICK_PERIOD_MS ) > ( entryTime + ( MQTT_TEST_PROCESS_LOOP_TIMEOUT_MS * 2 ) ) )
         {
             /* Timeout. */
             break;
         }
-            
+
     }while( ( xMQTTStatus == MQTTSuccess ) || ( xMQTTStatus == MQTTNeedMoreBytes ) );
 
     TEST_ASSERT_EQUAL( MQTTSendFailed, xMQTTStatus );
@@ -1414,7 +1414,7 @@ TEST( MqttTest, MQTT_Restore_Session_Duplicate_Incoming_Publish_Qos1 )
     /* Make sure that a record was created for the incoming PUBLISH packet. */
     TEST_ASSERT_NOT_EQUAL( MQTT_PACKET_ID_INVALID, context.incomingPublishRecords[ 0 ].packetId );
 
-    FRTest_TimeDelay( 30000 );
+    vTaskDelay( pdMS_TO_TICKS( 30000 );
 
     /* We will re-establish an MQTT over TLS connection with the broker to restore
      * the persistent session. */
@@ -1426,17 +1426,17 @@ TEST( MqttTest, MQTT_Restore_Session_Duplicate_Incoming_Publish_Qos1 )
 
     /* Process the duplicate incoming QoS 1 PUBLISH that will be sent by the broker
      * to re-attempt the PUBLISH operation. */
-    entryTime = FRTest_GetTimeMs();
+    entryTime = ( xTaskGetTickCount() * portTICK_PERIOD_MS );
     do
     {
         xMQTTStatus = MQTT_ProcessLoop( &context );
 
-        if( FRTest_GetTimeMs() > ( entryTime + ( MQTT_TEST_PROCESS_LOOP_TIMEOUT_MS * 2 ) ) )
+        if( ( xTaskGetTickCount() * portTICK_PERIOD_MS ) > ( entryTime + ( MQTT_TEST_PROCESS_LOOP_TIMEOUT_MS * 2 ) ) )
         {
             /* Timeout. */
             break;
         }
-            
+
     }while( ( xMQTTStatus == MQTTSuccess ) || ( xMQTTStatus == MQTTNeedMoreBytes ) );
 
     TEST_ASSERT_TRUE( ( xMQTTStatus == MQTTSuccess ) || ( xMQTTStatus == MQTTNeedMoreBytes ) );
@@ -1466,12 +1466,12 @@ TEST( MqttTest, MQTT_Publish_With_Retain_Flag )
     /* Complete the QoS 1 PUBLISH operation. */
     TEST_ASSERT_FALSE( receivedPubAck );
 
-    entryTime = FRTest_GetTimeMs();
+    entryTime = ( xTaskGetTickCount() * portTICK_PERIOD_MS );
     do
     {
         xMQTTStatus = MQTT_ProcessLoop( &context );
 
-        if( FRTest_GetTimeMs() > ( entryTime + ( MQTT_TEST_PROCESS_LOOP_TIMEOUT_MS * 2 ) ) )
+        if( ( xTaskGetTickCount() * portTICK_PERIOD_MS ) > ( entryTime + ( MQTT_TEST_PROCESS_LOOP_TIMEOUT_MS * 2 ) ) )
         {
             /* Timeout. */
             break;
@@ -1499,12 +1499,12 @@ TEST( MqttTest, MQTT_Publish_With_Retain_Flag )
 
     TEST_ASSERT_FALSE( receivedRetainedMessage );
 
-    entryTime = FRTest_GetTimeMs();
+    entryTime = ( xTaskGetTickCount() * portTICK_PERIOD_MS );
     do
     {
         xMQTTStatus = MQTT_ProcessLoop( &context );
 
-        if( FRTest_GetTimeMs() > ( entryTime + ( MQTT_TEST_PROCESS_LOOP_TIMEOUT_MS * 2 ) ) )
+        if( ( xTaskGetTickCount() * portTICK_PERIOD_MS ) > ( entryTime + ( MQTT_TEST_PROCESS_LOOP_TIMEOUT_MS * 2 ) ) )
         {
             /* Timeout. */
             break;
@@ -1544,12 +1544,12 @@ TEST( MqttTest, MQTT_Publish_With_Retain_Flag )
 
     /* Complete the QoS 1 PUBLISH operation. */
     TEST_ASSERT_FALSE( receivedPubAck );
-    entryTime = FRTest_GetTimeMs();
+    entryTime = ( xTaskGetTickCount() * portTICK_PERIOD_MS );
     do
     {
         xMQTTStatus = MQTT_ProcessLoop( &context );
 
-        if( FRTest_GetTimeMs() > ( entryTime + ( MQTT_TEST_PROCESS_LOOP_TIMEOUT_MS * 2 ) ) )
+        if( ( xTaskGetTickCount() * portTICK_PERIOD_MS ) > ( entryTime + ( MQTT_TEST_PROCESS_LOOP_TIMEOUT_MS * 2 ) ) )
         {
             /* Timeout. */
             break;
@@ -1575,12 +1575,12 @@ TEST( MqttTest, MQTT_Publish_With_Retain_Flag )
                            &context, TEST_MQTT_TOPIC, MQTTQoS1 ) );
     TEST_ASSERT_FALSE( receivedSubAck );
 
-    entryTime = FRTest_GetTimeMs();
+    entryTime = ( xTaskGetTickCount() * portTICK_PERIOD_MS );
     do
     {
         xMQTTStatus = MQTT_ProcessLoop( &context );
 
-        if( FRTest_GetTimeMs() > ( entryTime + ( MQTT_TEST_PROCESS_LOOP_TIMEOUT_MS * 2 ) ) )
+        if( ( xTaskGetTickCount() * portTICK_PERIOD_MS ) > ( entryTime + ( MQTT_TEST_PROCESS_LOOP_TIMEOUT_MS * 2 ) ) )
         {
             /* Timeout. */
             break;
@@ -1650,12 +1650,12 @@ TEST( MqttTest, MQTT_SubUnsub_Multiple_Topics )
 
     /* Expect a SUBACK from the broker for the subscribe operation. */
     TEST_ASSERT_FALSE( receivedSubAck );
-    entryTime = FRTest_GetTimeMs();
+    entryTime = ( xTaskGetTickCount() * portTICK_PERIOD_MS );
     do
     {
         xMQTTStatus = MQTT_ProcessLoop( &context );
 
-        if( FRTest_GetTimeMs() > ( entryTime + MQTT_TEST_PROCESS_LOOP_TIMEOUT_MS ) )
+        if( ( xTaskGetTickCount() * portTICK_PERIOD_MS ) > ( entryTime + MQTT_TEST_PROCESS_LOOP_TIMEOUT_MS ) )
         {
             /* Timeout. */
             break;
@@ -1691,12 +1691,12 @@ TEST( MqttTest, MQTT_SubUnsub_Multiple_Topics )
         /* Reset the PUBACK flag. */
         receivedPubAck = false;
 
-        entryTime = FRTest_GetTimeMs();
+        entryTime = ( xTaskGetTickCount() * portTICK_PERIOD_MS );
         do
         {
             xMQTTStatus = MQTT_ProcessLoop( &context );
 
-            if( FRTest_GetTimeMs() > ( entryTime + MQTT_TEST_PROCESS_LOOP_TIMEOUT_MS ) )
+            if( ( xTaskGetTickCount() * portTICK_PERIOD_MS ) > ( entryTime + MQTT_TEST_PROCESS_LOOP_TIMEOUT_MS ) )
             {
                 /* Timeout. */
                 break;
@@ -1741,12 +1741,12 @@ TEST( MqttTest, MQTT_SubUnsub_Multiple_Topics )
     receivedUnsubAck = false;
 
     /* Expect an UNSUBACK from the broker for the unsubscribe operation. */
-    entryTime = FRTest_GetTimeMs();
+    entryTime = ( xTaskGetTickCount() * portTICK_PERIOD_MS );
     do
     {
         xMQTTStatus = MQTT_ProcessLoop( &context );
 
-        if( FRTest_GetTimeMs() > ( entryTime + MQTT_TEST_PROCESS_LOOP_TIMEOUT_MS ) )
+        if( ( xTaskGetTickCount() * portTICK_PERIOD_MS ) > ( entryTime + MQTT_TEST_PROCESS_LOOP_TIMEOUT_MS ) )
         {
             /* Timeout. */
             break;

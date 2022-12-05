@@ -311,7 +311,7 @@ static CK_SLOT_ID prvGetTestSlotId( void )
     TEST_ASSERT_GREATER_THAN_MESSAGE( 0, xSlotCount, "Slot count incorrectly updated." );
 
     /* Allocate memory to receive the list of slots. */
-    pxSlotId = FRTest_MemoryAlloc( sizeof( CK_SLOT_ID ) * ( xSlotCount ) );
+    pxSlotId = pvPortMalloc( sizeof( CK_SLOT_ID ) * ( xSlotCount ) );
     TEST_ASSERT_MESSAGE( ( NULL != pxSlotId ), "Failed malloc memory for slot list." );
 
     /* Call C_GetSlotList again to receive all slots with tokens present. */
@@ -319,7 +319,7 @@ static CK_SLOT_ID prvGetTestSlotId( void )
     TEST_ASSERT_MESSAGE( ( CKR_OK == xResult ), "Failed to get slot count." );
     xSlotId = pxSlotId[ PKCS11_TEST_SLOT_NUMBER ];
 
-    FRTest_MemoryFree( pxSlotId );
+    vPortFree( pxSlotId );
     return xSlotId;
 }
 
@@ -895,7 +895,7 @@ TEST( Full_PKCS11_StartFinish, PKCS11_GetSlotList )
     TEST_ASSERT_GREATER_THAN_MESSAGE( 0, xSlotCount, "Slot count incorrectly updated." );
 
     /* Allocate memory to receive the list of slots, plus one extra. */
-    pxSlotId = FRTest_MemoryAlloc( sizeof( CK_SLOT_ID ) * ( xSlotCount + 1 ) );
+    pxSlotId = pvPortMalloc( sizeof( CK_SLOT_ID ) * ( xSlotCount + 1 ) );
     TEST_ASSERT_MESSAGE( ( NULL != pxSlotId ), "Failed malloc memory for slot list." );
 
     if( TEST_PROTECT() )
@@ -926,7 +926,7 @@ TEST( Full_PKCS11_StartFinish, PKCS11_GetSlotList )
     }
 
     /* Free previous allocated memory. */
-    FRTest_MemoryFree( pxSlotId );
+    vPortFree( pxSlotId );
 }
 
 /*-----------------------------------------------------------*/
@@ -1646,7 +1646,7 @@ static void prvTestRsaGetAttributeValue( provisionMethod_t testProvisionMethod )
     if( testProvisionMethod == eProvisionImportPrivateKey )
     {
         /* Verify the imported certificate. */
-        pucDerObject = FRTest_MemoryAlloc( sizeof( cValidRSACertificate ) );
+        pucDerObject = pvPortMalloc( sizeof( cValidRSACertificate ) );
         TEST_ASSERT_MESSAGE( pucDerObject != NULL, "Allocate memory for RSA certificate failed." );
         xDerLen = sizeof( cValidRSACertificate );
 
@@ -1661,7 +1661,7 @@ static void prvTestRsaGetAttributeValue( provisionMethod_t testProvisionMethod )
         }
 
         /* Free the allocated memory and compare. */
-        FRTest_MemoryFree( pucDerObject );
+        vPortFree( pucDerObject );
         pucDerObject = NULL;
 
         if( ( lConversionReturn != 0 ) || ( lImportKeyCompare != 0 ) )
@@ -2470,7 +2470,7 @@ static void prvTestEcSign( provisionMethod_t testProvisionMethod )
     TEST_ASSERT_MESSAGE( ( CKR_OK == xResult ), "Failed to query for public key length" );
     TEST_ASSERT_MESSAGE( ( 0 != xPubKeyQuery.ulValueLen ), "The size of the public key was an unexpected value." );
 
-    pxPublicKey = FRTest_MemoryAlloc( xPubKeyQuery.ulValueLen );
+    pxPublicKey = pvPortMalloc( xPubKeyQuery.ulValueLen );
     TEST_ASSERT_MESSAGE( ( NULL != pxPublicKey ), "Failed to allocate space for public key." );
 
     if( TEST_PROTECT() )
@@ -2526,7 +2526,7 @@ static void prvTestEcSign( provisionMethod_t testProvisionMethod )
 
     if( pxPublicKey != NULL )
     {
-        FRTest_MemoryFree( pxPublicKey );
+        vPortFree( pxPublicKey );
     }
 }
 
