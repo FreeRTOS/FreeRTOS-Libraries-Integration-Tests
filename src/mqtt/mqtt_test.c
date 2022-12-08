@@ -1727,6 +1727,21 @@ TEST( MqttTest, MQTT_SubUnsub_Multiple_Topics )
         TEST_ASSERT_EQUAL_MEMORY( MQTT_EXAMPLE_MESSAGE,
                                   incomingInfo.pPayload,
                                   incomingInfo.payloadLength );
+
+        /* Free memory, if allocated during test case execution. */
+        if( incomingInfo.pTopicName != NULL )
+        {
+            free( ( void * ) incomingInfo.pTopicName );
+        }
+
+        if( incomingInfo.pPayload != NULL )
+        {
+            free( ( void * ) incomingInfo.pPayload );
+        }
+
+        /* Reset the pointers to NULL. */
+        incomingInfo.pTopicName = NULL;
+        incomingInfo.pPayload = NULL;
     }
 
     globalUnsubscribePacketIdentifier = MQTT_GetPacketId( &context );
