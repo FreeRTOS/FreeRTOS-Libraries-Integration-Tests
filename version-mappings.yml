@@ -6,7 +6,7 @@ mappings:
     compatibleTestsVersions:
       - "202210.00"
       - "202210.01"
-  - freeRTOSVersion: "202211.00"
+  - freeRTOSVersion: "202212.00"
     compatibleTestsVersions:
       - "202210.01"
   - freeRTOSVersion: "202012.00-LTS"
