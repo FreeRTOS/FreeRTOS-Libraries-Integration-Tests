@@ -9,6 +9,9 @@ mappings:
   - freeRTOSVersion: "202212.00"
     compatibleTestsVersions:
       - "202210.01"
+  - freeRTOSVersion: "202212.01"
+    compatibleTestsVersions:
+      - "202210.01"
   - freeRTOSVersion: "202012.00-LTS"
     compatibleTestsVersions:
       - "202205.01"
