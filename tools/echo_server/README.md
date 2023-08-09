@@ -26,6 +26,8 @@ The JSON file contains the following options:
     1. Relative or absolute path to the server certificate generated in the credential creation prerequisite.
 1. server-key-location
     1. Relative or absolute path to the server key generated in the credential creation prerequisite.
+1. use-udp
+    1. Enable this option to run the USP echo server.
 ## Example Configuration
 ```json
 {
@@ -34,7 +36,8 @@ The JSON file contains the following options:
     "secure-connection": false,
     "server-port": "9000",
     "server-certificate-location": "./certs/server.pem",
-    "server-key-location": "./certs/server.key"
+    "server-key-location": "./certs/server.key",
+    "use-udp": false
 }
 ```
 
