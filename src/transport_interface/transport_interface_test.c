@@ -472,7 +472,7 @@ static bool prvTransportRecvData( TransportInterface_t * pTransport,
         }
 
         /* Delay to wait for the test data from the transport network. */
-        FRTest_TimeDelay( TRANSPORT_TEST_DELAY_MS );
+        vTaskDelay( pdMS_TO_TICKS( TRANSPORT_TEST_DELAY_MS ) );
     }
 
     /* Check if all the data is recevied. */
@@ -1134,7 +1134,7 @@ TEST( Full_TransportInterfaceTest, TransportSend_RemoteDisconnect )
                                      "Transport send should not have any error." );
 
     /* Delay to wait for the command send to server and server disconnection. */
-    FRTest_TimeDelay( TRANSPORT_TEST_NETWORK_DELAY_MS );
+    vTaskDelay( pdMS_TO_TICKS( TRANSPORT_TEST_NETWORK_DELAY_MS ) );
 
     /* Negative value should be returned if a network disconnection has occurred. */
     transportResult = pTestTransport->send( pNetworkContext,
@@ -1164,7 +1164,7 @@ TEST( Full_TransportInterfaceTest, TransportRecv_RemoteDisconnect )
                                      "Transport send should not have any error." );
 
     /* Delay to wait for the command send to server. */
-    FRTest_TimeDelay( TRANSPORT_TEST_NETWORK_DELAY_MS );
+    vTaskDelay( pdMS_TO_TICKS( TRANSPORT_TEST_NETWORK_DELAY_MS ) );
 
     /* Negative value should be returned if a network disconnection has occurred. */
     transportResult = pTestTransport->recv( pNetworkContext,
@@ -1597,7 +1597,7 @@ TEST( Full_TransportInterfaceTest, TransportWritev_RemoteDisconnect )
                                      "Transport writev should not have any error." );
 
     /* Delay to wait for the command send to server and server disconnection. */
-    FRTest_TimeDelay( TRANSPORT_TEST_NETWORK_DELAY_MS );
+    vTaskDelay( pdMS_TO_TICKS( TRANSPORT_TEST_NETWORK_DELAY_MS ) );
 
     /* Negative value should be returned if a network disconnection has occurred. */
     transportResult = pTestTransport->writev( pNetworkContext,

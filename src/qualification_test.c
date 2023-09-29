@@ -60,7 +60,7 @@
 
 void RunQualificationTest( void )
 {
-    FRTest_TimeDelay( TEST_START_DELAY_MS );
+    vTaskDelay( pdMS_TO_TICKS( TEST_START_DELAY_MS ) );
 
     #if ( DEVICE_ADVISOR_TEST_ENABLED == 1)
         RunDeviceAdvisorDemo();

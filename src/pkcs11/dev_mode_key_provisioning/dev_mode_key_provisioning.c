@@ -153,7 +153,7 @@ static CK_RV prvProvisionPrivateECKey( CK_SESSION_HANDLE xSession,
 
     xResult = C_GetFunctionList( &pxFunctionList );
 
-    pxD = FRTest_MemoryAlloc( EC_D_LENGTH );
+    pxD = pvPortMalloc( EC_D_LENGTH );
 
     if( ( pxD == NULL ) )
     {
@@ -213,7 +213,7 @@ static CK_RV prvProvisionPrivateECKey( CK_SESSION_HANDLE xSession,
 
     if( pxD != NULL )
     {
-        FRTest_MemoryFree( pxD );
+        vPortFree( pxD );
     }
 
     return xResult;
@@ -238,7 +238,7 @@ static CK_RV prvProvisionPrivateRSAKey( CK_SESSION_HANDLE xSession,
 
     xResult = C_GetFunctionList( &pxFunctionList );
 
-    pxRsaParams = FRTest_MemoryAlloc( sizeof( RsaParams_t ) );
+    pxRsaParams = pvPortMalloc( sizeof( RsaParams_t ) );
 
     if( pxRsaParams == NULL )
     {
@@ -312,7 +312,7 @@ static CK_RV prvProvisionPrivateRSAKey( CK_SESSION_HANDLE xSession,
 
     if( NULL != pxRsaParams )
     {
-        FRTest_MemoryFree( pxRsaParams );
+        vPortFree( pxRsaParams );
     }
 
     return xResult;
@@ -718,7 +718,7 @@ CK_RV xProvisionCertificate( CK_SESSION_HANDLE xSession,
         /* Convert the certificate to DER format if it was in PEM. The DER key
          * should be about 3/4 the size of the PEM key, so mallocing the PEM key
          * size is sufficient. */
-        pucDerObject = FRTest_MemoryAlloc( xCertificateTemplate.xValue.ulValueLen );
+        pucDerObject = pvPortMalloc( xCertificateTemplate.xValue.ulValueLen );
         xDerLen = xCertificateTemplate.xValue.ulValueLen;
 
         if( pucDerObject != NULL )
@@ -768,7 +768,7 @@ CK_RV xProvisionCertificate( CK_SESSION_HANDLE xSession,
 
     if( pucDerObject != NULL )
     {
-        FRTest_MemoryFree( pucDerObject );
+        vPortFree( pucDerObject );
     }
 
     return xResult;

@@ -11,12 +11,12 @@
 </t>6.2 [Compile and run the PKCS #11 test application](#62-compile-and-run-the-pkcs-11-test-application)<br>
 
 ## 1. Introduction
-[PKCS #11 ](https://en.wikipedia.org/wiki/PKCS_11) is a standardize API to allow application software to use, create, modify and delete cryptographic objects. 
+[PKCS #11 ](https://en.wikipedia.org/wiki/PKCS_11) is a standardize API to allow application software to use, create, modify and delete cryptographic objects.
 The benefit of PKCS #11 is that it allows the app to take advantage of offload crypto while mitigating the threats of private key cloning and theft.
 
-To keep as lean as possible, FreeRTOS uses a subset of PKCS #11 APIs. Implementers are free to integrate more than our required subset of PKCS #11, but it is optional to do so. 
+To keep as lean as possible, FreeRTOS uses a subset of PKCS #11 APIs. Implementers are free to integrate more than our required subset of PKCS #11, but it is optional to do so.
 
-The PKCS #11 API functions required by FreeRTOS are described in the following table. 
+The PKCS #11 API functions required by FreeRTOS are described in the following table.
 
 FreeRTOS Library | Required PKCS #11 API Family
 ----------------------- | ----------------------------
@@ -64,12 +64,12 @@ The following table lists the required test configurations for PKCS #11 tests. T
 FreeRTOS libraries and reference integrations needs at least one of the key function and one of the key provisioning mechanism supported by the PKCS #11 APIs. The test must enable at least one of the following configurations:
 
 * At least one of the key function configurations:
-    * PKCS11_TEST_RSA_KEY_SUPPORT 
-    *  PKCS11_TEST_EC_KEY_SUPPORT 
+    * PKCS11_TEST_RSA_KEY_SUPPORT
+    *  PKCS11_TEST_EC_KEY_SUPPORT
 * At least one of the key provisioning mechanisms:
-    *  PKCS11_TEST_IMPORT_PRIVATE_KEY_SUPPORT 
-    *  PKCS11_TEST_GENERATE_KEYPAIR_SUPPORT 
-    *  PKCS11_TEST_PREPROVISIONED_SUPPORT 
+    *  PKCS11_TEST_IMPORT_PRIVATE_KEY_SUPPORT
+    *  PKCS11_TEST_GENERATE_KEYPAIR_SUPPORT
+    *  PKCS11_TEST_PREPROVISIONED_SUPPORT
 
 
 Pre-provisioned device credential test can not be enabled with other provisioning mechanisms. It must be run in the following conditions:
@@ -110,7 +110,7 @@ The tree only lists the required files to run the PKCS #11 test.
 1. Add [FreeRTOS-Libraries-Integration-Tests](https://github.com/FreeRTOS/FreeRTOS-Libraries-Integration-Tests) as a submodule into your project. It doesn’t matter where the submodule is placed in the project, as long as it can be built.
 2. Copy **config_template/test_execution_config_template.h** and **config_template/test_param_config_template.h** to a project location in the build path, and rename them to **test_execution_config.h** and **test_param_config.h**.
 3. Include relevant files into the build system. If using CMake, **qualification_test.cmake** and **src/pkcs11_test.cmake** can be used to include relevant files.
-4. Implement the [platform functions](https://github.com/FreeRTOS/FreeRTOS-Libraries-Integration-Tests/blob/main/src/common/platform_function.h) required by PKCS #11 tests. 
+4. Implement the [platform functions](https://github.com/FreeRTOS/FreeRTOS-Libraries-Integration-Tests/blob/main/src/common/platform_function.h) required by PKCS #11 tests.
 5. Enable the PKCS #11 test config, **PKCS11_TEST_ENABLED**, in **test_execution_config.h**.
 6. Implement the main function and call the **RunQualificationTest**.
 
@@ -129,14 +129,14 @@ int FRTest_ThreadTimedJoin( FRTestThreadHandle_t threadHandle, uint32_t timeoutM
 {
     /* Thread timed wait function for multithreaded test. */
 }
-void * FRTest_MemoryAlloc( size_t size )
+void * pvPortMalloc( size_t size )
 {
     /* Malloc function to allocate memory for test. */
 }
 
-void FRTest_MemoryFree( void * ptr )
+void vPortFree( void * ptr )
 {
-    /* Free function to free memory allocated by FRTest_MemoryAlloc function. */
+    /* Free function to free memory allocated by pvPortMalloc function. */
 }
 
 void yourMainFunction( void )

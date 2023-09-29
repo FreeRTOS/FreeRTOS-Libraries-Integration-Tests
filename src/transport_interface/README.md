@@ -156,13 +156,6 @@ typedef void * FRTestThreadHandle_t;
 typedef void ( * FRTestThreadFunction_t )( void * pParam );
 
 /**
- * @brief Delay function to wait for at least specified amount of time.
- *
- * @param[in] delayMs Delay in milliseconds.
- */
-void FRTest_TimeDelay( uint32_t delayMs );
-
-/**
  * @brief Thread create function for test application.
  *
  * @param[in] threadFunc The thread function to be executed in the created thread.
@@ -221,11 +214,6 @@ static NetworkConnectStatus_t prvTransportNetworkConnect( void * pNetworkContext
 static void prvTransportNetworkDisconnect( void * pNetworkContext )
 {
     /* Disconnect the transport network. */
-}
-
-void FRTest_TimeDelay( uint32_t delayMs )
-{
-    /* Delay function to wait for the response from network. */
 }
 
 FRTestThreadHandle_t FRTest_ThreadCreate( FRTestThreadFunction_t threadFunc, void * pParam )
@@ -288,7 +276,7 @@ The echo server needs a configuration file. The following is echo server configu
     * Relative or absolute path to the server key generated in the credential creation prerequisite.
 
 
-To run the echo serve without TLS, the following configuraition file, "example_config.json", can be referenced as an example to run the echo server. 
+To run the echo serve without TLS, the following configuraition file, "example_config.json", can be referenced as an example to run the echo server.
 
 ```
 {
