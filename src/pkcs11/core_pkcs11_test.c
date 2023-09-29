@@ -1405,6 +1405,7 @@ TEST_GROUP_RUNNER( Full_PKCS11_RSA )
         RUN_TEST_CASE( Full_PKCS11_RSA, PKCS11_RSA_FindObject );
         RUN_TEST_CASE( Full_PKCS11_RSA, PKCS11_RSA_GetAttributeValue );
         RUN_TEST_CASE( Full_PKCS11_RSA, PKCS11_RSA_Sign );
+        RUN_TEST_CASE( Full_PKCS11_RSA, PKCS11_RSA_Verify );
 
         /* RSA multi-threaded test. */
         RUN_TEST_CASE( Full_PKCS11_RSA, PKCS11_RSA_FindObjectMultiThread );
@@ -1742,6 +1743,12 @@ static void prvTestRsaSign( provisionMethod_t testProvisionMethod )
     TEST_ASSERT_MESSAGE( ( CKR_OK == xResult ), "Failed to RSA Sign." );
     TEST_ASSERT_MESSAGE( ( pkcs11RSA_2048_SIGNATURE_LENGTH == xSignatureLength ), "RSA Sign should return needed signature buffer length when pucSignature is NULL." );
 
+    xResult = pxGlobalFunctionList->C_VerifyInit( xGlobalSession, &xMechanism, xPublicKeyHandle );
+    TEST_ASSERT_MESSAGE( ( CKR_OK == xResult ), "VerifyInit failed." );
+
+    xResult = pxGlobalFunctionList->C_Verify( xGlobalSession, xHashedMessage, pkcs11SHA256_DIGEST_LENGTH, xSignature, xSignatureLength );
+    TEST_ASSERT_MESSAGE( ( CKR_OK == xResult ), "Verify failed." );
+
     mbedtls_pk_init( &xMbedPkContext );
 
     #if MBEDTLS_VERSION_NUMBER >= 0x03000000
@@ -1797,6 +1804,132 @@ static void prvTestRsaSign( provisionMethod_t testProvisionMethod )
 TEST( Full_PKCS11_RSA, PKCS11_RSA_Sign )
 {
     prvRsaObjectTestHelper( prvTestRsaSign );
+}
+
+/*-----------------------------------------------------------*/
+
+static void prvTestRsaVerify( provisionMethod_t testProvisionMethod )
+{
+    CK_RV xResult;
+    CK_OBJECT_HANDLE xPrivateKeyHandle;
+    CK_OBJECT_HANDLE xPublicKeyHandle;
+    CK_OBJECT_HANDLE xCertificateHandle;
+    CK_MECHANISM xMechanism;
+    CK_BYTE xHashedMessage[ pkcs11SHA256_DIGEST_LENGTH ] = { 0 };
+    CK_BYTE xSignature[ pkcs11RSA_2048_SIGNATURE_LENGTH ] = { 0 };
+    CK_ULONG xSignatureLength;
+    CK_BYTE xHashPlusOid[ pkcs11RSA_SIGNATURE_INPUT_LENGTH ];
+
+    /* Verify the signature with mbedTLS */
+    mbedtls_pk_context xMbedPkContext;
+    int lMbedTLSResult;
+
+    #if MBEDTLS_VERSION_NUMBER >= 0x03000000
+        mbedtls_entropy_context xEntropyContext;
+        mbedtls_ctr_drbg_context xDrbgContext;
+    #endif
+
+    prvFindObjectTest( &xPrivateKeyHandle, &xCertificateHandle, &xPublicKeyHandle );
+
+    xResult = vAppendSHA256AlgorithmIdentifierSequence( xHashedMessage, xHashPlusOid );
+    TEST_ASSERT_MESSAGE( ( CKR_OK == xResult ), "Failed to append hash algorithm to RSA signature material." );
+
+    /* The RSA X.509 mechanism assumes a pre-hashed input. */
+    xMechanism.mechanism = CKM_RSA_PKCS;
+    xMechanism.pParameter = NULL;
+    xMechanism.ulParameterLen = 0;
+    xResult = pxGlobalFunctionList->C_SignInit( xGlobalSession, &xMechanism, xPrivateKeyHandle );
+    TEST_ASSERT_MESSAGE( ( CKR_OK == xResult ), "Failed to SignInit RSA." );
+
+    xSignatureLength = sizeof( xSignature );
+    xResult = pxGlobalFunctionList->C_Sign( xGlobalSession, xHashPlusOid, sizeof( xHashPlusOid ), xSignature, &xSignatureLength );
+    TEST_ASSERT_MESSAGE( ( CKR_OK == xResult ), "Failed to RSA Sign." );
+    TEST_ASSERT_MESSAGE( ( pkcs11RSA_2048_SIGNATURE_LENGTH == xSignatureLength ), "RSA Sign returned an unexpected signature length." );
+
+    xResult = pxGlobalFunctionList->C_SignInit( xGlobalSession, &xMechanism, xPrivateKeyHandle );
+    TEST_ASSERT_MESSAGE( ( CKR_OK == xResult ), "Failed to SignInit RSA." );
+
+    xResult = pxGlobalFunctionList->C_Sign( xGlobalSession, xHashPlusOid, sizeof( xHashPlusOid ), NULL, &xSignatureLength );
+    TEST_ASSERT_MESSAGE( ( CKR_OK == xResult ), "Failed to RSA Sign." );
+    TEST_ASSERT_MESSAGE( ( pkcs11RSA_2048_SIGNATURE_LENGTH == xSignatureLength ), "RSA Sign should return needed signature buffer length when pucSignature is NULL." );
+
+    xResult = pxGlobalFunctionList->C_VerifyInit( xGlobalSession, &xMechanism, xPublicKeyHandle );
+    TEST_ASSERT_MESSAGE( ( CKR_OK == xResult ), "VerifyInit failed." );
+
+    xResult = pxGlobalFunctionList->C_Verify( xGlobalSession, xHashedMessage, pkcs11SHA256_DIGEST_LENGTH, xSignature, xSignatureLength );
+    TEST_ASSERT_MESSAGE( ( CKR_OK == xResult ), "Verify failed." );
+
+    mbedtls_pk_init( &xMbedPkContext );
+
+    #if MBEDTLS_VERSION_NUMBER >= 0x03000000
+        /* Initialize the RNG. */
+        mbedtls_entropy_init( &xEntropyContext );
+        mbedtls_ctr_drbg_init( &xDrbgContext );
+    #endif
+
+    if( TEST_PROTECT() )
+    {
+        mbedtls_rsa_context *rsa_context = NULL;
+
+        #if MBEDTLS_VERSION_NUMBER < 0x03000000
+            lMbedTLSResult = mbedtls_pk_parse_key( ( mbedtls_pk_context * ) &xMbedPkContext,
+                                                   ( const unsigned char * ) cValidRSAPrivateKey,
+                                                   sizeof( cValidRSAPrivateKey ),
+                                                   NULL,
+                                                   0 );
+            TEST_ASSERT_MESSAGE( ( 0 == lMbedTLSResult ), "mbedTLS failed to parse valid RSA key (verification)" );
+
+            rsa_context = mbedtls_pk_rsa( xMbedPkContext );
+
+            mbedtls_rsa_pkcs1_sign( rsa_context, NULL, NULL, MBEDTLS_RSA_PRIVATE, MBEDTLS_MD_SHA256, pkcs11RSA_SIGNATURE_INPUT_LENGTH,
+                xHashPlusOid, xSignature );
+
+            xResult = pxGlobalFunctionList->C_VerifyInit( xGlobalSession, &xMechanism, xPublicKeyHandle );
+            TEST_ASSERT_MESSAGE( ( CKR_OK == xResult ), "VerifyInit failed." );
+
+            xResult = pxGlobalFunctionList->C_Verify( xGlobalSession, xHashedMessage, pkcs11SHA256_DIGEST_LENGTH, xSignature, xSignatureLength );
+            TEST_ASSERT_MESSAGE( ( CKR_OK == xResult ), "Verify failed." );
+
+        #else
+            lMbedTLSResult = mbedtls_ctr_drbg_seed( &xDrbgContext, mbedtls_entropy_func, &xEntropyContext, NULL, 0 );
+            TEST_ASSERT_MESSAGE( ( 0 == lMbedTLSResult ), "Failed to initialize DRBG" );
+
+            lMbedTLSResult = mbedtls_pk_parse_key( ( mbedtls_pk_context * ) &xMbedPkContext,
+                                                   ( const unsigned char * ) cValidRSAPrivateKey,
+                                                   sizeof( cValidRSAPrivateKey ),
+                                                   NULL,
+                                                   0,
+                                                   mbedtls_ctr_drbg_random, &xDrbgContext );
+            TEST_ASSERT_MESSAGE( ( 0 == lMbedTLSResult ), "mbedTLS failed to parse valid RSA key (verification)" );
+
+            rsa_context = mbedtls_pk_rsa( xMbedPkContext );
+
+            mbedtls_rsa_pkcs1_sign( rsa_context, NULL, NULL, MBEDTLS_RSA_PRIVATE, MBEDTLS_MD_SHA256, pkcs11RSA_SIGNATURE_INPUT_LENGTH,
+                xHashPlusOid, xSignature );
+
+            xResult = pxGlobalFunctionList->C_VerifyInit( xGlobalSession, &xMechanism, xPublicKeyHandle );
+            TEST_ASSERT_MESSAGE( ( CKR_OK == xResult ), "VerifyInit failed." );
+
+            xResult = pxGlobalFunctionList->C_Verify( xGlobalSession, xHashedMessage, pkcs11SHA256_DIGEST_LENGTH, xSignature, xSignatureLength );
+            TEST_ASSERT_MESSAGE( ( CKR_OK == xResult ), "Verify failed." );
+
+        #endif /* MBEDTLS_VERSION_NUMBER < 0x03000000 */
+    }
+
+    #if MBEDTLS_VERSION_NUMBER >= 0x03000000
+        /* Free the RNG. */
+        mbedtls_ctr_drbg_free( &xDrbgContext );
+        mbedtls_entropy_free( &xEntropyContext );
+    #endif
+
+    mbedtls_pk_free( &xMbedPkContext );
+}
+
+/*-----------------------------------------------------------*/
+
+TEST( Full_PKCS11_RSA, PKCS11_RSA_Verify )
+{
+    prvRsaObjectTestHelper( prvTestRsaVerify );
 }
 
 /*-----------------------------------------------------------*/

@@ -470,7 +470,7 @@ CK_RV xProvisionPublicKey( CK_SESSION_HANDLE xSession,
         xPublicKeyTemplate[ 0 ].pValue = &xClass;
         xPublicKeyTemplate[ 1 ].pValue = &xPublicKeyType;
         xPublicKeyTemplate[ 2 ].pValue = &xTrue;
-        xPublicKeyTemplate[ 3 ].pValue = &xModulus + 1;
+        xPublicKeyTemplate[ 3 ].pValue = &xModulus[ 1 ];
         xPublicKeyTemplate[ 4 ].pValue = &xTrue;
         xPublicKeyTemplate[ 5 ].pValue = xPublicExponent;
 
