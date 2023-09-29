@@ -57,15 +57,15 @@
     "-----END RSA PRIVATE KEY-----\n"
 
 #define RSA_TEST_VALID_PUBLIC_KEY                                        \
-    "-----BEGIN RSA PUBLIC KEY-----\n"                                   \
-    "MIIBCgKCAQEAsIqRecRxLz3PZXzZOHF7jMlB25tfv2LDGR7nGTJiey5zxd7oswih\n" \
-    "e7+26yx8medpNvX1ym9jphty+9IR053k1WGnQQ4aaDeJonqn7V50Vesw6zFx/x8L\n" \
-    "MdXFoBAkRXIL8WS5YKafC87KPnye8A0piVWUFy7+IEEaK3hQEJTzB6LC/N100XL5\n" \
-    "ykLCa4xJBOqlIvbDvJ+bKty1EBA3sStlTNuXi3nBWZbXwCB2A+ddjijFf5+gUjin\n" \
-    "r7h6e2uQeipWyiIw9NKWbvq8AG1Mj4XBoFL9wP2YTf2SQAgAzx0ySPNrIYOzBNl1\n" \
-    "YZ4lIW5sJLATES9+Z8nHi7yRDLw6x/kcVQIDAQAB\n"                         \
-    "-----END RSA PUBLIC KEY-----\n"
-
+    "-----BEGIN PUBLIC KEY-----\n"                                       \
+    "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAsIqRecRxLz3PZXzZOHF7\n" \
+    "jMlB25tfv2LDGR7nGTJiey5zxd7oswihe7+26yx8medpNvX1ym9jphty+9IR053k\n" \
+    "1WGnQQ4aaDeJonqn7V50Vesw6zFx/x8LMdXFoBAkRXIL8WS5YKafC87KPnye8A0p\n" \
+    "iVWUFy7+IEEaK3hQEJTzB6LC/N100XL5ykLCa4xJBOqlIvbDvJ+bKty1EBA3sStl\n" \
+    "TNuXi3nBWZbXwCB2A+ddjijFf5+gUjinr7h6e2uQeipWyiIw9NKWbvq8AG1Mj4XB\n" \
+    "oFL9wP2YTf2SQAgAzx0ySPNrIYOzBNl1YZ4lIW5sJLATES9+Z8nHi7yRDLw6x/kc\n" \
+    "VQIDAQAB\n" \
+    "-----END PUBLIC KEY-----\n"
 
 #define RSA_TEST_VALID_CERTIFICATE                                       \
     "-----BEGIN CERTIFICATE-----\n"                                      \
