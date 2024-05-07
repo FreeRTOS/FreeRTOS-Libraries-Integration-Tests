@@ -1635,13 +1635,19 @@ static void prvTestRsaGetAttributeValue( provisionMethod_t testProvisionMethod )
     xTemplate.pValue = NULL;
     xTemplate.ulValueLen = 0;
     xResult = pxGlobalFunctionList->C_GetAttributeValue( xGlobalSession, xCertificateHandle, &xTemplate, 1 );
+    if( testProvisionMethod == eProvisionImportPrivateKey )
+    {
     TEST_ASSERT_MESSAGE( ( CERTIFICATE_VALUE_LENGTH == xTemplate.ulValueLen ), "GetAttributeValue returned incorrect length of RSA certificate value" );
+    }
 
     /* Get the certificate value. */
     xTemplate.pValue = xCertificateValue;
     xResult = pxGlobalFunctionList->C_GetAttributeValue( xGlobalSession, xCertificateHandle, &xTemplate, 1 );
     TEST_ASSERT_MESSAGE( ( CKR_OK == xResult ), "Failed to get RSA certificate value" );
+    if( testProvisionMethod == eProvisionImportPrivateKey )
+    {
     TEST_ASSERT_MESSAGE( ( CERTIFICATE_VALUE_LENGTH == xTemplate.ulValueLen ), "GetAttributeValue returned incorrect length of RSA certificate value" );
+    }
 
     if( testProvisionMethod == eProvisionImportPrivateKey )
     {
@@ -1753,6 +1759,8 @@ static void prvTestRsaSign( provisionMethod_t testProvisionMethod )
     if( TEST_PROTECT() )
     {
         #if MBEDTLS_VERSION_NUMBER < 0x03000000
+        if( sizeof( cValidRSAPrivateKey ) > 1 )
+        {
             lMbedTLSResult = mbedtls_pk_parse_key( ( mbedtls_pk_context * ) &xMbedPkContext,
                                                    ( const unsigned char * ) cValidRSAPrivateKey,
                                                    sizeof( cValidRSAPrivateKey ),
@@ -1762,9 +1770,11 @@ static void prvTestRsaSign( provisionMethod_t testProvisionMethod )
 
             lMbedTLSResult = mbedtls_rsa_pkcs1_verify( xMbedPkContext.pk_ctx, NULL, NULL,
                 MBEDTLS_RSA_PUBLIC, MBEDTLS_MD_SHA256, 32, xHashedMessage, xSignature );
-            TEST_ASSERT_MESSAGE( ( 0 == xResult ), "mbedTLS failed to verify RSA signagure." );
-
+            TEST_ASSERT_MESSAGE( ( 0 == xResult ), "mbedTLS failed to verify RSA signature." );
+        }
         #else
+        if( sizeof( cValidRSAPrivateKey ) > 1 )
+        {
             lMbedTLSResult = mbedtls_ctr_drbg_seed( &xDrbgContext, mbedtls_entropy_func, &xEntropyContext, NULL, 0 );
             TEST_ASSERT_MESSAGE( ( 0 == lMbedTLSResult ), "Failed to initialize DRBG" );
 
@@ -1779,7 +1789,7 @@ static void prvTestRsaSign( provisionMethod_t testProvisionMethod )
             lMbedTLSResult = mbedtls_rsa_pkcs1_verify( xMbedPkContext.pk_ctx, MBEDTLS_MD_SHA256,
                 32, xHashedMessage, xSignature );
             TEST_ASSERT_MESSAGE( ( 0 == xResult ), "mbedTLS failed to verify RSA signagure." );
-
+        }
         #endif /* MBEDTLS_VERSION_NUMBER < 0x03000000 */
     }
 
