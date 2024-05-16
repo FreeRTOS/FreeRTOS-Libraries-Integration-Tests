@@ -66,18 +66,8 @@
     "YZ4lIW5sJLATES9+Z8nHi7yRDLw6x/kcVQIDAQAB\n"                         \
     "-----END RSA PUBLIC KEY-----\n"
 
-#if ( PKCS11_TEST_PREPROVISIONED_SUPPORT != 0 ) && ( PKCS11_TEST_RSA_KEY_SUPPORT != 0 )
-    #ifndef PKCS11_TEST_RSA_CERTIFICATE
-        #error "PKCS11_TEST_RSA_CERTIFICATE must be defined to verify RSA preprovision mechanism."
-    #endif
-    #ifndef PKCS11_TEST_RSA_CERTIFICATE_LENGTH
-        #error "PKCS11_TEST_RSA_CERTIFICATE_LENGTH must be defined to verify RSA preprovision mechanism."
-    #endif
-
-    #define RSA_TEST_VALID_CERTIFICATE PKCS11_TEST_RSA_CERTIFICATE
-    #define RSA_TEST_VALID_CERTIFICATE_LENGTH PKCS11_TEST_RSA_CERTIFICATE_LENGTH
-#else
-    #define RSA_TEST_VALID_CERTIFICATE                                       \
+#ifndef PKCS11_TEST_RSA_CERTIFICATE
+    #define PKCS11_TEST_RSA_CERTIFICATE                                      \
         "-----BEGIN CERTIFICATE-----\n"                                      \
         "MIIDsTCCApmgAwIBAgIJALg4YJlPspxyMA0GCSqGSIb3DQEBCwUAMG8xCzAJBgNV\n" \
         "BAYTAlVTMQswCQYDVQQIDAJXQTEQMA4GA1UEBwwHU2VhdHRsZTENMAsGA1UECgwE\n" \
@@ -99,8 +89,13 @@
         "M9KVtzFveOQKkWvb4VgOyfn7aCnEogGlWt1S0d12pBRwYjJgKrVQaGs6IiGFVtm8\n" \
         "JRLZrLL3sfgsN7L1xu//JUoTOkgxdKuYRmPuUdV2hw/VYDzcnKj7/DMXNDvgl3s7\n" \
         "5GC4F+8LFLzRrZJWs18FMLaCE+zJChw/oeSt+RS0JZDFn+uX9Q==\n"             \
-        "-----END CERTIFICATE-----\n"
-    #define RSA_TEST_VALID_CERTIFICATE_LENGTH    ( 949 )
+    "-----END CERTIFICATE-----\n"
 #endif
+#ifndef PKCS11_TEST_RSA_CERTIFICATE_LENGTH
+    #define PKCS11_TEST_RSA_CERTIFICATE_LENGTH    ( 949 )
+#endif
+
+#define RSA_TEST_VALID_CERTIFICATE PKCS11_TEST_RSA_CERTIFICATE
+#define RSA_TEST_VALID_CERTIFICATE_LENGTH PKCS11_TEST_RSA_CERTIFICATE_LENGTH
 
 #endif /* ifndef RSA_TEST_CREDENTIALS_H */
