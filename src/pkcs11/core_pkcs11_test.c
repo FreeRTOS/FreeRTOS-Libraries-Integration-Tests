@@ -56,13 +56,13 @@
 #include "mbedtls/ctr_drbg.h"
 #include "mbedtls/x509_crt.h"
 
+/* Test configuration includes. */
+#include "test_param_config.h"
+
 /* corePKCS11 test includes. */
 #include "platform_function.h"
 #include "rsa_test_credentials.h"
 #include "ecdsa_test_credentials.h"
-
-/* Test configuration includes. */
-#include "test_param_config.h"
 
 /*-----------------------------------------------------------*/
 
@@ -140,7 +140,7 @@
 /**
  * @brief Test RSA certificate value length.
  */
-#define CERTIFICATE_VALUE_LENGTH        ( 949 )
+#define CERTIFICATE_VALUE_LENGTH        ( RSA_TEST_VALID_CERTIFICATE_LENGTH )
 
 /**
  * @brief EC point length.
@@ -1636,39 +1636,37 @@ static void prvTestRsaGetAttributeValue( provisionMethod_t testProvisionMethod )
     xTemplate.pValue = NULL;
     xTemplate.ulValueLen = 0;
     xResult = pxGlobalFunctionList->C_GetAttributeValue( xGlobalSession, xCertificateHandle, &xTemplate, 1 );
+    TEST_ASSERT_MESSAGE( ( CKR_OK == xResult ), "Failed to get RSA certificate value length." );
     TEST_ASSERT_MESSAGE( ( CERTIFICATE_VALUE_LENGTH == xTemplate.ulValueLen ), "GetAttributeValue returned incorrect length of RSA certificate value" );
 
     /* Get the certificate value. */
     xTemplate.pValue = xCertificateValue;
     xResult = pxGlobalFunctionList->C_GetAttributeValue( xGlobalSession, xCertificateHandle, &xTemplate, 1 );
-    TEST_ASSERT_MESSAGE( ( CKR_OK == xResult ), "Failed to get RSA certificate value" );
+    TEST_ASSERT_MESSAGE( ( CKR_OK == xResult ), "Failed to get RSA certificate value." );
     TEST_ASSERT_MESSAGE( ( CERTIFICATE_VALUE_LENGTH == xTemplate.ulValueLen ), "GetAttributeValue returned incorrect length of RSA certificate value" );
 
-    if( testProvisionMethod == eProvisionImportPrivateKey )
+    /* Verify the imported certificate. */
+    pucDerObject = FRTest_MemoryAlloc( sizeof( cValidRSACertificate ) );
+    TEST_ASSERT_MESSAGE( pucDerObject != NULL, "Allocate memory for RSA certificate failed." );
+    xDerLen = sizeof( cValidRSACertificate );
+
+    lConversionReturn = convert_pem_to_der( ( const unsigned char * ) cValidRSACertificate,
+                                            sizeof( cValidRSACertificate ),
+                                            pucDerObject,
+                                            &xDerLen );
+
+    if( lConversionReturn == 0 )
     {
-        /* Verify the imported certificate. */
-        pucDerObject = FRTest_MemoryAlloc( sizeof( cValidRSACertificate ) );
-        TEST_ASSERT_MESSAGE( pucDerObject != NULL, "Allocate memory for RSA certificate failed." );
-        xDerLen = sizeof( cValidRSACertificate );
+        lImportKeyCompare = memcmp( xTemplate.pValue, pucDerObject, xTemplate.ulValueLen );
+    }
 
-        lConversionReturn = convert_pem_to_der( ( const unsigned char * ) cValidRSACertificate,
-                                                sizeof( cValidRSACertificate ),
-                                                pucDerObject,
-                                                &xDerLen );
+    /* Free the allocated memory and compare. */
+    FRTest_MemoryFree( pucDerObject );
+    pucDerObject = NULL;
 
-        if( lConversionReturn == 0 )
-        {
-            lImportKeyCompare = memcmp( xTemplate.pValue, pucDerObject, xTemplate.ulValueLen );
-        }
-
-        /* Free the allocated memory and compare. */
-        FRTest_MemoryFree( pucDerObject );
-        pucDerObject = NULL;
-
-        if( ( lConversionReturn != 0 ) || ( lImportKeyCompare != 0 ) )
-        {
-            TEST_FAIL_MESSAGE( "Compare imported RSA certificate failed." );
-        }
+    if( ( lConversionReturn != 0 ) || ( lImportKeyCompare != 0 ) )
+    {
+        TEST_FAIL_MESSAGE( "Compare imported RSA certificate failed." );
     }
 
     /* Get the private key handle. */
@@ -1760,6 +1758,7 @@ static void prvTestRsaSign( provisionMethod_t testProvisionMethod )
     if( TEST_PROTECT() )
     {
         #if MBEDTLS_VERSION_NUMBER < 0x03000000
+        {
             lMbedTLSResult = mbedtls_pk_parse_key( ( mbedtls_pk_context * ) &xMbedPkContext,
                                                    ( const unsigned char * ) cValidRSAPrivateKey,
                                                    sizeof( cValidRSAPrivateKey ),
@@ -1769,9 +1768,10 @@ static void prvTestRsaSign( provisionMethod_t testProvisionMethod )
 
             lMbedTLSResult = mbedtls_rsa_pkcs1_verify( xMbedPkContext.pk_ctx, NULL, NULL,
                 MBEDTLS_RSA_PUBLIC, MBEDTLS_MD_SHA256, 32, xHashedMessage, xSignature );
-            TEST_ASSERT_MESSAGE( ( 0 == xResult ), "mbedTLS failed to verify RSA signagure." );
-
+            TEST_ASSERT_MESSAGE( ( 0 == xResult ), "mbedTLS failed to verify RSA signature." );
+        }
         #else
+        {
             lMbedTLSResult = mbedtls_ctr_drbg_seed( &xDrbgContext, mbedtls_entropy_func, &xEntropyContext, NULL, 0 );
             TEST_ASSERT_MESSAGE( ( 0 == lMbedTLSResult ), "Failed to initialize DRBG" );
 
@@ -1786,7 +1786,7 @@ static void prvTestRsaSign( provisionMethod_t testProvisionMethod )
             lMbedTLSResult = mbedtls_rsa_pkcs1_verify( xMbedPkContext.pk_ctx, MBEDTLS_MD_SHA256,
                 32, xHashedMessage, xSignature );
             TEST_ASSERT_MESSAGE( ( 0 == xResult ), "mbedTLS failed to verify RSA signagure." );
-
+        }
         #endif /* MBEDTLS_VERSION_NUMBER < 0x03000000 */
     }
 

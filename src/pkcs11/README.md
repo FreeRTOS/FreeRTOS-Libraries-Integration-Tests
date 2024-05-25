@@ -59,6 +59,8 @@ The following table lists the required test configurations for PKCS #11 tests. T
 |PKCS11_TEST_LABEL_CODE_VERIFICATION_KEY	|The label of the code verification key used in JITP codeverify test.	|
 |PKCS11_TEST_LABEL_JITP_CERTIFICATE	|The label of the JITP certificate used in JITP codeverify test.	|
 |PKCS11_TEST_LABEL_ROOT_CERTIFICATE	|The label of the root certificate used in JITP codeverify test.	|
+|PKCS11_TEST_RSA_CERTIFICATE	|The certificate used to verify RSA preprovision mechanism.	|
+|PKCS11_TEST_RSA_CERTIFICATE_LENGTH	|The certificate length used to verify RSA preprovision mechanism.	|
 
 
 FreeRTOS libraries and reference integrations needs at least one of the key function and one of the key provisioning mechanism supported by the PKCS #11 APIs. The test must enable at least one of the following configurations:
@@ -77,6 +79,7 @@ Pre-provisioned device credential test can not be enabled with other provisionin
 * Enable **PKCS11_TEST_PREPROVISIONED_SUPPORT** and the other provisioning mechanisms must be disabled
 * Only one of the key function, **PKCS11_TEST_RSA_KEY_SUPPORT** or **PKCS11_TEST_EC_KEY_SUPPORT**, enabled
 * Setup the pre-provisioned key labels according to your key function, including **PKCS11_TEST_LABEL_DEVICE_PRIVATE_KEY_FOR_TLS**, **PKCS11_TEST_LABEL_DEVICE_PUBLIC_KEY_FOR_TLS** and **PKCS11_TEST_LABEL_DEVICE_CERTIFICATE_FOR_TLS**. These credentials must exist in the PKCS #11 before running the test.
+* **PKCS11_TEST_RSA_CERTIFICATE** and **PKCS11_TEST_RSA_CERTIFICATE_LENGTH** must be defined before running the test to verify RSA preprovision mechanism.
 
 You may need to run the test several times with different configurations if your implementation support pre-provisioned credentials and other provisioning mechanisms.
 
