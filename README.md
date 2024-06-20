@@ -4,17 +4,13 @@
 This repository contains tests that verify an integration of FreeRTOS IoT libraries
 running on a specific microcontroller-based development board for robustness and
 compatibility with AWS’s published best practices for AWS IoT Core connectivity.
-Refer to [FreeRTOS Porting Guide](https://docs.aws.amazon.com/freertos/latest/portingguide/afr-porting.html) for how to port FreeRTOS libraries and test your project.
-The tests are used by [AWS IoT Device Tester](https://docs.aws.amazon.com/freertos/latest/userguide/device-tester-for-freertos-ug.html) (IDT)
-as part of the [AWS Device Qualification for FreeRTOS](https://docs.aws.amazon.com/freertos/latest/qualificationguide/afr-qualification.html). The tests can also be run locally from your IDE to verify your project, but a test report from IDT is required for AWS Device Qualification.
 
 ### Tests
 
 The following test groups are included in this repository:
 1. Transport Interface Test validates the implementation of transport interface required by [coreMQTT](https://docs.aws.amazon.com/freertos/latest/portingguide/afr-porting-mqtt.html) and [coreHTTP](https://docs.aws.amazon.com/freertos/latest/portingguide/afr-porting-corehttp.html). The implementation can be plain text or TLS. See [Transport Interface Test](/src/transport_interface) for details.
 2. PKCS11 Test validates the implementation of PKCS11 interface required by [corePKCS11](https://docs.aws.amazon.com/freertos/latest/portingguide/afr-porting-pkcs.html).See [PKCS11 Test](/src/pkcs11) for details.
-3. OTA Test validates the implementation of Physical Abstract Layer for [Over-the-Air Updates](https://docs.aws.amazon.com/freertos/latest/portingguide/afr-porting-ota.html). See [OTA Test](/src/ota) for details.
-4. MQTT Test validates the integration with coreMQTT library.
+3. MQTT Test validates the integration with coreMQTT library.
 
 
 ### Folder Structure
@@ -24,7 +20,6 @@ The folder inside the repository is organized as follows:
 ├── src
 │   ├── common
 |   |── mqtt
-|   |── ota
 |   |── pkcs11
 │   └── transport_interface
 └── tools
@@ -71,6 +66,8 @@ If testing using the [FreeRTOS-LTS](https://github.com/FreeRTOS/FreeRTOS-LTS) re
 | [202012.04-LTS](https://github.com/FreeRTOS/FreeRTOS-LTS/tree/202012.04-LTS) | [202205.01](https://github.com/FreeRTOS/FreeRTOS-Libraries-Integration-Tests/tree/202205.01) |
 | [202012.05-LTS](https://github.com/FreeRTOS/FreeRTOS-LTS/tree/202012.05-LTS) | [202205.01](https://github.com/FreeRTOS/FreeRTOS-Libraries-Integration-Tests/tree/202205.01) |
 | [202210.00-LTS](https://github.com/FreeRTOS/FreeRTOS-LTS/tree/202210.00-LTS) | [202210.00](https://github.com/FreeRTOS/FreeRTOS-Libraries-Integration-Tests/tree/202210.00) |
+| [202210.01-LTS](https://github.com/FreeRTOS/FreeRTOS-LTS/tree/202210.01-LTS) | [202210.00](https://github.com/FreeRTOS/FreeRTOS-Libraries-Integration-Tests/tree/202210.00) |
+| [202406.00-LTS](https://github.com/FreeRTOS/FreeRTOS-LTS/tree/202210.01-LTS) | [202406.00](https://github.com/FreeRTOS/FreeRTOS-Libraries-Integration-Tests/tree/202406.00) |
 
 4. Checkout the version of this repository needed with the following command:
 ```
