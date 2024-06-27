@@ -66,7 +66,7 @@ If testing using the [FreeRTOS-LTS](https://github.com/FreeRTOS/FreeRTOS-LTS) re
 | [202012.04-LTS](https://github.com/FreeRTOS/FreeRTOS-LTS/tree/202012.04-LTS) | [202205.01](https://github.com/FreeRTOS/FreeRTOS-Libraries-Integration-Tests/tree/202205.01) |
 | [202012.05-LTS](https://github.com/FreeRTOS/FreeRTOS-LTS/tree/202012.05-LTS) | [202205.01](https://github.com/FreeRTOS/FreeRTOS-Libraries-Integration-Tests/tree/202205.01) |
 | [202210.00-LTS](https://github.com/FreeRTOS/FreeRTOS-LTS/tree/202210.00-LTS) | [202210.00](https://github.com/FreeRTOS/FreeRTOS-Libraries-Integration-Tests/tree/202210.00) |
-| [202210.01-LTS](https://github.com/FreeRTOS/FreeRTOS-LTS/tree/202210.01-LTS) | [202210.00](https://github.com/FreeRTOS/FreeRTOS-Libraries-Integration-Tests/tree/202210.00) |
+| [202210.01-LTS](https://github.com/FreeRTOS/FreeRTOS-LTS/tree/202210.01-LTS) | [202210.01](https://github.com/FreeRTOS/FreeRTOS-Libraries-Integration-Tests/tree/202210.01) |
 | [202406.00-LTS](https://github.com/FreeRTOS/FreeRTOS-LTS/tree/202406.00-LTS) | [202406.00](https://github.com/FreeRTOS/FreeRTOS-Libraries-Integration-Tests/tree/202406.00) |
 
 4. Checkout the version of this repository needed with the following command:
