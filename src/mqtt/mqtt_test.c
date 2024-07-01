@@ -170,7 +170,9 @@
  * @brief Time interval in seconds at which an MQTT PINGREQ need to be sent to
  * broker.
  */
-#define MQTT_KEEP_ALIVE_INTERVAL_SECONDS    ( 5U )
+#ifndef MQTT_KEEP_ALIVE_INTERVAL_SECONDS
+    #define MQTT_KEEP_ALIVE_INTERVAL_SECONDS    ( 5U )
+#endif
 
 /**
  * @brief The MQTT message published in this example.
