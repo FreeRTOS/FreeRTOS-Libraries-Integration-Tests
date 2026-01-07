@@ -1678,7 +1678,7 @@ static void prvTestRsaGetAttributeValue( provisionMethod_t testProvisionMethod )
     TEST_ASSERT_MESSAGE( ( CK_INVALID_HANDLE != xPrivateKeyHandle ), "Invalid object handle found for RSA private key." );
 
     /* Check that the private key cannot be retrieved. */
-    xTemplate.type = CKA_PRIVATE_EXPONENT;
+    xTemplate.type = CKA_VALUE;
     xTemplate.pValue = xKeyComponent;
     xTemplate.ulValueLen = sizeof( xKeyComponent );
     xResult = pxGlobalFunctionList->C_GetAttributeValue( xGlobalSession, xPrivateKeyHandle, &xTemplate, 1 );
@@ -1832,7 +1832,7 @@ static void prvRSAGetAttributeValueMultiThreadTask( void * pvParameters )
             TEST_ASSERT_MESSAGE( ( CERTIFICATE_VALUE_LENGTH == xTemplate.ulValueLen ), "GetAttributeValue returned incorrect length of RSA certificate value" );
 
             /* Check that the private key cannot be retrieved. */
-            xTemplate.type = CKA_PRIVATE_EXPONENT;
+            xTemplate.type = CKA_VALUE;
             xTemplate.pValue = xKeyComponent;
             xTemplate.ulValueLen = sizeof( xKeyComponent );
             pxMultiTaskParam->xTestResult = pxGlobalFunctionList->C_GetAttributeValue( xSession, xPrivateKeyHandle, &xTemplate, 1 );
